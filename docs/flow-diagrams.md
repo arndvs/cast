@@ -180,7 +180,8 @@ Two input paths, one folder, one resolver. Maya doesn't have to learn the slug r
 - Product name → slug: lowercase, non-alphanumeric runs collapsed to `-`, leading/trailing `-` stripped.
   - `"Sparkling Citrus"` → `sparkling-citrus`
   - `"Energy Drink Pro"` → `energy-drink-pro`
-- Resolver looks for `/inputs/assets/[slug].{png,jpg,jpeg,webp}` (first hit wins).
+- Slugs must match `SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/` server-side. Non-conforming → 400.
+- Resolver looks for `/inputs/assets/[slug].{png,jpg,webp}` (first hit wins). Pre-placed `.jpeg` files are accepted on read but uploads always normalize to `.jpg`.
 - No file found → Asset Resolver falls back to GenAI on Generate.
 
 **Two ways an asset gets into `/inputs/assets/`:**
@@ -221,7 +222,17 @@ Content-Type: multipart/form-data
 Fields: productSlug=sparkling-citrus, file=<binary>
 
 Response: { "ok": true, "path": "/inputs/assets/sparkling-citrus.png" }
-  — server derives extension from MIME, writes file, overwrites any prior asset for that slug
+
+Constraints (enforced server-side, single source of truth):
+  - productSlug must match SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/ → else 400
+  - Content-Length ≤ 5 MB → else 413 (rejected before disk write)
+  - MIME must be one of: image/png, image/jpeg, image/webp → else 415
+  - Extension is canonical-mapped: png→.png, jpeg→.jpg, webp→.webp
+    (NOT derived from filename — derived from MIME)
+  - On write: delete /inputs/assets/[slug].{png,jpg,webp} first, then write
+    the canonical extension. One slug → one file on disk at a time.
+  - Path constructed via safeJoin("inputs", `${slug}.${ext}`) — rejects
+    traversal even if SLUG_RE is bypassed.
 
 GET /api/detected-assets?slugs=sparkling-citrus,energy-drink-pro
 Response: [
@@ -230,10 +241,13 @@ Response: [
 ]
   — called on S1 mount (immediate), on brief edit (300ms debounced),
     and after each successful upload (immediate)
+  — every slug in the query string is validated with SLUG_RE before
+    any filesystem call; lookups go through safeJoin("inputs", ...).
 
 POST /api/generate
 Content-Type: application/json
-Body: <brief JSON>
+Body: <brief JSON> (validated against briefSchema — single Zod schema
+  shared between client editor validation and server entry)
 
 Response: text/x-ndjson  (streamed)
   { "type": "step", "message": "run started" }
