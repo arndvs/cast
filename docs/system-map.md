@@ -2,7 +2,7 @@
 
 ### Local Next.js App · POC · v1
 
-> Bridges the [user stories](user-stories.md) to a buildable solution. Entities, actors, and subsystems are pulled directly from the verbs/nouns in Maya's, Priya's, and Sam's stories.
+> Bridges the [user stories](user-stories.md) to a buildable solution. Entities, actors, and subsystems are pulled directly from the verbs/nouns in Maya's, Priya's, and Aaron's stories.
 
 ---
 
@@ -12,15 +12,15 @@ The "things" the system stores, moves, and renders. Pulled from the user-story v
 
 ```mermaid
 graph LR
-    Brief["📄 Brief<br/>products · region · audience<br/>message · locales"]
-    Product["📦 Product<br/>name · sku"]
-    InputAsset["🖼️ Input Asset<br/>/inputs/assets/[product].png"]
-    HeroImage["✨ Hero Image<br/>GenAI fallback"]
-    Creative["🎨 Output Creative<br/>1:1 · 9:16 · 16:9"]
-    Message["💬 Localized Message<br/>per locale"]
-    Compliance["✅ Compliance Result<br/>OK · WARN · FAIL"]
-    RunLog["📜 Run Log<br/>streamed steps"]
-    Report["📊 Report<br/>report.json"]
+    Brief["Brief<br/>products · region · audience<br/>message · locales"]
+    Product["Product<br/>name · sku"]
+    InputAsset["Input Asset<br/>/inputs/assets/[product].png"]
+    HeroImage["Hero Image<br/>GenAI fallback"]
+    Creative["Output Creative<br/>1:1 · 9:16 · 16:9"]
+    Message["Localized Message<br/>per locale"]
+    Compliance["Compliance Result<br/>OK · WARN · FAIL"]
+    RunLog["Run Log<br/>streamed steps"]
+    Report["Report<br/>report.json"]
 
     Brief -->|lists| Product
     Brief -->|carries| Message
@@ -39,25 +39,25 @@ graph LR
 
 ## 2. Actor Map — who does what
 
-Three actors, each with a distinct primary verb. Same system, three lenses.
+Three actors, each with a distinct primary verb. Aarone system, three lenses.
 
 ```mermaid
 graph TB
     subgraph Actors
-        Maya["👩‍🎨 Maya<br/>Creative Producer"]
-        Priya["👩‍💼 Priya<br/>Brand Manager"]
-        Sam["👨‍💻 Sam<br/>Engineer / Demo"]
+        Maya["Maya<br/>Creative Producer"]
+        Priya["Priya<br/>Brand Manager"]
+        Aaron["Aaron<br/>Engineer / Demo"]
     end
 
     subgraph Verbs["Primary actions"]
-        Edit["✏️ edits brief"]
-        Drop["📥 drops photos in /inputs"]
-        Generate["▶️ clicks Generate"]
-        Watch["👀 watches pipeline log"]
-        Review["🔍 reviews output grid"]
-        Read["🏷️ reads compliance badges"]
-        Drill["🔎 drills into flagged item"]
-        Demo["🎤 narrates the demo"]
+        Edit["edits brief"]
+        Drop["drops photos in /inputs"]
+        Generate["clicks Generate"]
+        Watch["watches pipeline log"]
+        Review["reviews output grid"]
+        Read["reads compliance badges"]
+        Drill["drills into flagged item"]
+        Demo["narrates the demo"]
     end
 
     Maya --> Edit
@@ -70,9 +70,9 @@ graph TB
     Priya --> Read
     Priya --> Drill
 
-    Sam --> Generate
-    Sam --> Watch
-    Sam --> Demo
+    Aaron --> Generate
+    Aaron --> Watch
+    Aaron --> Demo
 ```
 
 ---
@@ -84,23 +84,23 @@ The verbs from the stories cluster into seven subsystems. Anything inside the da
 ```mermaid
 graph TB
     subgraph External["External / filesystem"]
-        Inputs[("📁 /inputs/assets/<br/>product photos")]
-        Outputs[("📁 /outputs/[campaign]/<br/>[product]/[ratio].png")]
-        GenAI["🤖 GenAI Image API<br/>hero fallback"]
-        ReportFile[("📄 report.json")]
+        Inputs[("/inputs/assets/<br/>product photos")]
+        Outputs[("/outputs/[campaign]/<br/>[product]/[ratio].png")]
+        GenAI["GenAI Image API<br/>hero fallback"]
+        ReportFile[("report.json")]
     end
 
     subgraph App["Local Next.js app — localhost:3000"]
         direction TB
 
-        subgraph UI["🖥️ UI layer"]
+        subgraph UI["UI layer"]
             Editor["Brief Editor<br/>JSON form, pre-loaded example"]
             LogView["Live Pipeline Log<br/>streamed steps"]
             Grid["Output Grid<br/>row per product · 3 ratio cols"]
             BadgeUI["Compliance Badges<br/>OK / WARN / FAIL + drill-in"]
         end
 
-        subgraph Engine["⚙️ Pipeline Engine"]
+        subgraph Engine["Pipeline Engine"]
             Orchestrator["Run Orchestrator<br/>steps + streaming"]
             Resolver["Asset Resolver<br/>find or generate"]
             Resizer["Image Processor<br/>Sharp · 1:1 · 9:16 · 16:9"]
@@ -135,7 +135,7 @@ How a single click on **Generate** moves a brief through the system and back to 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as Maya / Sam
+    actor User as Maya / Aaron
     participant UI as Brief Editor
     participant Orc as Run Orchestrator
     participant Res as Asset Resolver
@@ -184,7 +184,7 @@ Priya never touches the pipeline; she lives on the output grid. Her flow is a re
 graph LR
     Done["Run completes"] --> Grid["Output Grid<br/>all creatives + badges"]
     Grid --> Scan{"All green?"}
-    Scan -->|yes| Ship["✅ ship"]
+    Scan -->|yes| Ship["ship"]
     Scan -->|no| Click["click flagged tile"]
     Click --> Detail["Compliance Detail<br/>which check failed · why"]
     Detail --> Decide{"fixable in brief?"}

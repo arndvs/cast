@@ -88,8 +88,8 @@ Using the Inform → Engage → Invite framework.
 - Products list — each row shows: name, description, slug preview
 - Per-product drop zone (shadcn-dropzone) — drag target visible
 - Detected Assets panel — per-product status:
-  - ✓ `sparkling-citrus.png` — using local asset
-  - ⚠ no asset found — will generate via GenAI
+  - found: `sparkling-citrus.png` — using local asset
+  - missing: no asset found — will generate via GenAI
 - Generate button (enabled when brief is valid JSON)
 - Validation badge on brief (valid / invalid)
 
@@ -118,7 +118,7 @@ Using the Inform → Engage → Invite framework.
 
 - Live pipeline log — NDJSON events rendered as they stream:
   - `step` → grey log line: "Parsing brief..."
-  - `asset_resolved` → green/amber line: "✓ sparkling-citrus — using local asset" / "⚠ energy-drink — generating via GenAI"
+  - `asset_resolved` → green/amber line: "sparkling-citrus — using local asset" / "energy-drink — generating via GenAI"
   - `creative_ready` → cyan line: "sparkling-citrus 1:1 → composed"
   - `compliance_result` → badge line: "sparkling-citrus 1:1 — OK"
   - `error` → red line: error message
@@ -149,7 +149,7 @@ Using the Inform → Engage → Invite framework.
 **Engage — what the user can do:**
 
 - Click "Edit brief" — go back to S1 to fix the brief
-- Click "Retry" — rerun the same brief
+- Click "Retry" — rerun the Aarone brief
 
 **Invite — how they move to the next screen:**
 
@@ -193,9 +193,9 @@ Using the Inform → Engage → Invite framework.
 - Product name + ratio label
 - Compliance badge (WARN or FAIL)
 - Per-check results:
-  - Logo present: ✓ / ✗
-  - Brand colors: ✓ / ✗ (with found vs expected swatches if failed)
-  - Banned words: ✓ / ✗ (with flagged terms listed if failed)
+  - Logo present: pass / fail
+  - Brand colors: pass / fail (with found vs expected swatches if failed)
+  - Banned words: pass / fail (with flagged terms listed if failed)
 
 **Engage — what the user can do:**
 
@@ -248,7 +248,7 @@ Using the Inform → Engage → Invite framework.
 | copy output path        | S3      | Copyable code block                  |
 | narrate demo            | S2 + S3 | Live log + grid + badges             |
 
-✅ Every verb has a screen and a named attribute. Nothing is floating.
+Every verb has a screen and a named attribute. Nothing is floating.
 
 ---
 
