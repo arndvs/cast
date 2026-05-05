@@ -652,7 +652,7 @@
       <div class="step">
         <div class="num">01</div>
         <div class="name">Ingest brief</div>
-        <div class="desc">Parse JSON/YAML brief: products, region, audience, message.</div>
+        <div class="desc">Parse JSON brief: products, region, audience, message.</div>
       </div>
       <div class="step">
         <div class="num">02</div>
@@ -686,7 +686,7 @@
     <div class="section-grid grid-2">
       <div class="brief">
         <div class="brief-header">
-          <span class="title">brief.yaml</span>
+          <span class="title">brief.json</span>
           <span class="badge ok"><span class="dot"></span>Valid</span>
         </div>
         <div class="brief-body">
@@ -699,19 +699,21 @@
         </div>
       </div>
       <div class="card">
-        <h4>Example YAML</h4>
-<pre>campaign: summer_refresh_2026
-products:
-  - name: Sparkling Citrus
-    sku: SPK-CIT-12
-  - name: Sparkling Berry
-    sku: SPK-BRY-12
-markets: [us-en, mx-es]
-audience: 18-34, urban, health-conscious
-message:
-  en: "Crack open something brighter."
-  es: "Abre algo más brillante."
-ratios: [1x1, 9x16, 16x9]</pre>
+        <h4>Example JSON</h4>
+<pre>{
+  "campaign": "summer-refresh-2026",
+  "products": [
+    { "name": "Sparkling Citrus", "sku": "SPK-CIT-12" },
+    { "name": "Sparkling Berry", "sku": "SPK-BRY-12" }
+  ],
+  "markets": ["us-en", "mx-es"],
+  "audience": "18-34, urban, health-conscious",
+  "message": {
+    "en": "Crack open something brighter.",
+    "es": "Abre algo más brillante."
+  },
+  "ratios": ["1x1", "9x16", "16x9"]
+}</pre>
       </div>
     </div>
   </section>
@@ -779,7 +781,7 @@ ratios: [1x1, 9x16, 16x9]</pre>
     │   ├── 1x1.png
     │   ├── 9x16.png
     │   └── 16x9.png
-    ├── brief.yaml
+    ├── brief.json
     └── report.json    <span style="color: var(--muted-foreground);">// compliance + legal check results</span></pre>
     </div>
   </section>
