@@ -33,7 +33,7 @@ flowchart TB
 
     subgraph S1["S1 · Home / Brief Editor"]
         Brief["Pre-loaded example brief<br/>(JSON form)"]
-        EditBrief["Edit products · region<br/>audience · message · locales"]
+        EditBrief["Edit brand · products · markets<br/>audience · message · ratios"]
         Drop["Drop zone per product row<br/>(POST /api/upload → saves as<br/>/inputs/assets/[slug].ext)"]
         Detected["Detected Assets panel<br/>(scans /inputs/assets/<br/>by product slug after upload<br/>or pre-placement)"]
         GenBtn["Generate"]
@@ -95,7 +95,7 @@ The validation step Carl and Dane both stress: read each story aloud, trace the 
 
 ```mermaid
 flowchart LR
-    A[opens app] --> B["S1 · edits brief<br/>(products, locales, message)"]
+    A[opens app] --> B["S1 · edits brief<br/>(brand, products, markets, message)"]
     B --> C["S1 · drops photos onto<br/>product rows (drop zone)"]
     C --> D["S1 · Detected Assets panel<br/>shows found / will generate"]
     D --> E["S1 · clicks Generate"]
@@ -253,11 +253,64 @@ Body: <brief JSON> (validated against briefSchema — single Zod schema
 Response: text/x-ndjson  (streamed)
   { "type": "step", "message": "run started" }
   { "type": "asset_resolved", "product": "sparkling-citrus", "source": "local" }
-  { "type": "creative_ready", "product": "sparkling-citrus", "ratio": "1x1", "path": "/outputs/..." }
-  { "type": "compliance_result", "product": "sparkling-citrus", "ratio": "1x1", "badge": "OK", "checks": {...} }
+  { "type": "creative_ready", "product": "sparkling-citrus", "market": "us-en", "ratio": "1x1", "path": "outputs/..." }
+  { "type": "compliance_result", "product": "sparkling-citrus", "market": "us-en", "ratio": "1x1", "badge": "OK", "checks": {...} }
   ...
-  { "type": "complete", "manifest": { "campaign": "...", "outputDir": "/abs/path/outputs/...", "creatives": [...] } }
+  { "type": "complete", "manifest": { "campaign": "...", "brand": "...", "outputDir": "/abs/path/outputs/...", "creatives": [...] } }
 ```
+
+### Brief schema (canonical Zod definition)
+
+The **single source of truth** for brief validation. Same schema used client-side (editor validation) and server-side (`/api/generate` entry). Every other doc references this block; field names and shapes do not get restated elsewhere.
+
+```ts
+import { z } from 'zod'
+
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const MARKET_RE = /^[a-z]{2}-[a-z]{2}$/   // <region>-<lang>, e.g. us-en, mx-es
+const RATIO = z.enum(['1x1', '9x16', '16x9'])
+
+export const briefSchema = z
+  .object({
+    campaign: z.string().regex(SLUG_RE),
+    brand: z.string().regex(SLUG_RE),
+    products: z
+      .array(
+        z.object({
+          name: z.string().min(1),
+          sku: z.string().min(1),
+          promptOverrides: z
+            .object({
+              environment: z.string().optional(),
+              mood: z.array(z.string()).optional(),
+            })
+            .optional(),
+        }),
+      )
+      .min(2),
+    markets: z.array(z.string().regex(MARKET_RE)).min(1),
+    audience: z.string().min(1),
+    message: z.record(z.string().regex(/^[a-z]{2}$/), z.string().min(1)),
+    ratios: z.array(RATIO).min(1),
+  })
+  .superRefine((brief, ctx) => {
+    // Every market's locale (suffix after `-`) must have a message string.
+    for (const market of brief.markets) {
+      const locale = market.split('-').pop()!
+      if (!(locale in brief.message)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['message'],
+          message: `market ${market} requires message["${locale}"]`,
+        })
+      }
+    }
+  })
+
+export type Brief = z.infer<typeof briefSchema>
+```
+
+**Market → locale mapping rule:** `locale = market.split('-').pop()`. The `superRefine` rejects any brief whose markets reference a locale missing from `message{}`. There is no separate `locales` field on the brief.
 
 **Run artifacts written to `outputDir`** (alongside the per-product creative subfolders):
 

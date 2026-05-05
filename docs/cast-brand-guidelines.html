@@ -652,7 +652,7 @@
       <div class="step">
         <div class="num">01</div>
         <div class="name">Ingest brief</div>
-        <div class="desc">Parse JSON brief: products, region, audience, message.</div>
+        <div class="desc">Parse JSON brief: brand, products, markets, audience, message.</div>
       </div>
       <div class="step">
         <div class="num">02</div>
@@ -691,8 +691,9 @@
         </div>
         <div class="brief-body">
           <div class="row"><div class="k">Campaign</div><div class="v">Summer Refresh 2026</div></div>
+          <div class="row"><div class="k">Brand</div><div class="v">sparkling-co</div></div>
           <div class="row"><div class="k">Products</div><div class="v">Sparkling Citrus · Sparkling Berry</div></div>
-          <div class="row"><div class="k">Market</div><div class="v">US-EN, MX-ES</div></div>
+          <div class="row"><div class="k">Markets</div><div class="v">us-en · mx-es</div></div>
           <div class="row"><div class="k">Audience</div><div class="v">18–34, urban, health-conscious</div></div>
           <div class="row"><div class="k">Message</div><div class="v">"Crack open something brighter."</div></div>
           <div class="row"><div class="k">Ratios</div><div class="v">1:1 · 9:16 · 16:9</div></div>
@@ -702,6 +703,7 @@
         <h4>Example JSON</h4>
 <pre>{
   "campaign": "summer-refresh-2026",
+  "brand": "sparkling-co",
   "products": [
     { "name": "Sparkling Citrus", "sku": "SPK-CIT-12" },
     { "name": "Sparkling Berry", "sku": "SPK-BRY-12" }

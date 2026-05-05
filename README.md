@@ -28,6 +28,7 @@ The app starts with `inputs/brief.json` pre-loaded. Click **Generate** to run th
 ```json
 {
   "campaign": "summer-refresh-2026",
+  "brand": "sparkling-co",
   "products": [
     { "name": "Sparkling Citrus", "sku": "SPK-CIT-12" },
     { "name": "Sparkling Berry", "sku": "SPK-BRY-12" }

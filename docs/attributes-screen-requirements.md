@@ -11,63 +11,61 @@ Organized by entity, then mapped to screens in Step 5.
 
 ### Brief
 
-- campaign name
-- products (array: name, description, existing_asset slug)
-- region / market
-- audience
-- campaign_message (string or locale map: en, es, ja...)
-- brand_colors (array of hex)
-- aspect_ratios (1:1, 9:16, 16:9)
+Fields are defined by the canonical Zod `briefSchema` in [flow-diagrams.md §4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview). Field names and shapes are not restated here — the schema is the single source of truth. Summary:
+
+- `campaign` (slug)
+- `brand` (slug — references `inputs/brands/[brand]/`)
+- `products[]` — each `{ name, sku, promptOverrides? }`
+- `markets[]` — BCP-47-style `<region>-<lang>` (e.g. `us-en`, `mx-es`)
+- `audience` (freeform string)
+- `message` — `Record<lang, string>` (locale → copy)
+- `ratios[]` — enum subset of `[1x1, 9x16, 16x9]`
 
 ### Product
 
 - name
-- slug (derived: lowercase, hyphens)
-- description
-- existing_asset (filename or null)
+- slug (derived: lowercase, hyphens, validated against `SLUG_RE`)
+- sku
+- promptOverrides (optional — see [flow-diagrams.md “Implementation primitives”](flow-diagrams.md#implementation-primitives))
 
 ### Input Asset
 
 - slug (matches product)
-- file path (/inputs/assets/[slug].ext)
-- extension (png, jpg, jpeg, webp)
+- file path (`inputs/assets/[product-slug].ext`)
+- extension (resolver looks for `png, jpg, jpeg, webp`)
 - found (boolean — detected at page load)
 
 ### Hero Image
 
-- source: "local" | "generated"
+- source: `local` | `genai`
 - product slug
 - file path after generation
 
 ### Output Creative
 
 - product slug
-- ratio (1x1, 9x16, 16x9)
-- file path (/outputs/[campaign]/[product]/[ratio].png)
-- badge: OK | WARN | FAIL
-- compliance checks (logo_present, colors_ok, banned_words)
+- market
+- ratio (`1x1`, `9x16`, `16x9`)
+- file path (`outputs/[campaign]/[market]/[product]/[ratio].png`)
+- badge: `OK` | `WARN` | `FAIL`
+- compliance checks (logoPresent, colorsOk, bannedWords)
 
 ### Compliance Result
 
-- badge: OK | WARN | FAIL
+- badge: `OK` | `WARN` | `FAIL`
 - checks:
-  - logo_present: boolean
-  - colors_ok: boolean
-  - banned_words: string[] (flagged terms)
+  - logoPresent: boolean
+  - colorsOk: boolean
+  - bannedWords: string[] (flagged terms)
 
 ### Run Log
 
 - steps (array of: type, message, timestamp)
-- event types: step, asset_resolved, creative_ready, compliance_result, error, complete
+- event types: `step`, `asset_resolved`, `creative_ready`, `compliance_result`, `error`, `complete`
 
 ### Report (report.json)
 
-- campaign name
-- outputDir (absolute path)
-- creatives (array of Output Creative)
-- generated_count (how many went to GenAI)
-- reused_count (how many used local assets)
-- flagged_count (compliance WARN + FAIL)
+Shape is the same object delivered in the `complete` event's `manifest`. See [flow-diagrams.md §4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview) for the canonical example.
 
 ---
 
@@ -84,14 +82,20 @@ Using the Inform → Engage → Invite framework.
 **Inform — what the user sees:**
 
 - Pre-loaded example brief in a JSON editor (editable)
-- Campaign name, region, audience, message fields surfaced as readable form
-- Products list — each row shows: name, description, slug preview
+- Campaign name, brand, audience, message fields surfaced as readable form
+- Brand slug field with validation against `inputs/brands/[brand]/` (errors inline if missing)
+- Markets field — typeahead input accepting any conforming `<region>-<lang>` value; suggestion list seeds common values (`us-en`, `mx-es`, `de-de`, `jp-ja`)
+- Ratios picker — three pill toggles (`1:1`, `9:16`, `16:9`); default all checked; at least one must remain selected
+- Products list — each row shows: name, sku, slug preview
 - Per-product drop zone (shadcn-dropzone) — drag target visible
 - Detected Assets panel — per-product status:
   - found: `sparkling-citrus.png` — using local asset
   - missing: no asset found — will generate via GenAI
-- Generate button (enabled when brief is valid JSON)
+- Read-only prompt preview — shows the prompt that will hit OpenAI per missing product (assembled from brand `voice.json` + product overrides)
+- Pre-flight banned-words check — if any locale's `message` contains a banned word for this brand, the Generate button is disabled with an inline warning
+- Generate button (enabled when brief is valid + no banned-word violations)
 - Validation badge on brief (valid / invalid)
+- Daily allocation indicator (e.g. "32 of 50 generations remaining today")
 
 **Engage — what the user can do:**
 

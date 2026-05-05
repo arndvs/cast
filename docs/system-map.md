@@ -12,7 +12,7 @@ The "things" the system stores, moves, and renders. Pulled from the user-story v
 
 ```mermaid
 graph LR
-    Brief["Brief<br/>products · region · audience<br/>message · locales"]
+    Brief["Brief<br/>brand · products · markets<br/>audience · message · ratios"]
     Product["Product<br/>name · sku"]
     InputAsset["Input Asset<br/>/inputs/assets/[product].png"]
     HeroImage["Hero Image<br/>GenAI fallback"]
@@ -202,7 +202,7 @@ A sanity check that every user-story verb has a home in the system map.
 | Story verb (from [user-stories.md](user-stories.md))        | Subsystem that owns it               |
 | ----------------------------------------------------------- | ------------------------------------ |
 | edit campaign brief in UI                                   | Brief Editor                         |
-| read products / region / audience / message                 | Brief Editor → Run Orchestrator      |
+| read brand / products / markets / audience / message        | Brief Editor → Run Orchestrator      |
 | look up input assets in `/inputs/assets/`                   | Asset Resolver                       |
 | generate hero image when missing                            | Asset Resolver → GenAI API           |
 | resize to 1:1, 9:16, 16:9                                   | Image Processor (Sharp)              |
