@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cast — Creative Automation Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/geist@1.7.0/dist/fonts/geist-mono/font.css" rel="stylesheet">
+<style>
+  /* =========================================================
+     Cast Design System — Tokens
+     Creative automation pipeline for social ad campaigns.
+     Default: DARK. Add `.light` to <html> to flip.
+     ========================================================= */
+  :root {
+    /* Brand: cyan → lime gradient signals signal + transmission.
+       Distinct from Adobe red so the work reads as the candidate's, not pastiche. */
+    --brand-cyan: oklch(0.78 0.14 210);
+    --brand-cyan-hex: #06b6d4;
+    --brand-lime: oklch(0.88 0.21 125);
+    --brand-lime-hex: #a3e635;
+
+    --background: oklch(0.06 0 0);
+    --foreground: oklch(0.92 0 0);
+    --card: oklch(0.09 0 0);
+    --card-foreground: oklch(0.92 0.005 210);
+    --popover: oklch(0.08 0 0);
+    --primary: var(--brand-cyan);
+    --primary-foreground: oklch(0.06 0 0);
+    --secondary: oklch(0.14 0 0);
+    --muted: oklch(0.12 0 0);
+    --muted-foreground: oklch(0.55 0 0);
+    --accent: oklch(0.14 0 0);
+    --border: oklch(0.16 0 0);
+    --input: oklch(0.18 0 0);
+    --ring: var(--brand-cyan);
+
+    /* Semantic status — used by brand-compliance and legal checks. */
+    --ok: oklch(0.72 0.17 155);
+    --ok-hex: #34d399;
+    --warn: oklch(0.78 0.16 80);
+    --warn-hex: #fbbf24;
+    --bad: oklch(0.62 0.22 25);
+    --bad-hex: #f87171;
+
+    --fg-1: oklch(0.92 0 0);
+    --fg-2: oklch(0.78 0 0);
+    --fg-3: oklch(0.55 0 0);
+    --fg-4: oklch(0.4 0 0);
+
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.25rem;
+
+    --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.5), 0 1px 2px -1px rgba(0,0,0,0.4);
+    --shadow-glow: 0 25px 50px -12px rgba(6, 182, 212, 0.35);
+
+    --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
+    --font-display: "Outfit", system-ui, sans-serif;
+    --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .light {
+    --background: oklch(0.985 0 0);
+    --foreground: oklch(0.13 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.13 0 0);
+    --secondary: oklch(0.955 0 0);
+    --muted: oklch(0.96 0 0);
+    --muted-foreground: oklch(0.5 0 0);
+    --accent: oklch(0.94 0 0);
+    --border: oklch(0.92 0 0);
+    --input: oklch(0.91 0 0);
+    --fg-1: oklch(0.13 0 0);
+    --fg-2: oklch(0.2 0 0);
+    --fg-3: oklch(0.5 0 0);
+    --fg-4: oklch(0.65 0 0);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+  }
+  a { color: inherit; text-decoration: none; }
+  svg { display: block; }
+
+  /* =========================================================
+     Page chrome
+     ========================================================= */
+  .page-shell { max-width: 1200px; margin: 0 auto; padding: 64px 32px 128px; }
+  .page-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 48px;
+    margin-bottom: 64px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 32px; flex-wrap: wrap;
+  }
+  .page-header h1 {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(3rem, 7vw, 5rem);
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+    margin: 16px 0 0;
+  }
+  .page-header .eyebrow {
+    color: var(--brand-cyan-hex);
+    font-family: var(--font-mono);
+    font-size: 0.75rem; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  .page-header p { max-width: 48ch; color: var(--muted-foreground); margin: 24px 0 0; font-size: 1.0625rem; }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem; text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--brand-cyan-hex);
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: -0.025em;
+    margin: 0 0 8px;
+  }
+  .section-desc { color: var(--muted-foreground); margin: 0 0 32px; max-width: 60ch; }
+  .section { margin-bottom: 96px; }
+  .section-grid { display: grid; gap: 24px; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+  /* =========================================================
+     Card
+     ========================================================= */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 28px;
+    color: var(--card-foreground);
+  }
+  .card h4 {
+    font-family: var(--font-mono);
+    font-size: 0.75rem; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted-foreground);
+    margin: 0 0 16px;
+  }
+  .card .meta {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    margin-top: 16px;
+  }
+
+  /* =========================================================
+     Logo / wordmark
+     ========================================================= */
+  .logo-row { display: flex; align-items: center; gap: 20px; }
+  .logo-mark {
+    width: 56px; height: 56px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--brand-cyan-hex) 0%, var(--brand-lime-hex) 100%);
+    display: grid; place-items: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.75rem;
+    color: #fff;
+    letter-spacing: -0.04em;
+    box-shadow: var(--shadow-glow);
+  }
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.75rem;
+    letter-spacing: -0.04em;
+  }
+  .wordmark .dot { color: var(--brand-lime-hex); }
+  .lockup { display: flex; flex-direction: column; gap: 4px; }
+  .lockup .tagline {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* =========================================================
+     Type
+     ========================================================= */
+  .type-display {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+  }
+  .text-gradient {
+    background: linear-gradient(135deg, var(--brand-cyan-hex) 0%, var(--brand-lime-hex) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .type-scale .row {
+    display: grid; grid-template-columns: 100px 1fr; gap: 24px;
+    align-items: baseline; padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .type-scale .row:last-child { border-bottom: 0; }
+  .type-scale .tag { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.08em; }
+  .type-scale .h1 { font-family: var(--font-display); font-weight: 800; font-size: 3rem; line-height: 1.05; letter-spacing: -0.025em; }
+  .type-scale .h2 { font-family: var(--font-display); font-weight: 700; font-size: 2.25rem; line-height: 1.1; letter-spacing: -0.025em; }
+  .type-scale .h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; line-height: 1.2; letter-spacing: -0.025em; }
+  .type-scale .lead { font-size: 1.125rem; line-height: 1.625; color: var(--muted-foreground); }
+  .type-scale .body { font-size: 1rem; line-height: 1.625; }
+  .type-scale .mono { font-family: var(--font-mono); font-size: 0.875rem; color: var(--brand-cyan-hex); }
+  .type-scale .small { font-size: 0.8125rem; color: var(--muted-foreground); }
+
+  /* =========================================================
+     Color swatches
+     ========================================================= */
+  .swatch {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .swatch .chip { height: 120px; }
+  .swatch .body { padding: 16px; background: var(--card); }
+  .swatch .name { font-weight: 700; font-size: 0.9375rem; }
+  .swatch .val { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted-foreground); margin-top: 4px; }
+
+  /* =========================================================
+     Buttons
+     ========================================================= */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 0.9375rem;
+    padding: 10px 18px;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--brand-cyan-hex) 0%, var(--brand-lime-hex) 100%);
+    color: #fff;
+    box-shadow: var(--shadow-glow);
+  }
+  .btn-secondary {
+    background: var(--secondary);
+    color: var(--foreground);
+    border-color: var(--border);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--foreground);
+    border-color: var(--border);
+  }
+  .btn-sm { padding: 6px 12px; font-size: 0.8125rem; }
+
+  /* =========================================================
+     Status badges (brand compliance / legal checks)
+     ========================================================= */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    background: var(--secondary);
+  }
+  .badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--muted-foreground);
+  }
+  .badge.ok { color: var(--ok-hex); border-color: color-mix(in oklch, var(--ok) 40%, transparent); }
+  .badge.ok .dot { background: var(--ok-hex); box-shadow: 0 0 8px var(--ok-hex); }
+  .badge.warn { color: var(--warn-hex); border-color: color-mix(in oklch, var(--warn) 40%, transparent); }
+  .badge.warn .dot { background: var(--warn-hex); }
+  .badge.bad { color: var(--bad-hex); border-color: color-mix(in oklch, var(--bad) 40%, transparent); }
+  .badge.bad .dot { background: var(--bad-hex); }
+
+  /* =========================================================
+     Aspect-ratio creative frames
+     The deliverable: 1:1, 9:16, 16:9. These are mock outputs.
+     ========================================================= */
+  .frame-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    align-items: end;
+  }
+  .frame {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: linear-gradient(135deg, oklch(0.18 0.08 295) 0%, oklch(0.14 0.1 350) 100%);
+    position: relative;
+    isolation: isolate;
+  }
+  .frame::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(60% 40% at 30% 20%, rgba(6,182,212,0.45), transparent 60%),
+      radial-gradient(50% 50% at 80% 80%, rgba(163,230,53,0.4), transparent 60%);
+    z-index: 0;
+  }
+  .frame-1x1 { aspect-ratio: 1 / 1; }
+  .frame-9x16 { aspect-ratio: 9 / 16; }
+  .frame-16x9 { aspect-ratio: 16 / 9; }
+  .frame-content {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #fff;
+  }
+  .frame-content .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .frame-content .ratio-tag {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.7);
+  }
+  .frame-content .headline {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.5rem;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+  .frame-content .cta {
+    display: inline-flex; align-self: flex-start;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: #000;
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  /* =========================================================
+     Brief panel
+     ========================================================= */
+  .brief {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 0;
+    overflow: hidden;
+  }
+  .brief-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--muted);
+  }
+  .brief-header .title { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--muted-foreground); letter-spacing: 0.06em; }
+  .brief-body {
+    display: grid; grid-template-columns: 140px 1fr;
+    gap: 0;
+  }
+  .brief-body .k, .brief-body .v {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brief-body .k {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: var(--card);
+  }
+  .brief-body .v { font-size: 0.9375rem; }
+  .brief-body .row:last-child .k,
+  .brief-body .row:last-child .v { border-bottom: 0; }
+  .brief-body .row { display: contents; }
+
+  /* =========================================================
+     Pipeline / step indicator
+     ========================================================= */
+  .pipeline {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    position: relative;
+  }
+  .step .num {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--brand-cyan-hex);
+    letter-spacing: 0.12em;
+  }
+  .step .name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1rem;
+    margin-top: 4px;
+  }
+  .step .desc {
+    color: var(--muted-foreground);
+    font-size: 0.8125rem;
+    margin-top: 8px;
+  }
+  .step.active {
+    border-color: color-mix(in oklch, var(--brand-cyan) 50%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--brand-cyan) 30%, transparent);
+  }
+
+  /* =========================================================
+     Theme toggle
+     ========================================================= */
+  .toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--card);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+  }
+
+  /* =========================================================
+     Code
+     ========================================================= */
+  pre {
+    margin: 0;
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--fg-2);
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+  code { font-family: var(--font-mono); font-size: 0.875em; color: var(--brand-cyan-hex); }
+
+  hr.divider { border: 0; border-top: 1px solid var(--border); margin: 96px 0; }
+</style>
+</head>
+<body>
+<div class="page-shell">
+
+  <!-- ================= HEADER ================= -->
+  <header class="page-header">
+    <div>
+      <div class="eyebrow">Adobe FDE Take-Home · Design System v0.1</div>
+      <h1>Cast<span style="color: var(--brand-lime-hex);">.</span></h1>
+      <p>A creative automation pipeline that turns a single campaign brief into on-brand, localized social ad creatives at three aspect ratios. <strong style="color: var(--foreground);">From brief to broadcast.</strong></p>
+    </div>
+    <button class="toggle" onclick="document.documentElement.classList.toggle('light')">
+      <span>◐</span> Toggle theme
+    </button>
+  </header>
+
+  <!-- ================= LOGO ================= -->
+  <section class="section">
+    <div class="section-label">01 · Identity</div>
+    <h2 class="section-title">Logo &amp; wordmark</h2>
+    <p class="section-desc">Geometric mark with a cyan→lime gradient. The trailing lime dot is the system signature — it appears in the wordmark and as a status pulse in the UI.</p>
+
+    <div class="section-grid grid-2">
+      <div class="card">
+        <h4>Primary lockup</h4>
+        <div class="logo-row">
+          <div class="logo-mark">C</div>
+          <div class="lockup">
+            <div class="wordmark">Cast<span class="dot">.</span></div>
+            <div class="tagline">From brief to broadcast</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Wordmark only</h4>
+        <div style="display:flex; align-items:center; gap:32px; flex-wrap:wrap;">
+          <div class="wordmark" style="font-size: 2.5rem;">Cast<span class="dot">.</span></div>
+          <div class="wordmark text-gradient" style="font-size: 2.5rem;">Cast.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= COLOR ================= -->
+  <section class="section">
+    <div class="section-label">02 · Color</div>
+    <h2 class="section-title">Palette</h2>
+    <p class="section-desc">A neutral dark surface gives generated creative imagery breathing room. Brand gradient is reserved for primary CTAs and the logo. Semantic colors carry status — used in compliance checks.</p>
+
+    <div class="section-grid grid-4">
+      <div class="swatch">
+        <div class="chip" style="background: linear-gradient(135deg, var(--brand-cyan-hex) 0%, var(--brand-lime-hex) 100%);"></div>
+        <div class="body">
+          <div class="name">Brand gradient</div>
+          <div class="val">#06B6D4 → #A3E635</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background: var(--brand-cyan-hex);"></div>
+        <div class="body">
+          <div class="name">Cyan 500</div>
+          <div class="val">#06B6D4 · oklch(0.78 0.14 210)</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background: var(--brand-lime-hex);"></div>
+        <div class="body">
+          <div class="name">Lime 400</div>
+          <div class="val">#A3E635 · oklch(0.88 0.21 125)</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background: var(--background); border-bottom: 1px solid var(--border);"></div>
+        <div class="body">
+          <div class="name">Background</div>
+          <div class="val">oklch(0.06 0 0)</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background: var(--card); border-bottom: 1px solid var(--border);"></div>
+        <div class="body">
+          <div class="name">Surface</div>
+          <div class="val">oklch(0.09 0 0)</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background: var(--ok-hex);"></div>
+        <div class="body">
+          <div class="name">OK</div>
+          <div class="val">#34D399</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background: var(--warn-hex);"></div>
+        <div class="body">
+          <div class="name">Warn</div>
+          <div class="val">#FBBF24</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background: var(--bad-hex);"></div>
+        <div class="body">
+          <div class="name">Bad</div>
+          <div class="val">#F87171</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TYPE ================= -->
+  <section class="section">
+    <div class="section-label">03 · Typography</div>
+    <h2 class="section-title">Type system</h2>
+    <p class="section-desc">Outfit for display (campaign headlines, hero copy), DM Sans for UI body, Geist Mono for metadata, IDs, and machine-readable labels (briefs, file paths, ratios).</p>
+
+    <div class="section-grid grid-2">
+      <div class="card">
+        <h4>Display · Outfit</h4>
+        <div class="type-display text-gradient">Generate at scale.</div>
+        <div class="meta">Outfit 900 · clamp(3rem, 7vw, 5.5rem)</div>
+      </div>
+      <div class="card">
+        <h4>Type scale</h4>
+        <div class="type-scale">
+          <div class="row"><span class="tag">H1</span><span class="h1">Campaign headline</span></div>
+          <div class="row"><span class="tag">H2</span><span class="h2">Section title</span></div>
+          <div class="row"><span class="tag">H3</span><span class="h3">Card heading</span></div>
+          <div class="row"><span class="tag">Lead</span><span class="lead">Supporting copy that introduces a section.</span></div>
+          <div class="row"><span class="tag">Body</span><span class="body">Standard interface body copy.</span></div>
+          <div class="row"><span class="tag">Mono</span><span class="mono">brief_id: cast_2026_summer_us</span></div>
+          <div class="row"><span class="tag">Small</span><span class="small">Caption · 13px DM Sans</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= COMPONENTS ================= -->
+  <section class="section">
+    <div class="section-label">04 · Components</div>
+    <h2 class="section-title">Buttons &amp; status</h2>
+    <p class="section-desc">Three button intents and three semantic status badges. Badges drive the brand-compliance and legal-content checks that ship as bonus deliverables.</p>
+
+    <div class="section-grid grid-2">
+      <div class="card">
+        <h4>Buttons</h4>
+        <div style="display:flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+          <button class="btn btn-primary">Generate creatives →</button>
+          <button class="btn btn-secondary">Re-render</button>
+          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-primary btn-sm">Approve</button>
+          <button class="btn btn-secondary btn-sm">Edit brief</button>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Status badges</h4>
+        <div style="display:flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+          <span class="badge ok"><span class="dot"></span>Brand OK</span>
+          <span class="badge ok"><span class="dot"></span>Logo present</span>
+          <span class="badge warn"><span class="dot"></span>Low contrast</span>
+          <span class="badge warn"><span class="dot"></span>Off-palette</span>
+          <span class="badge bad"><span class="dot"></span>Prohibited word</span>
+          <span class="badge bad"><span class="dot"></span>Logo missing</span>
+        </div>
+        <div class="meta">Used by the compliance + legal check pass after generation.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PIPELINE ================= -->
+  <section class="section">
+    <div class="section-label">05 · Pipeline</div>
+    <h2 class="section-title">Flow at a glance</h2>
+    <p class="section-desc">The five-stage pipeline that maps directly to the deliverable: ingest brief → resolve assets → generate missing → compose per ratio → verify.</p>
+
+    <div class="pipeline">
+      <div class="step">
+        <div class="num">01</div>
+        <div class="name">Ingest brief</div>
+        <div class="desc">Parse JSON/YAML brief: products, region, audience, message.</div>
+      </div>
+      <div class="step">
+        <div class="num">02</div>
+        <div class="name">Resolve assets</div>
+        <div class="desc">Reuse local assets where present; flag gaps.</div>
+      </div>
+      <div class="step active">
+        <div class="num">03</div>
+        <div class="name">Generate</div>
+        <div class="desc">Fill missing hero images via GenAI image API.</div>
+      </div>
+      <div class="step">
+        <div class="num">04</div>
+        <div class="name">Compose</div>
+        <div class="desc">Render 1:1, 9:16, 16:9 with localized message.</div>
+      </div>
+      <div class="step">
+        <div class="num">05</div>
+        <div class="name">Verify</div>
+        <div class="desc">Brand &amp; legal compliance checks; report.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= BRIEF ================= -->
+  <section class="section">
+    <div class="section-label">06 · Brief schema</div>
+    <h2 class="section-title">Campaign brief</h2>
+    <p class="section-desc">The input contract. Anything renderable downstream comes from this. Two products minimum; one brief produces N×3 creatives where N = product count.</p>
+
+    <div class="section-grid grid-2">
+      <div class="brief">
+        <div class="brief-header">
+          <span class="title">brief.yaml</span>
+          <span class="badge ok"><span class="dot"></span>Valid</span>
+        </div>
+        <div class="brief-body">
+          <div class="row"><div class="k">Campaign</div><div class="v">Summer Refresh 2026</div></div>
+          <div class="row"><div class="k">Products</div><div class="v">Sparkling Citrus · Sparkling Berry</div></div>
+          <div class="row"><div class="k">Market</div><div class="v">US-EN, MX-ES</div></div>
+          <div class="row"><div class="k">Audience</div><div class="v">18–34, urban, health-conscious</div></div>
+          <div class="row"><div class="k">Message</div><div class="v">"Crack open something brighter."</div></div>
+          <div class="row"><div class="k">Ratios</div><div class="v">1:1 · 9:16 · 16:9</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Example YAML</h4>
+<pre>campaign: summer_refresh_2026
+products:
+  - name: Sparkling Citrus
+    sku: SPK-CIT-12
+  - name: Sparkling Berry
+    sku: SPK-BRY-12
+markets: [us-en, mx-es]
+audience: 18-34, urban, health-conscious
+message:
+  en: "Crack open something brighter."
+  es: "Abre algo más brillante."
+ratios: [1x1, 9x16, 16x9]</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CREATIVE FRAMES ================= -->
+  <section class="section">
+    <div class="section-label">07 · Output</div>
+    <h2 class="section-title">Aspect ratios</h2>
+    <p class="section-desc">Every brief produces these three frames per product. The campaign message is composited on the final post; safe areas account for platform UI overlays.</p>
+
+    <div class="frame-row">
+      <div class="frame frame-1x1">
+        <div class="frame-content">
+          <div class="top">
+            <span class="ratio-tag">1:1 · INSTAGRAM</span>
+            <span class="badge ok" style="background: rgba(0,0,0,0.3);"><span class="dot"></span>OK</span>
+          </div>
+          <div>
+            <div class="headline">Crack open something brighter.</div>
+            <div class="cta" style="margin-top: 12px;">Shop now</div>
+          </div>
+        </div>
+      </div>
+      <div class="frame frame-9x16">
+        <div class="frame-content">
+          <div class="top">
+            <span class="ratio-tag">9:16 · STORIES</span>
+            <span class="badge ok" style="background: rgba(0,0,0,0.3);"><span class="dot"></span>OK</span>
+          </div>
+          <div>
+            <div class="headline">Crack open<br/>something brighter.</div>
+            <div class="cta" style="margin-top: 12px;">Shop now</div>
+          </div>
+        </div>
+      </div>
+      <div class="frame frame-16x9">
+        <div class="frame-content">
+          <div class="top">
+            <span class="ratio-tag">16:9 · FACEBOOK</span>
+            <span class="badge warn" style="background: rgba(0,0,0,0.3);"><span class="dot"></span>Low contrast</span>
+          </div>
+          <div>
+            <div class="headline">Crack open something brighter.</div>
+            <div class="cta" style="margin-top: 12px;">Shop now</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= OUTPUT TREE ================= -->
+  <section class="section">
+    <div class="section-label">08 · Filesystem</div>
+    <h2 class="section-title">Output structure</h2>
+    <p class="section-desc">Deterministic, navigable on disk. A reviewer can find any creative without opening the tool.</p>
+
+    <div class="card">
+<pre>outputs/
+└── summer-refresh-2026/
+    ├── sparkling-citrus/
+    │   ├── 1x1.png
+    │   ├── 9x16.png
+    │   └── 16x9.png
+    ├── sparkling-berry/
+    │   ├── 1x1.png
+    │   ├── 9x16.png
+    │   └── 16x9.png
+    ├── brief.yaml
+    └── report.json    <span style="color: var(--muted-foreground);">// compliance + legal check results</span></pre>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <footer style="display:flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; color: var(--muted-foreground); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;">
+    <span>Cast · Design System v0.1</span>
+    <span>Adobe FDE Take-Home · Aaron Davis · 2026</span>
+  </footer>
+
+</div>
+</body>
+</html>
