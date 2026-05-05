@@ -17,7 +17,7 @@ npm run dev
 # → open http://localhost:3000
 ```
 
-The app starts with `inputs/brief.json` pre-loaded. Click **Generate** to run the pipeline. Outputs land in `outputs/[campaign]/[product]/[ratio].png`. See [docs/system-map.md](docs/system-map.md) for the canonical filesystem layout.
+The app starts with `inputs/brief.json` pre-loaded. Click **Generate** to run the pipeline. Outputs land in `outputs/[campaign]/[market]/[product]/[ratio].png`. See [docs/system-map.md](docs/system-map.md) for the canonical filesystem layout.
 
 ---
 
@@ -50,17 +50,29 @@ Drop product photos into the per-product drop zone in the UI (or pre-place files
 ```
 outputs/
 └── summer-refresh-2026/
-    ├── sparkling-citrus/
-    │   ├── 1x1.png
-    │   ├── 9x16.png
-    │   └── 16x9.png
-    ├── sparkling-berry/
-    │   ├── 1x1.png
-    │   ├── 9x16.png
-    │   └── 16x9.png
+    ├── us-en/
+    │   ├── sparkling-citrus/
+    │   │   ├── 1x1.png
+    │   │   ├── 9x16.png
+    │   │   └── 16x9.png
+    │   └── sparkling-berry/
+    │       ├── 1x1.png
+    │       ├── 9x16.png
+    │       └── 16x9.png
+    ├── mx-es/
+    │   ├── sparkling-citrus/
+    │   │   ├── 1x1.png
+    │   │   ├── 9x16.png
+    │   │   └── 16x9.png
+    │   └── sparkling-berry/
+    │       ├── 1x1.png
+    │       ├── 9x16.png
+    │       └── 16x9.png
     ├── brief.json
     └── report.json    # compliance + legal check results
 ```
+
+File path shape: `outputs/[campaign]/[market]/[product]/[ratio].png`. The locale used for compositing copy is derived from the market: `locale = market.split('-').pop()`.
 
 ---
 

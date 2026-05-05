@@ -14,7 +14,7 @@ The "things" the system stores, moves, and renders. Pulled from the user-story v
 graph LR
     Brief["Brief<br/>brand · products · markets<br/>audience · message · ratios"]
     Product["Product<br/>name · sku"]
-    InputAsset["Input Asset<br/>/inputs/assets/[product].png"]
+    InputAsset["Input Asset<br/>inputs/assets/[product-slug].{png,jpg,jpeg,webp}"]
     HeroImage["Hero Image<br/>GenAI fallback"]
     Creative["Output Creative<br/>1:1 · 9:16 · 16:9"]
     Message["Localized Message<br/>per locale"]
@@ -84,8 +84,8 @@ The verbs from the stories cluster into seven subsystems. Anything inside the da
 ```mermaid
 graph TB
     subgraph External["External / filesystem"]
-        Inputs[("/inputs/assets/<br/>product photos")]
-        Outputs[("/outputs/[campaign]/<br/>[product]/[ratio].png")]
+        Inputs[("inputs/assets/<br/>product photos")]
+        Outputs[("outputs/[campaign]/[market]/<br/>[product]/[ratio].png")]
         GenAI["GenAI Image API<br/>hero fallback"]
         ReportFile[("report.json")]
     end
@@ -139,7 +139,7 @@ sequenceDiagram
     participant UI as Brief Editor
     participant Orc as Run Orchestrator
     participant Res as Asset Resolver
-    participant FS as /inputs/assets
+    participant FS as inputs/assets
     participant AI as GenAI API
     participant Img as Resizer + Compositor
     participant Out as /outputs
@@ -203,13 +203,13 @@ A sanity check that every user-story verb has a home in the system map.
 | ----------------------------------------------------------- | ------------------------------------ |
 | edit campaign brief in UI                                   | Brief Editor                         |
 | read brand / products / markets / audience / message        | Brief Editor → Run Orchestrator      |
-| look up input assets in `/inputs/assets/`                   | Asset Resolver                       |
+| look up input assets in `inputs/assets/`                    | Asset Resolver                       |
 | generate hero image when missing                            | Asset Resolver → GenAI API           |
 | resize to 1:1, 9:16, 16:9                                   | Image Processor (Sharp)              |
 | composite localized message overlay                         | Text Compositor                      |
 | stream pipeline log in real time                            | Run Orchestrator → Live Pipeline Log |
 | display output grid in browser                              | Output Grid                          |
-| save outputs to `/outputs/[campaign]/[product]/[ratio].png` | Image Processor → filesystem         |
+| save outputs to `outputs/[campaign]/[market]/[product]/[ratio].png` | Image Processor → filesystem |
 | check logo / colors / prohibited words                      | Compliance Checker                   |
 | badge each output OK / WARN / FAIL                          | Compliance Checker → Badge UI        |
 | write `report.json`                                         | Reporter                             |

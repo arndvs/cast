@@ -50,13 +50,13 @@ Success looks like: Aaron **opens** `localhost:3000`, **clicks Generate** with t
 
 - **accept / edit** campaign brief in the UI — JSON editor, pre-populated with working example
 - **read** products, region, audience, message (with optional locale map) from brief
-- **look up** input assets in `/inputs/assets/` per product
+- **look up** input assets in `inputs/assets/` per product
 - **generate** hero image via GenAI API when no input asset found for a product
 - **resize** each image to 1:1, 9:16, 16:9 using Sharp
 - **composite** the campaign message (correct locale if provided) as text overlay on each output
 - **stream** pipeline log steps to the UI in real time
 - **display** output grid in browser — one row per product, three ratio columns
-- **save** outputs to `/outputs/[campaign]/[product]/1x1.png`, `9x16.png`, `16x9.png`
+- **save** outputs to `outputs/[campaign]/[market]/[product]/[ratio].png` (one file per product × market × ratio)
 - **check** brand compliance — logo present, brand colors, prohibited words
 - **badge** each output — OK / WARN / FAIL
 - **write** `report.json` — steps run, assets generated vs. reused, compliance results

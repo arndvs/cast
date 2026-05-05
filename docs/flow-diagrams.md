@@ -34,8 +34,8 @@ flowchart TB
     subgraph S1["S1 · Home / Brief Editor"]
         Brief["Pre-loaded example brief<br/>(JSON form)"]
         EditBrief["Edit brand · products · markets<br/>audience · message · ratios"]
-        Drop["Drop zone per product row<br/>(POST /api/upload → saves as<br/>/inputs/assets/[slug].ext)"]
-        Detected["Detected Assets panel<br/>(scans /inputs/assets/<br/>by product slug after upload<br/>or pre-placement)"]
+        Drop["Drop zone per product row<br/>(POST /api/upload → saves as<br/>inputs/assets/[slug].ext)"]
+        Detected["Detected Assets panel<br/>(scans inputs/assets/<br/>by product slug after upload<br/>or pre-placement)"]
         GenBtn["Generate"]
         Brief --> EditBrief --> Drop --> Detected --> GenBtn
         EditBrief -.->|debounced 300ms| Detected
@@ -74,7 +74,7 @@ flowchart TB
         Which --> Why
     end
 
-    OpenFolder --> S5(["OS file explorer<br/>opens /outputs/[campaign]/"])
+    OpenFolder --> S5(["OS file explorer<br/>opens outputs/[campaign]/"])
     NewRun --> S1
 ```
 
@@ -88,8 +88,8 @@ The validation step Carl and Dane both stress: read each story aloud, trace the 
 
 > **Asset acquisition (two paths, same folder):**
 >
-> - **Drop in browser** — Maya drags a photo onto a product row in S1; server saves to `/inputs/assets/[slug].ext` using the slug derived from the brief product name. _(Primary path — what Story 1 means by "drops her product photos.")_
-> - **Pre-placement** — photos already living at `/inputs/assets/[slug].{png,jpg,jpeg,webp}` are picked up automatically. _(Used by Aaron's "ships with the repo" demo path — see Story 3.)_
+> - **Drop in browser** — Maya drags a photo onto a product row in S1; server saves to `inputs/assets/[slug].ext` using the slug derived from the brief product name. _(Primary path — what Story 1 means by "drops her product photos.")_
+> - **Pre-placement** — photos already living at `inputs/assets/[slug].{png,jpg,jpeg,webp}` are picked up automatically. _(Used by Aaron's "ships with the repo" demo path — see Story 3.)_
 >
 > Both paths feed the same **Detected Assets panel**, which shows per-product `found` / `will generate` _before_ Generate fires.
 
@@ -185,12 +185,12 @@ Two input paths, one folder, one resolver. Maya doesn't have to learn the slug r
 - Resolver looks for `/inputs/assets/[slug].{png,jpg,webp}` (first hit wins). Pre-placed `.jpeg` files are accepted on read but uploads always normalize to `.jpg`.
 - No file found → Asset Resolver falls back to GenAI on Generate.
 
-**Two ways an asset gets into `/inputs/assets/`:**
+**Two ways an asset gets into `inputs/assets/`:**
 
 | Path                            | How                                                                                                       | When used                              |
 | ------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| **Drop zone (per product row)** | Maya drags a file onto the product row in S1 → `POST /api/upload` saves it as `/inputs/assets/[slug].ext` | Story 1 — Maya's primary path          |
-| **Pre-placement**               | File already exists at `/inputs/assets/[slug].{png,jpg,jpeg,webp}` before app launch                      | Story 3 — Aaron's repo-shipped example |
+| **Drop zone (per product row)** | Maya drags a file onto the product row in S1 → `POST /api/upload` saves it as `inputs/assets/[slug].ext`  | Story 1 — Maya's primary path          |
+| **Pre-placement**               | File already exists at `inputs/assets/[slug].{png,jpg,jpeg,webp}` before app launch                       | Story 3 — Aaron's repo-shipped example |
 
 **Component:** [`shadcn-dropzone`](https://shadcn-dropzone.vercel.app/docs) — installed via `npx shadcn@latest add 'https://shadcn-dropzone.vercel.app/dropzone.json'`. Built on the shadcn primitive set we're already using. Single-file mode per product row, `accept: image/png,image/jpeg,image/webp`, image-preview variant, retry + remove file slots wire to `/api/upload` retry semantics. `useDropzone()` hook bound per row; `onDropFile` calls upload then triggers `/api/detected-assets` re-fetch.
 
@@ -222,7 +222,7 @@ POST /api/upload
 Content-Type: multipart/form-data
 Fields: productSlug=sparkling-citrus, file=<binary>
 
-Response: { "ok": true, "path": "/inputs/assets/sparkling-citrus.png" }
+Response: { "ok": true, "path": "inputs/assets/sparkling-citrus.png" }
 
 Constraints (enforced server-side, single source of truth):
   - productSlug must match SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/ → else 400
@@ -230,7 +230,7 @@ Constraints (enforced server-side, single source of truth):
   - MIME must be one of: image/png, image/jpeg, image/webp → else 415
   - Extension is canonical-mapped: png→.png, jpeg→.jpg, webp→.webp
     (NOT derived from filename — derived from MIME)
-  - On write: delete /inputs/assets/[slug].{png,jpg,webp} first, then write
+  - On write: delete inputs/assets/[slug].{png,jpg,webp} first, then write
     the canonical extension. One slug → one file on disk at a time.
   - Path constructed via safeJoin("inputs", `${slug}.${ext}`) — rejects
     traversal even if SLUG_RE is bypassed.
@@ -360,7 +360,7 @@ Final sanity pass. If any verb lacks a screen, the flow diagram is broken.
 | open app                             | S1                               | Editing                             |
 | edit brief                           | S1                               | Editing                             |
 | **drop product photos onto rows**    | S1 (drop zone → `/api/upload`)   | Editing                             |
-| pre-place files in `/inputs/assets/` | (filesystem path — Aaron's demo) | confirmed via Detected Assets panel |
+| pre-place files in `inputs/assets/` | (filesystem path — Aaron's demo) | confirmed via Detected Assets panel |
 | confirm assets will be picked up     | S1 (Detected Assets panel)       | Editing                             |
 | click Generate                       | S1                               | Editing → Running                   |
 | watch pipeline log                   | S2                               | Running                             |
@@ -385,7 +385,7 @@ With screens + flow + states + API contract locked, the next step (wireframes) h
 - **One Next.js route** (`/`) handling four states: `Editing`, `Running`, `Complete`, `Failed`.
 - **One modal/drawer** for `DetailOpen` (S4).
 - **One server action** for S5 — `revealOutputFolder(absPath)` reveals the generated output folder via the OS (`start` on Windows / `open` on macOS / `xdg-open` on Linux). `absPath` must be normalized and validated to remain within the expected outputs directory before invocation. Do **not** build the command via string interpolation or shell concatenation of untrusted input; use a `spawn`/`execFile`-style API with explicit args. Fallback: copyable absolute path on screen.
-- **Per-product drop zone** on S1 → `POST /api/upload` (multipart, `productSlug` + `file`) writes to `/inputs/assets/[slug].ext`.
+- **Per-product drop zone** on S1 → `POST /api/upload` (multipart, `productSlug` + `file`) writes to `inputs/assets/[slug].ext`.
 - **Asset preview read** — `GET /api/detected-assets?slugs=...` on S1 mount (immediate), on brief change (300 ms debounced), and after each upload (immediate). Returns `[{ slug, foundFile | null }]` for the Detected Assets panel.
 - **Streaming generate** — `POST /api/generate` returns NDJSON; terminal `complete` event carries the full manifest. S2 reads the stream; S3 hydrates from the manifest. **No separate output-read endpoint.**
 - **One filename convention** — `[product-slug].{png,jpg,jpeg,webp}` — enforced server-side by `/api/upload` and matched by Resolver and Detected Assets panel. Maya never has to type a slug.
