@@ -182,7 +182,16 @@ Two input paths, one folder, one resolver. Maya doesn't have to learn the slug r
   - `"Sparkling Citrus"` → `sparkling-citrus`
   - `"Energy Drink Pro"` → `energy-drink-pro`
 - Slugs must match `SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/` server-side. Non-conforming → 400.
-- Resolver looks for `/inputs/assets/[slug].{png,jpg,webp}` (first hit wins). Pre-placed `.jpeg` files are accepted on read but uploads always normalize to `.jpg`.
+- **Asset extension matrix** — the only authoritative answer to “which extensions are allowed where?”:
+
+  | Operation                   | Accepted extensions                                | Notes                                                                                |
+  | --------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------ |
+  | Upload (`POST /api/upload`) | `.png`, `.jpg`, `.jpeg`, `.webp`                   | `.jpeg` is canonicalized to `.jpg` on disk. Anything else → 415.                     |
+  | Resolver lookup             | `.png`, `.jpg`, `.jpeg`, `.webp`                   | First hit wins. Pre-placed `.jpeg` files are accepted on read.                        |
+  | Disk write extensions       | `.png`, `.jpg`, `.webp`                            | The set of files Resolver may unlink before a re-upload (delete-then-write).          |
+  | Output creative             | `.png`                                             | Always PNG. Sharp encodes from the composited buffer.                                  |
+  | Animated formats            | _none_                                             | `.gif`, `.mp4`, `.webm` are rejected at upload (415) and ignored at resolve (D26).    |
+
 - No file found → Asset Resolver falls back to GenAI on Generate.
 
 **Two ways an asset gets into `inputs/assets/`:**
