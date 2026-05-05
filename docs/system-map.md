@@ -39,7 +39,7 @@ graph LR
 
 ## 2. Actor Map — who does what
 
-Three actors, each with a distinct primary verb. Aarone system, three lenses.
+Three actors, each with a distinct primary verb. same system, three lenses.
 
 ```mermaid
 graph TB

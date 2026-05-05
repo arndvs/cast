@@ -34,13 +34,13 @@ Success looks like: Priya **looks at** the output grid, **sees** 5 of 6 creative
 
 ---
 
-## Story 3 — Sam, Engineer Demoing the POC
+## Story 3 — Aaron, Engineer Demoing the POC
 
-Sam is running the demo in a few days. He needs the app to start from a clean checkout with one command, the brief editor to be pre-populated with a working example, and the output to be immediately readable so a non-engineer in the room can follow along.
+Aaron is running the demo in a few days. He needs the app to start from a clean checkout with one command, the brief editor to be pre-populated with a working example, and the output to be immediately readable so a non-engineer in the room can follow along.
 
 What he wants: a README with a Quick Start at the top, a `brief.json` that ships with the repo and works out of the box, and a UI that makes the pipeline visible — not a black box. When he clicks Generate the audience should see each pipeline step appear in the log, then the output grid populate with images and compliance badges. No terminal archaeology, no explaining folder structures mid-demo.
 
-Success looks like: Sam **opens** `localhost:3000`, **clicks Generate** with the pre-loaded example brief, **walks** the audience through the live pipeline log and output grid, and **answers** "how does it work" by pointing at the screen.
+Success looks like: Aaron **opens** `localhost:3000`, **clicks Generate** with the pre-loaded example brief, **walks** the audience through the live pipeline log and output grid, and **answers** "how does it work" by pointing at the screen.
 
 **Key verbs:** opens localhost, clicks generate, narrates pipeline log, shows output grid, explains compliance badges
 

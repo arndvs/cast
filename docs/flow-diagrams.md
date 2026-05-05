@@ -2,7 +2,7 @@
 
 ### Local Next.js App · POC · v1
 
-> Translates the [system map](system-map.md) into screens and the routes between them. Each user story from [user-stories.md](user-stories.md) is walked through the diagram to validate that Maya, Priya, and Sam can finish their jobs without dead ends.
+> Translates the [system map](system-map.md) into screens and the routes between them. Each user story from [user-stories.md](user-stories.md) is walked through the diagram to validate that Maya, Priya, and Aaron can finish their jobs without dead ends.
 
 ---
 
@@ -10,16 +10,16 @@
 
 Working from the system map, the seven subsystems collapse into **five screens** for the POC. The pipeline is a single-tool experience — there is no auth, no multi-tenancy, no history. State transitions on a single page do most of the work; only compliance-detail and the output folder are separate destinations.
 
-| # | Screen | Owner subsystem | Why it exists (story) |
-|---|---|---|---|
-| S1 | **Home / Brief Editor + Detected Assets + Drop zones** | Brief Editor + Asset Resolver (preview) + Upload | Maya edits brief, drops photos onto product rows, sees what the resolver will pick up; Sam loads pre-populated example |
-| S2 | **Run View** (Live Pipeline Log) | Run Orchestrator → Live Log | Maya/Sam watch pipeline run step by step |
-| S2′ | **Failed state** (within S2) | Run Orchestrator (error path) | Demo-safety: a thrown error gets a visible message + recovery, not a hung spinner |
-| S3 | **Output Grid** | Output Grid + Badge UI | Maya reviews creatives; Priya scans badges |
-| S4 | **Compliance Detail** (modal over S3) | Compliance Checker → Badge UI | Priya drills into a flagged creative |
-| S5 | **Reveal in File Explorer** (action, not a screen) | Server action + copyable path | Maya grabs the files to ship |
+| #   | Screen                                                 | Owner subsystem                                  | Why it exists (story)                                                                                                    |
+| --- | ------------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| S1  | **Home / Brief Editor + Detected Assets + Drop zones** | Brief Editor + Asset Resolver (preview) + Upload | Maya edits brief, drops photos onto product rows, sees what the resolver will pick up; Aaron loads pre-populated example |
+| S2  | **Run View** (Live Pipeline Log)                       | Run Orchestrator → Live Log                      | Maya/Aaron watch pipeline run step by step                                                                               |
+| S2′ | **Failed state** (within S2)                           | Run Orchestrator (error path)                    | Demo-safety: a thrown error gets a visible message + recovery, not a hung spinner                                        |
+| S3  | **Output Grid**                                        | Output Grid + Badge UI                           | Maya reviews creatives; Priya scans badges                                                                               |
+| S4  | **Compliance Detail** (modal over S3)                  | Compliance Checker → Badge UI                    | Priya drills into a flagged creative                                                                                     |
+| S5  | **Reveal in File Explorer** (action, not a screen)     | Server action + copyable path                    | Maya grabs the files to ship                                                                                             |
 
-> **Practical note:** S1, S2, and S3 are *states of a single Next.js page* (`/`), not separate routes. S4 is a modal/drawer over S3. S5 is a *server action* triggered from S3 that opens the OS file explorer at the campaign output folder, with the absolute path also rendered as a copyable code block for fallback. The diagrams below treat them as logical screens for clarity.
+> **Practical note:** S1, S2, and S3 are _states of a single Next.js page_ (`/`), not separate routes. S4 is a modal/drawer over S3. S5 is a _server action_ triggered from S3 that opens the OS file explorer at the campaign output folder, with the absolute path also rendered as a copyable code block for fallback. The diagrams below treat them as logical screens for clarity.
 
 ---
 
@@ -87,10 +87,11 @@ The validation step Carl and Dane both stress: read each story aloud, trace the 
 ### Story 1 — Maya · "ship the campaign in under three minutes"
 
 > **Asset acquisition (two paths, same folder):**
-> - **Drop in browser** — Maya drags a photo onto a product row in S1; server saves to `/inputs/assets/[slug].ext` using the slug derived from the brief product name. *(Primary path — what Story 1 means by "drops her product photos.")*
-> - **Pre-placement** — photos already living at `/inputs/assets/[slug].{png,jpg,jpeg,webp}` are picked up automatically. *(Used by Sam's "ships with the repo" demo path — see Story 3.)*
 >
-> Both paths feed the same **Detected Assets panel**, which shows per-product `found` / `will generate` *before* Generate fires.
+> - **Drop in browser** — Maya drags a photo onto a product row in S1; server saves to `/inputs/assets/[slug].ext` using the slug derived from the brief product name. _(Primary path — what Story 1 means by "drops her product photos.")_
+> - **Pre-placement** — photos already living at `/inputs/assets/[slug].{png,jpg,jpeg,webp}` are picked up automatically. _(Used by Aaron's "ships with the repo" demo path — see Story 3.)_
+>
+> Both paths feed the same **Detected Assets panel**, which shows per-product `found` / `will generate` _before_ Generate fires.
 
 ```mermaid
 flowchart LR
@@ -123,7 +124,7 @@ flowchart LR
 
 **Covered.** Priya never has to leave the grid for routine cases; the drill-in is one click away.
 
-### Story 3 — Sam · "narrate the demo"
+### Story 3 — Aaron · "narrate the demo"
 
 ```mermaid
 flowchart LR
@@ -134,7 +135,7 @@ flowchart LR
     E --> F["S4 · clicks one tile<br/>to show compliance detail"]
 ```
 
-**Covered.** The pre-populated brief means S1 is a 0-second screen for Sam — he goes straight to Generate. The live log on S2 is the demo's centerpiece.
+**Covered.** The pre-populated brief means S1 is a 0-second screen for Aaron — he goes straight to Generate. The live log on S2 is the demo's centerpiece.
 
 ---
 
@@ -186,29 +187,29 @@ Two input paths, one folder, one resolver. Maya doesn't have to learn the slug r
 
 **Two ways an asset gets into `/inputs/assets/`:**
 
-| Path | How | When used |
-|---|---|---|
-| **Drop zone (per product row)** | Maya drags a file onto the product row in S1 → `POST /api/upload` saves it as `/inputs/assets/[slug].ext` | Story 1 — Maya's primary path |
-| **Pre-placement** | File already exists at `/inputs/assets/[slug].{png,jpg,jpeg,webp}` before app launch | Story 3 — Sam's repo-shipped example |
+| Path                            | How                                                                                                       | When used                              |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| **Drop zone (per product row)** | Maya drags a file onto the product row in S1 → `POST /api/upload` saves it as `/inputs/assets/[slug].ext` | Story 1 — Maya's primary path          |
+| **Pre-placement**               | File already exists at `/inputs/assets/[slug].{png,jpg,jpeg,webp}` before app launch                      | Story 3 — Aaron's repo-shipped example |
 
 **Component:** [`shadcn-dropzone`](https://shadcn-dropzone.vercel.app/docs) — installed via `npx shadcn@latest add 'https://shadcn-dropzone.vercel.app/dropzone.json'`. Built on the shadcn primitive set we're already using. Single-file mode per product row, `accept: image/png,image/jpeg,image/webp`, image-preview variant, retry + remove file slots wire to `/api/upload` retry semantics. `useDropzone()` hook bound per row; `onDropFile` calls upload then triggers `/api/detected-assets` re-fetch.
 
 **Panel rendering (per product in the brief):**
 
-| Brief product | Resolver looks for | Panel shows |
-|---|---|---|
+| Brief product        | Resolver looks for                     | Panel shows                                       |
+| -------------------- | -------------------------------------- | ------------------------------------------------- |
 | `"Sparkling Citrus"` | `sparkling-citrus.{png,jpg,jpeg,webp}` | found: `sparkling-citrus.png` (using local asset) |
-| `"Energy Drink Pro"` | `energy-drink-pro.{png,jpg,…}` | no asset found — will generate via GenAI |
+| `"Energy Drink Pro"` | `energy-drink-pro.{png,jpg,…}`         | no asset found — will generate via GenAI          |
 
-The panel re-scans whenever the brief's product list changes *or* an upload completes. This makes the resolver's behavior *visible before commitment*, which kills a whole class of "why did it generate when I had a photo?" demo questions.
+The panel re-scans whenever the brief's product list changes _or_ an upload completes. This makes the resolver's behavior _visible before commitment_, which kills a whole class of "why did it generate when I had a photo?" demo questions.
 
 **Re-fetch trigger semantics (avoid keystroke storms):**
 
-| Trigger | Debounce | Rationale |
-|---|---|---|
-| S1 mount | none — fire immediately | Initial state must be correct on load |
-| Successful upload (`/api/upload` → 200) | none — fire immediately | Confirms the just-dropped file landed |
-| Brief edit (`onChange` on the form) | **300 ms debounce** | Maya types product names character-by-character; a per-keystroke filesystem scan is wasted work and risks inconsistent UI flicker. Trailing-edge debounce on the field's last change before the panel re-fetches. |
+| Trigger                                 | Debounce                | Rationale                                                                                                                                                                                                         |
+| --------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S1 mount                                | none — fire immediately | Initial state must be correct on load                                                                                                                                                                             |
+| Successful upload (`/api/upload` → 200) | none — fire immediately | Confirms the just-dropped file landed                                                                                                                                                                             |
+| Brief edit (`onChange` on the form)     | **300 ms debounce**     | Maya types product names character-by-character; a per-keystroke filesystem scan is wasted work and risks inconsistent UI flicker. Trailing-edge debounce on the field's last change before the panel re-fetches. |
 
 Implementation note: the brief-editor `onChange` handler updates local state synchronously, but the `/api/detected-assets` call is scheduled through a debounced function (e.g. `useDebouncedCallback(refetchDetectedAssets, 300)`). Mount and post-upload calls bypass the debounce.
 
@@ -258,6 +259,13 @@ Response: text/x-ndjson  (streamed)
   { "type": "complete", "manifest": { "campaign": "...", "outputDir": "/abs/path/outputs/...", "creatives": [...] } }
 ```
 
+**Run artifacts written to `outputDir`** (alongside the per-product creative subfolders):
+
+- `brief.json` — verbatim copy of the validated brief that produced this run. Written before the per-product loop. Lets a reviewer reproduce or audit a run from the output folder alone, without going back to `inputs/`.
+- `report.json` — compliance + run summary. Written by the Reporter after the loop completes, before the `complete` event fires.
+
+Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived from `safeJoin("outputs", campaignSlug)` with `SLUG_RE` validation.
+
 - **S1 drop zone** → `POST /api/upload` then re-fetch `/api/detected-assets` (immediate).
 - **S1 brief edit** → debounce 300 ms → re-fetch `/api/detected-assets`.
 - **S2** consumes the generate stream and renders log lines as they arrive.
@@ -294,24 +302,24 @@ stateDiagram-v2
 
 Final sanity pass. If any verb lacks a screen, the flow diagram is broken.
 
-| Story verb | Screen | State |
-|---|---|---|
-| open app | S1 | Editing |
-| edit brief | S1 | Editing |
-| **drop product photos onto rows** | S1 (drop zone → `/api/upload`) | Editing |
-| pre-place files in `/inputs/assets/` | (filesystem path — Sam's demo) | confirmed via Detected Assets panel |
-| confirm assets will be picked up | S1 (Detected Assets panel) | Editing |
-| click Generate | S1 | Editing → Running |
-| watch pipeline log | S2 | Running |
-| recover from a run failure | S2′ | Failed |
-| review output grid | S3 | Complete |
-| read compliance badge | S3 | Complete |
-| click flagged tile | S3 → S4 | Complete → DetailOpen |
-| read compliance detail | S4 | DetailOpen |
-| reveal output folder | S3 → S5 | Complete (server action) |
-| copy absolute output path | S3 | Complete |
-| download files | OS file explorer | (post-handoff) |
-| narrate demo | S2 + S3 | Running, Complete |
+| Story verb                           | Screen                           | State                               |
+| ------------------------------------ | -------------------------------- | ----------------------------------- |
+| open app                             | S1                               | Editing                             |
+| edit brief                           | S1                               | Editing                             |
+| **drop product photos onto rows**    | S1 (drop zone → `/api/upload`)   | Editing                             |
+| pre-place files in `/inputs/assets/` | (filesystem path — Aaron's demo) | confirmed via Detected Assets panel |
+| confirm assets will be picked up     | S1 (Detected Assets panel)       | Editing                             |
+| click Generate                       | S1                               | Editing → Running                   |
+| watch pipeline log                   | S2                               | Running                             |
+| recover from a run failure           | S2′                              | Failed                              |
+| review output grid                   | S3                               | Complete                            |
+| read compliance badge                | S3                               | Complete                            |
+| click flagged tile                   | S3 → S4                          | Complete → DetailOpen               |
+| read compliance detail               | S4                               | DetailOpen                          |
+| reveal output folder                 | S3 → S5                          | Complete (server action)            |
+| copy absolute output path            | S3                               | Complete                            |
+| download files                       | OS file explorer                 | (post-handoff)                      |
+| narrate demo                         | S2 + S3                          | Running, Complete                   |
 
 Every verb maps to a screen, a state, or a defined action. No orphans.
 

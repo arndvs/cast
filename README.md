@@ -2,7 +2,7 @@
 
 > From brief to broadcast. A creative-automation pipeline that turns one campaign brief into on-brand, localized social ad creatives at three aspect ratios.
 
-**Adobe FDE Take-Home · POC · Aaron Davis · 2026**
+**POC · Aaron Davis · 2026**
 
 ---
 
@@ -11,7 +11,7 @@
 ```bash
 git clone https://github.com/arndvs/cast.git
 cd cast
-cp .env.example .env          # add your GENAI_API_KEY
+cp .env.example .env          # add your OPENAI_API_KEY
 npm install
 npm run dev
 # → open http://localhost:3000
@@ -65,16 +65,16 @@ outputs/
 
 ## Key design decisions
 
-| Decision | Choice | Rationale |
-|---|---|---|
-| **Brief format** | JSON only | Brief permits JSON or YAML. JSON gives a dependency-light editor (`<textarea>` + `JSON.parse`) and matches `Content-Type: application/json` end-to-end. YAML import deferred to v2 — Zod schema is the contract; swapping the parser is a 30-line change. |
-| **Storage backend** | Local filesystem | Brief permits Azure / AWS / Dropbox. Local FS is the only option that runs from a clean checkout in under three minutes (Story 1's success metric). Cloud storage is a v2 conversation. |
-| **Framework** | Next.js (local web app) | Brief permits CLI or simple local app. The web app surfaces the live pipeline log and output grid in-browser — the centerpiece of Story 1 (Maya) and Story 3 (Sam's demo). A CLI hides the pipeline from the audience. |
-| **Image processing** | Sharp | Battle-tested, fast, no native binary surprises in CI. |
-| **API style** | NDJSON streaming for `/api/generate` | One request, terminal `complete` event carries the manifest. UI hydrates from the manifest — no second filesystem read, no race with disk writes. |
-| **Path I/O safety** | `safeJoin` helper + `SLUG_RE` validation at every boundary | `revealOutputFolder`, `/api/upload`, `/api/detected-assets`, and Sharp file reads all interpolate user-influenced strings. Validating every path is a child of a known root prevents traversal. `execFile` with explicit argv prevents shell injection. |
-| **Upload limits** | 5 MB max, MIME-allowlisted (PNG / JPEG / WebP), canonical extension mapping | Sharp can OOM on very large files. Canonical extension mapping (`jpeg → .jpg`) prevents stale-shadow files when re-uploading. |
-| **Compliance checks** | Heuristic — logo presence, brand-color sampling, banned-word list | Demonstrates the surface; not a substitute for legal review. |
+| Decision              | Choice                                                                      | Rationale                                                                                                                                                                                                                                                 |
+| --------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Brief format**      | JSON only                                                                   | Brief permits JSON or YAML. JSON gives a dependency-light editor (`<textarea>` + `JSON.parse`) and matches `Content-Type: application/json` end-to-end. YAML import deferred to v2 — Zod schema is the contract; swapping the parser is a 30-line change. |
+| **Storage backend**   | Local filesystem                                                            | Brief permits Azure / AWS / Dropbox. Local FS is the only option that runs from a clean checkout in under three minutes (Story 1's success metric). Cloud storage is a v2 conversation.                                                                   |
+| **Framework**         | Next.js (local web app)                                                     | Brief permits CLI or simple local app. The web app surfaces the live pipeline log and output grid in-browser — the centerpiece of Story 1 (Maya) and Story 3 (Aaron's demo). A CLI hides the pipeline from the audience.                                  |
+| **Image processing**  | Sharp                                                                       | Battle-tested, fast, no native binary surprises in CI.                                                                                                                                                                                                    |
+| **API style**         | NDJSON streaming for `/api/generate`                                        | One request, terminal `complete` event carries the manifest. UI hydrates from the manifest — no second filesystem read, no race with disk writes.                                                                                                         |
+| **Path I/O safety**   | `safeJoin` helper + `SLUG_RE` validation at every boundary                  | `revealOutputFolder`, `/api/upload`, `/api/detected-assets`, and Sharp file reads all interpolate user-influenced strings. Validating every path is a child of a known root prevents traversal. `execFile` with explicit argv prevents shell injection.   |
+| **Upload limits**     | 5 MB max, MIME-allowlisted (PNG / JPEG / WebP), canonical extension mapping | Sharp can OOM on very large files. Canonical extension mapping (`jpeg → .jpg`) prevents stale-shadow files when re-uploading.                                                                                                                             |
+| **Compliance checks** | Heuristic — logo presence, brand-color sampling, banned-word list         | Demonstrates the surface; not a substitute for legal review.                                                                                                                                                                                              |
 
 See [docs/](docs/) for the full design trail: [user stories](docs/user-stories.md) → [system map](docs/system-map.md) → [flow diagrams](docs/flow-diagrams.md) → [attributes & screens](docs/attributes-screen-requirements.md). Visual reference: [docs/cast-brand-guidelines.html](docs/cast-brand-guidelines.html).
 
@@ -85,7 +85,7 @@ See [docs/](docs/) for the full design trail: [user stories](docs/user-stories.m
 - **Single-machine, single-user, no auth.** Runs against `localhost:3000`. No multi-tenancy, no session, no role separation.
 - **Local filesystem only.** No S3 / Azure / Dropbox in the POC. The brief permits any of these; chosen scope cut.
 - **One asset per product slug at a time.** Re-uploading a photo for the same product overwrites the previous file (and its alternate-extension siblings).
-- **GenAI provider TBD.** The Asset Resolver targets a single image-generation endpoint behind `GENAI_API_KEY`. Provider selection is documented in `docs/` once chosen.
+- **GenAI provider: OpenAI `gpt-image-1`.** The Asset Resolver calls the OpenAI Images API behind `OPENAI_API_KEY`. Single endpoint, single model — provider abstraction is deferred to v2.
 - **Compliance checks are heuristic, not a legal review.** Logo presence is detected by template match in a configurable corner; brand-color check samples dominant colors; banned-word check is a flat list scan against the rendered overlay text.
 - **No run history.** Each Generate run is independent. No multi-run comparison view in the POC.
 - **Symlinks under `inputs/` and `outputs/` are not followed safely.** Production hardening would add `realpath` re-validation; out of POC scope.

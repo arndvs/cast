@@ -149,7 +149,7 @@ Using the Inform → Engage → Invite framework.
 **Engage — what the user can do:**
 
 - Click "Edit brief" — go back to S1 to fix the brief
-- Click "Retry" — rerun the Aarone brief
+- Click "Retry" — rerun the same brief
 
 **Invite — how they move to the next screen:**
 
