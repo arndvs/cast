@@ -12,7 +12,7 @@ Today she opens a brief from the brand team in a Google Doc, downloads the produ
 
 What she wants: **open** the app in her browser, **edit** the campaign brief in the UI — products, region, audience, message — **drop** her product photos into the inputs folder, and **click Generate**. The app runs the pipeline, shows her what's happening step by step, and displays the finished creatives organized by product and ratio right in the browser. If a product photo is missing the tool generates a stand-in hero image so she's not blocked.
 
-The brief supports localized messages — Maya can provide copy in multiple locales and the pipeline composits the right message for each market run without her touching Photoshop.
+The brief supports localized messages — Maya can provide copy in multiple locales and the pipeline composites the right message for each market run without her touching Photoshop.
 
 Success looks like: Maya **clicks Generate**, **watches** the pipeline log run in real time, **reviews** the 1:1 / 9:16 / 16:9 output grid for each product in the browser, and **opens** the output folder to grab the files — all in under three minutes.
 
@@ -38,7 +38,7 @@ Success looks like: Priya **looks at** the output grid, **sees** 5 of 6 creative
 
 Sam is running the demo in a few days. He needs the app to start from a clean checkout with one command, the brief editor to be pre-populated with a working example, and the output to be immediately readable so a non-engineer in the room can follow along.
 
-What he wants: a README with a Quick Start at the top, a `brief.json` that ships with the repo and works out of the box, and a UI that makes the pipeline visible — not a black box. When he clicks Generate the audience should see each pipeline step appear in the log, then the output grid populate with images and compliance badges. No terminal archaeology, no explaining folder structures mid-demo.
+What he wants: a README with a Quick Start at the top, a `brief.yaml` that ships with the repo and works out of the box, and a UI that makes the pipeline visible — not a black box. When he clicks Generate the audience should see each pipeline step appear in the log, then the output grid populate with images and compliance badges. No terminal archaeology, no explaining folder structures mid-demo.
 
 Success looks like: Sam **opens** `localhost:3000`, **clicks Generate** with the pre-loaded example brief, **walks** the audience through the live pipeline log and output grid, and **answers** "how does it work" by pointing at the screen.
 
@@ -53,7 +53,7 @@ Success looks like: Sam **opens** `localhost:3000`, **clicks Generate** with the
 - **look up** input assets in `/inputs/assets/` per product
 - **generate** hero image via GenAI API when no input asset found for a product
 - **resize** each image to 1:1, 9:16, 16:9 using Sharp
-- **composit** the campaign message (correct locale if provided) as text overlay on each output
+- **composite** the campaign message (correct locale if provided) as text overlay on each output
 - **stream** pipeline log steps to the UI in real time
 - **display** output grid in browser — one row per product, three ratio columns
 - **save** outputs to `/outputs/[campaign]/[product]/1x1.png`, `9x16.png`, `16x9.png`

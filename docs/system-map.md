@@ -162,7 +162,7 @@ sequenceDiagram
         Res-->>Orc: hero image
         Orc-->>Log: step "asset ready"
         loop for each ratio (1:1, 9:16, 16:9)
-            Orc->>Img: resize + composit message (locale)
+            Orc->>Img: resize + composite message (locale)
             Img->>Out: save creative
             Orc->>Chk: check creative
             Chk-->>Orc: OK / WARN / FAIL
@@ -206,7 +206,7 @@ A sanity check that every user-story verb has a home in the system map.
 | look up input assets in `/inputs/assets/`                   | Asset Resolver                       |
 | generate hero image when missing                            | Asset Resolver → GenAI API           |
 | resize to 1:1, 9:16, 16:9                                   | Image Processor (Sharp)              |
-| composit localized message overlay                          | Text Compositor                      |
+| composite localized message overlay                         | Text Compositor                      |
 | stream pipeline log in real time                            | Run Orchestrator → Live Pipeline Log |
 | display output grid in browser                              | Output Grid                          |
 | save outputs to `/outputs/[campaign]/[product]/[ratio].png` | Image Processor → filesystem         |
