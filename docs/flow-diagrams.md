@@ -309,7 +309,7 @@ With screens + flow + states + API contract locked, the next step (wireframes) h
 
 - **One Next.js route** (`/`) handling four states: `Editing`, `Running`, `Complete`, `Failed`.
 - **One modal/drawer** for `DetailOpen` (S4).
-- **One server action** for S5 — `revealOutputFolder(absPath)` shells out via `start "" <path>` (Windows) / `open <path>` (macOS) / `xdg-open <path>` (Linux). Fallback: copyable absolute path on screen.
+- **One server action** for S5 — `revealOutputFolder(absPath)` reveals the generated output folder via the OS (`start` on Windows / `open` on macOS / `xdg-open` on Linux). `absPath` must be normalized and validated to remain within the expected outputs directory before invocation. Do **not** build the command via string interpolation or shell concatenation of untrusted input; use a `spawn`/`execFile`-style API with explicit args. Fallback: copyable absolute path on screen.
 - **Per-product drop zone** on S1 → `POST /api/upload` (multipart, `productSlug` + `file`) writes to `/inputs/assets/[slug].ext`.
 - **Asset preview read** — `GET /api/detected-assets?slugs=...` on S1 mount (immediate), on brief change (300 ms debounced), and after each upload (immediate). Returns `[{ slug, foundFile | null }]` for the Detected Assets panel.
 - **Streaming generate** — `POST /api/generate` returns NDJSON; terminal `complete` event carries the full manifest. S2 reads the stream; S3 hydrates from the manifest. **No separate output-read endpoint.**
