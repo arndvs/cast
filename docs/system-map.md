@@ -11,7 +11,6 @@
 The "things" the system stores, moves, and renders. Pulled from the user-story verbs (edit a **brief**, drop a **photo**, generate a **hero image**, render an **output**, badge for **compliance**, write a **report**).
 
 ```mermaid
-
 graph LR
     Brief["📄 Brief<br/>products · region · audience<br/>message · locales"]
     Product["📦 Product<br/>name · sku"]
