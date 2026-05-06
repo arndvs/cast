@@ -20,11 +20,23 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
   const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
   const slugInvalid = !SLUG_RE.test(brief.campaign || "");
 
-  // Banned-word inline check
+  // Active languages derived from selected markets (D11/D24/Story 1).
+  const activeLanguages = useMemo(() => {
+    const seen = new Set();
+    const langs = [];
+    brief.markets.forEach((code) => {
+      const m = CAST.ALL_MARKETS.find((mm) => mm.code === code);
+      if (m && !seen.has(m.language)) { seen.add(m.language); langs.push(m); }
+    });
+    return langs; // [{ code, language, name }]
+  }, [brief.markets]);
+
+  // Banned-word inline check (across headline + subheadline + cta + every locale message)
   const bannedHit = useMemo(() => {
-    const haystack = `${brief.headline} ${brief.subheadline || ""} ${brief.cta || ""}`.toLowerCase();
+    const localeMsgs = Object.values(brief.messageByLocale || {}).join(" ");
+    const haystack = `${brief.headline} ${brief.subheadline || ""} ${brief.cta || ""} ${localeMsgs}`.toLowerCase();
     return brand.bannedWords.filter((w) => haystack.includes(w.toLowerCase()));
-  }, [brief.headline, brief.subheadline, brief.cta, brand.bannedWords]);
+  }, [brief.headline, brief.subheadline, brief.cta, brief.messageByLocale, brand.bannedWords]);
 
   // Catalog-pick products (full brand catalog) vs in-brief products
   const inBriefSkus = new Set(brief.products.map((p) => p.sku));
@@ -132,8 +144,9 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
                   {slugInvalid && <div className="field-error">slug must match <code>[a-z0-9]+(-[a-z0-9]+)*</code> — lowercase, hyphens only</div>}
                 </div>
                 <div className="field span-2">
-                  <label>Headline</label>
+                  <label>Default headline</label>
                   <input className={`field-input ${bannedHit.length ? "warn" : ""}`} value={brief.headline} onChange={(e) => dispatch({ type: "setField", field: "headline", value: e.target.value })} />
+                  <div className="field-help">used as fallback when a locale row is empty</div>
                 </div>
                 <div className="field span-2">
                   <label>Subheadline</label>
@@ -147,6 +160,35 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
                   <label>Audience</label>
                   <input className="field-input" value={brief.audience} onChange={(e) => dispatch({ type: "setField", field: "audience", value: e.target.value })} />
                 </div>
+              </div>
+            </div>
+
+            {/* Headlines per locale (D11/Story 1) */}
+            <div className="card">
+              <div className="card-h">Headlines (per locale) <span className="card-sub">one row per active language &middot; falls back to default headline</span></div>
+              <div className="card-b">
+                {activeLanguages.length === 0 && (
+                  <div className="empty-row">add at least one market to localize your headline</div>
+                )}
+                {activeLanguages.map((m) => {
+                  const value = (brief.messageByLocale && brief.messageByLocale[m.language]) || "";
+                  const lowered = value.toLowerCase();
+                  const localBanned = brand.bannedWords.filter((w) => lowered.includes(w.toLowerCase()));
+                  return (
+                    <div key={m.language} className="locale-row">
+                      <span className="locale-tag mono">{m.language}</span>
+                      <input
+                        className={`field-input ${localBanned.length ? "warn" : ""}`}
+                        placeholder={`fallback: ${brief.headline}`}
+                        value={value}
+                        onChange={(e) => dispatch({ type: "setLocaleMessage", lang: m.language, value: e.target.value })}
+                      />
+                      {localBanned.length > 0 && (
+                        <span className="locale-banned">&#9888; {localBanned.join(", ")}</span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

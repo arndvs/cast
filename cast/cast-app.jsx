@@ -77,21 +77,30 @@ function reducer(state, action) {
     case "setField":
       return rebuild(
         { ...state, brief: { ...state.brief, [action.field]: action.value } },
-        "mixed",
       );
     case "toggleMarket": {
       const has = state.brief.markets.includes(action.code);
       const markets = has
         ? state.brief.markets.filter((m) => m !== action.code)
         : [...state.brief.markets, action.code];
-      return rebuild({ ...state, brief: { ...state.brief, markets } }, "mixed");
+      // Seed an empty locale message for any new language so the editor row appears.
+      const messageByLocale = { ...state.brief.messageByLocale };
+      if (!has) {
+        const lang = (CAST.ALL_MARKETS.find((m) => m.code === action.code) || {}).language;
+        if (lang && !(lang in messageByLocale)) messageByLocale[lang] = "";
+      }
+      return rebuild({ ...state, brief: { ...state.brief, markets, messageByLocale } });
+    }
+    case "setLocaleMessage": {
+      const messageByLocale = { ...state.brief.messageByLocale, [action.lang]: action.value };
+      return rebuild({ ...state, brief: { ...state.brief, messageByLocale } });
     }
     case "toggleRatio": {
       const has = state.brief.ratios.includes(action.value);
       const ratios = has
         ? state.brief.ratios.filter((r) => r !== action.value)
         : [...state.brief.ratios, action.value];
-      return rebuild({ ...state, brief: { ...state.brief, ratios } }, "mixed");
+      return rebuild({ ...state, brief: { ...state.brief, ratios } });
     }
     case "addProduct": {
       if (state.brief.products.some((p) => p.sku === action.sku)) return state;
@@ -103,7 +112,6 @@ function reducer(state, action) {
             products: [...state.brief.products, { sku: action.sku }],
           },
         },
-        "mixed",
       );
     }
     case "removeProduct": {
@@ -115,7 +123,6 @@ function reducer(state, action) {
             products: state.brief.products.filter((p) => p.sku !== action.sku),
           },
         },
-        "mixed",
       );
     }
     case "generate":

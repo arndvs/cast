@@ -302,7 +302,27 @@
   .field-input.warn { border-color: var(--warn); background: var(--warn-bg); }
   .field-error { color: var(--warn); font-family: var(--mono); font-size: 10px; margin-top: 4px; }
   .field-error code { background: var(--panel-3); padding: 0 4px; border-radius: 3px; }
+  .field-help { color: var(--fg-3); font-family: var(--mono); font-size: 10px; margin-top: 3px; }
   .warn-inline { color: var(--warn); font-weight: 600; }
+
+  .locale-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .locale-row:last-child { margin-bottom: 0; }
+  .locale-tag {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 32px; padding: 2px 8px; border-radius: 4px;
+    background: var(--panel-3); color: var(--fg-2);
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+  }
+  .locale-row .field-input { flex: 1; }
+  .locale-banned {
+    color: var(--warn); font-family: var(--mono); font-size: 10px;
+    white-space: nowrap;
+  }
+  .empty-row {
+    padding: 12px; text-align: center;
+    color: var(--fg-3); font-family: var(--mono); font-size: 11px;
+    background: var(--panel-2); border: 1px dashed var(--line); border-radius: var(--r-sm);
+  }
 
   .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
   .pick-chip {
