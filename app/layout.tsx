@@ -1,30 +1,41 @@
-import { Geist, Geist_Mono, Inter } from "next/font/google"
+import type { Metadata } from "next"
+import { DM_Sans, Geist_Mono, Outfit } from "next/font/google"
 
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'})
+const fontDisplay = Outfit({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["800", "900"],
+})
+
+const fontSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  weight: ["400", "500", "700"],
+})
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 })
 
+export const metadata: Metadata = {
+  title: "Cast — From brief to broadcast",
+  description:
+    "Creative Automation Studio Toolchain — turns a campaign brief into on-brand, localized social ad creatives at three aspect ratios.",
+}
+
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
+      className={`dark ${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable}`}
     >
-      <body>
-        <ThemeProvider>{children}</ThemeProvider>
-      </body>
+      <body>{children}</body>
     </html>
   )
 }
