@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cast — Rough Screen Mockups (S1–S5)</title>
+<style>
+  /* ===========================================================
+     Cast — Rough Wireframe Mockups
+     Deliberately crude. Boxes, labels, no production polish.
+     One HTML file, every screen state stacked top-to-bottom.
+     Cross-references docs/attributes-screen-requirements.md
+                   and docs/flow-diagrams.md.
+     =========================================================== */
+  :root {
+    --bg: #fafaf9;
+    --panel: #ffffff;
+    --panel-2: #f4f4f3;
+    --line: #e4e4e3;
+    --line-2: #cfcfce;
+    --fg: #18181b;
+    --fg-dim: #52525b;
+    --fg-mute: #8a8a90;
+    --cyan: #0891b2;
+    --lime: #4d7c0f;
+    --ok: #15803d;
+    --warn: #b45309;
+    --bad: #b91c1c;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font: 14px/1.45 system-ui, -apple-system, sans-serif; }
+
+  .page { max-width: 1200px; margin: 0 auto; padding: 32px 24px 96px; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h1 .tag { color: var(--cyan); font-family: var(--mono); font-size: 12px; margin-left: 8px; }
+  .subtitle { color: var(--fg-dim); margin: 0 0 32px; font-size: 13px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; border: 1px solid var(--line);
+    border-radius: 8px; margin-bottom: 32px; background: var(--panel); }
+  .toc a { color: var(--cyan); text-decoration: none; font-family: var(--mono); font-size: 12px;
+    padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; }
+  .toc a:hover { background: var(--panel-2); }
+
+  .screen { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 40px;
+    background: var(--panel); overflow: hidden; }
+  .screen-head { padding: 16px 20px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .screen-head h2 { margin: 0; font-size: 16px; }
+  .screen-head h2 .id { font-family: var(--mono); color: var(--cyan); margin-right: 8px; }
+  .screen-head .state { font-family: var(--mono); font-size: 11px; color: var(--fg-dim);
+    border: 1px solid var(--line-2); padding: 2px 8px; border-radius: 4px; }
+  .screen-head .note { color: var(--fg-mute); font-size: 12px; }
+  .screen-body { padding: 20px; }
+
+  /* App chrome shared across screens */
+  .app { border: 1px dashed var(--line-2); border-radius: 8px; background: var(--bg); }
+  .app-bar { display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-bottom: 1px dashed var(--line-2); font-family: var(--mono); font-size: 12px; }
+  .app-bar .brand { color: var(--cyan); font-weight: 600; }
+  .app-bar .brand::before { content: "▮ "; color: var(--lime); }
+  .app-bar .right { display: flex; gap: 8px; color: var(--fg-dim); }
+  .pill { border: 1px solid var(--line-2); padding: 2px 8px; border-radius: 999px; font-family: var(--mono); font-size: 11px; }
+  .pill.cyan { color: var(--cyan); border-color: var(--cyan); }
+  .pill.ok   { color: var(--ok); border-color: var(--ok); }
+  .pill.warn { color: var(--warn); border-color: var(--warn); }
+  .pill.bad  { color: var(--bad); border-color: var(--bad); }
+  .pill.mute { color: var(--fg-mute); }
+
+  /* Wireframe primitives */
+  .row { display: flex; gap: 16px; }
+  .col { flex: 1; min-width: 0; }
+  .box { border: 1px dashed var(--line-2); border-radius: 6px; padding: 12px; background: var(--panel-2); }
+  .box .label { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 8px; }
+  .field { border: 1px solid var(--line-2); border-radius: 4px; padding: 8px 10px; background: var(--panel);
+    font-family: var(--mono); font-size: 12px; color: var(--fg); margin-bottom: 8px; }
+  .field.placeholder { color: var(--fg-mute); }
+  .btn { display: inline-block; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--cyan);
+    color: var(--cyan); font-family: var(--mono); font-size: 12px; background: transparent; cursor: pointer; }
+  .btn.primary { background: var(--cyan); color: #000; border-color: var(--cyan); font-weight: 600; }
+  .btn.ghost { border-color: var(--line-2); color: var(--fg-dim); }
+  .btn.disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 8px; margin-top: 8px; }
+
+  /* JSON editor mock */
+  .editor { background: #1e1e1e; border: 1px solid var(--line); border-radius: 6px;
+    padding: 12px; font-family: var(--mono); font-size: 12px; color: #d4d4d4; white-space: pre;
+    overflow-x: auto; line-height: 1.5; }
+  .editor .k { color: #7dd3fc; }
+  .editor .s { color: #bef264; }
+  .editor .n { color: #fbbf24; }
+  .editor .c { color: #71717a; }
+
+  /* Drop zone */
+  .dropzone { border: 2px dashed var(--line-2); border-radius: 6px; padding: 14px;
+    text-align: center; color: var(--fg-mute); font-family: var(--mono); font-size: 12px; background: var(--panel); }
+  .dropzone.has-file { border-color: var(--ok); color: var(--ok); }
+
+  /* Detected assets */
+  .asset-row { display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 10px; border: 1px dashed var(--line-2); border-radius: 4px; margin-bottom: 6px;
+    font-family: var(--mono); font-size: 12px; }
+  .asset-row .status.ok   { color: var(--ok); }
+  .asset-row .status.miss { color: var(--warn); }
+
+  /* Logo picker */
+  .logo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .logo-tile { border: 1px solid var(--line-2); border-radius: 4px; padding: 8px; text-align: center;
+    background: repeating-conic-gradient(#e4e4e3 0% 25%, #f4f4f3 0% 50%) 0 0/10px 10px;
+    font-family: var(--mono); font-size: 10px; color: var(--fg); height: 64px; position: relative; }
+  .logo-tile.selected { border-color: var(--cyan); box-shadow: inset 0 0 0 1px var(--cyan); }
+  .logo-tile .name { position: absolute; bottom: 4px; left: 0; right: 0; color: var(--fg-dim); }
+
+  /* Color swatches */
+  .swatches { display: flex; gap: 6px; }
+  .sw { width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--line-2); }
+
+  /* Live log — terminal-style stays dark for legibility */
+  .log { background: #18181b; border: 1px solid var(--line); border-radius: 6px;
+    padding: 12px; font-family: var(--mono); font-size: 12px; line-height: 1.6; max-height: 280px; overflow: auto;
+    color: #d4d4d4; }
+  .log .step  { color: #a1a1aa; }
+  .log .res   { color: #4ade80; }
+  .log .res.miss { color: #fbbf24; }
+  .log .ready { color: #67e8f9; }
+  .log .badge { color: #bef264; }
+  .log .err   { color: #fca5a5; }
+  .log .ts    { color: #71717a; margin-right: 8px; }
+
+  /* Progress */
+  .progress { display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+    font-family: var(--mono); font-size: 12px; color: var(--fg-dim); }
+  .bar { flex: 1; height: 6px; background: var(--panel-2); border-radius: 999px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--lime)); width: 33%; }
+
+  /* Output grid */
+  .out-grid { display: grid; gap: 12px; }
+  .out-grid .product-row { display: grid; grid-template-columns: 140px repeat(3, 1fr); gap: 12px; align-items: stretch; }
+  .product-label { font-family: var(--mono); font-size: 12px; color: var(--fg-dim);
+    display: flex; align-items: center; padding: 8px; border-right: 1px dashed var(--line-2); }
+  .tile { border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden;
+    background: var(--panel-2); position: relative; aspect-ratio: 1/1; display: flex;
+    align-items: center; justify-content: center; }
+  .tile.r-9x16 { aspect-ratio: 9/16; }
+  .tile.r-16x9 { aspect-ratio: 16/9; }
+  .tile .ratio-label { position: absolute; top: 6px; left: 6px; font-family: var(--mono);
+    font-size: 10px; color: var(--fg-dim); background: rgba(255,255,255,0.85); padding: 2px 6px; border-radius: 3px; border: 1px solid var(--line); }
+  .tile .badge { position: absolute; top: 6px; right: 6px; font-family: var(--mono); font-size: 10px;
+    padding: 2px 6px; border-radius: 3px; }
+  .tile .badge.ok   { background: rgba(21,128,61,0.1); color: var(--ok); border: 1px solid var(--ok); }
+  .tile .badge.warn { background: rgba(180,83,9,0.1); color: var(--warn); border: 1px solid var(--warn); }
+  .tile .badge.bad  { background: rgba(185,28,28,0.1); color: var(--bad); border: 1px solid var(--bad); }
+  .tile .preview { color: var(--fg-mute); font-family: var(--mono); font-size: 11px; text-align: center; padding: 8px; }
+  .tile.failed { background: repeating-linear-gradient(45deg, #fef2f2, #fef2f2 8px, #fee2e2 8px, #fee2e2 16px);
+    border-color: var(--bad); color: var(--bad); }
+  .tile.failed .preview { color: var(--bad); }
+
+  /* Summary bar */
+  .summary { display: flex; gap: 16px; padding: 10px 12px; border: 1px solid var(--line-2);
+    border-radius: 6px; font-family: var(--mono); font-size: 12px; color: var(--fg-dim);
+    margin: 16px 0 12px; background: var(--panel-2); }
+  .summary b { color: var(--fg); }
+  .path-bar { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border: 1px dashed var(--line-2);
+    border-radius: 4px; font-family: var(--mono); font-size: 11px; color: var(--fg-dim); margin-top: 8px; }
+  .path-bar code { color: var(--cyan); }
+
+  /* S2′ failed banner */
+  .err-banner { border: 1px solid var(--bad); background: #fef2f2;
+    border-radius: 6px; padding: 12px; margin-bottom: 12px; }
+  .err-banner .title { color: var(--bad); font-family: var(--mono); font-size: 12px; margin-bottom: 4px; }
+
+  /* S4 modal */
+  .modal-bg { background: rgba(24,24,27,0.5); padding: 24px; border-radius: 8px; }
+  .modal { max-width: 760px; margin: 0 auto; background: var(--panel); border: 1px solid var(--line-2);
+    border-radius: 8px; padding: 16px; }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .check { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--line);
+    font-family: var(--mono); font-size: 12px; }
+  .check:last-child { border-bottom: 0; }
+  .check .name { flex: 1; color: var(--fg-dim); }
+  .check .res.pass { color: var(--ok); }
+  .check .res.fail { color: var(--bad); }
+
+  /* Annotations */
+  .anno { font-size: 11px; color: var(--fg-mute); font-style: italic; margin-top: 8px; font-family: var(--mono); }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-family: var(--mono); font-size: 11px; color: var(--fg-mute); }
+
+  /* Section divider in S1 */
+  .section-h { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); text-transform: uppercase;
+    letter-spacing: 0.08em; margin: 16px 0 8px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Cast — Rough Screen Mockups <span class="tag">wireframe · v1</span></h1>
+  <p class="subtitle">
+    Crude wireframes for every screen state in <a href="attributes-screen-requirements.md" style="color: var(--cyan);">docs/attributes-screen-requirements.md</a>.
+    Boxes, labels, no production polish. Inform → Engage → Invite per screen.
+  </p>
+
+  <div class="toc">
+    <a href="#s1">S1 · Brief Editor</a>
+    <a href="#s2">S2 · Run View</a>
+    <a href="#s2p">S2′ · Failed</a>
+    <a href="#s3">S3 · Output Grid</a>
+    <a href="#s4c">S4 · Detail (compliance)</a>
+    <a href="#s4e">S4 · Detail (error)</a>
+    <a href="#s5">S5 · Reveal action</a>
+  </div>
+
+  <!-- ============================================================
+       S1 · BRIEF EDITOR
+       ============================================================ -->
+  <section class="screen" id="s1">
+    <div class="screen-head">
+      <h2><span class="id">S1</span> Brief Editor + Detected Assets + Drop zones</h2>
+      <span class="state">state: Editing</span>
+    </div>
+    <div class="screen-body">
+      <div class="app">
+        <div class="app-bar">
+          <span class="brand">cast</span>
+          <span class="right">
+            <span class="pill cyan">mode: dall-e-3</span>
+            <span class="pill mute">cap: 38 / 50 today · run will use ~6</span>
+          </span>
+        </div>
+        <div style="padding: 16px;">
+
+          <div class="row">
+            <!-- LEFT: brief editor + structured fields -->
+            <div class="col" style="flex: 1.4;">
+              <div class="section-h">Brief (JSON editor — single source)</div>
+              <div class="editor"><span class="c">// inputs/brief.json — editable</span>
+{
+  <span class="k">"campaign"</span>: <span class="s">"summer-refresh-2026"</span>,
+  <span class="k">"brand"</span>: <span class="s">"brisa"</span>,
+  <span class="k">"products"</span>: [
+    { <span class="k">"name"</span>: <span class="s">"Brisa Citrus"</span>, <span class="k">"sku"</span>: <span class="s">"BRS-CIT-12"</span> },
+    { <span class="k">"name"</span>: <span class="s">"Brisa Berry"</span>,  <span class="k">"sku"</span>: <span class="s">"BRS-BRY-12"</span> }
+  ],
+  <span class="k">"markets"</span>: [<span class="s">"us-en"</span>, <span class="s">"mx-es"</span>],
+  <span class="k">"audience"</span>: <span class="s">"18-34, urban, health-conscious"</span>,
+  <span class="k">"message"</span>: {
+    <span class="k">"en"</span>: <span class="s">"Crack open something brighter."</span>,
+    <span class="k">"es"</span>: <span class="s">"Abre algo más brillante."</span>
+  },
+  <span class="k">"ratios"</span>: [<span class="s">"1x1"</span>, <span class="s">"9x16"</span>, <span class="s">"16x9"</span>],
+  <span class="k">"logoVariant"</span>: <span class="s">"primary-on-dark"</span>
+}</div>
+              <div class="anno">validation badge → <span class="pill ok">brief valid</span> · <span class="pill ok">no banned-word violations</span></div>
+
+              <div class="section-h" style="margin-top: 20px;">Structured fields (mirror of JSON)</div>
+              <div class="row" style="gap: 8px;">
+                <div class="col">
+                  <div class="box">
+                    <div class="label">Brand</div>
+                    <div class="field">▾ brisa  <span style="color: var(--fg-mute);">(Brisa Sparkling)</span></div>
+                    <div class="swatches"><div class="sw" style="background:#06b6d4"></div><div class="sw" style="background:#a3e635"></div><div class="sw" style="background:#fef3c7"></div></div>
+                    <div class="anno">voice: bright · refreshing · direct</div>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="box">
+                    <div class="label">Markets (typeahead)</div>
+                    <div class="field">us-en, mx-es</div>
+                    <div class="label">Audience</div>
+                    <div class="field">18-34, urban, health-conscious</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row" style="gap: 8px; margin-top: 8px;">
+                <div class="col">
+                  <div class="box">
+                    <div class="label">Ratios</div>
+                    <div class="btn-row">
+                      <span class="btn">☑ 1:1</span>
+                      <span class="btn">☑ 9:16</span>
+                      <span class="btn">☑ 16:9</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="box">
+                    <div class="label">Logo variant (D27)</div>
+                    <div class="logo-grid">
+                      <div class="logo-tile selected">●<div class="name">on-dark</div></div>
+                      <div class="logo-tile">○<div class="name">on-light</div></div>
+                      <div class="logo-tile">○<div class="name">mono-w</div></div>
+                      <div class="logo-tile">○<div class="name">mono-k</div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="section-h" style="margin-top: 20px;">Prompt preview (read-only · per missing product)</div>
+              <div class="editor" style="font-size: 11px;"><span class="c">// will hit OpenAI for: brisa-berry</span>
+"A clean studio shot of a Brisa Berry sparkling water can,
+ bright daylight, splash of berries, brand voice: refreshing
+ + direct, palette: cyan/lime/cream, no people, no text..."</div>
+            </div>
+
+            <!-- RIGHT: drop zones, detected assets, generate -->
+            <div class="col" style="flex: 1;">
+              <div class="section-h">Per-product drop zones</div>
+              <div class="box" style="margin-bottom: 8px;">
+                <div class="label">Brisa Citrus · slug: brisa-citrus</div>
+                <div class="dropzone has-file">✓ brisa-citrus.png · 1.2 MB · [remove]</div>
+              </div>
+              <div class="box" style="margin-bottom: 8px;">
+                <div class="label">Brisa Berry · slug: brisa-berry</div>
+                <div class="dropzone">drop image · png/jpeg/webp · ≤ 5 MB</div>
+              </div>
+
+              <div class="section-h">Detected Assets panel</div>
+              <div class="asset-row"><span>brisa-citrus</span><span class="status ok">✓ found · brisa-citrus.png</span></div>
+              <div class="asset-row"><span>brisa-berry</span><span class="status miss">⚠ missing · will generate via GenAI</span></div>
+              <div class="anno">re-fetches: mount · upload · brief edit (300 ms debounce)</div>
+
+              <div class="section-h">Daily allocation</div>
+              <div class="box">
+                <div style="font-family: var(--mono); font-size: 12px;">
+                  remaining today: <b style="color: var(--cyan);">12</b><br>
+                  this run will use: <b style="color: var(--lime);">~6</b>
+                  <span style="color: var(--fg-mute);"> (2 products × 3 ratios, 1 has local asset)</span>
+                </div>
+              </div>
+
+              <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+                <button class="btn primary">Generate →</button>
+              </div>
+              <div class="anno" style="text-align: right;">→ S2 (Running)</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="legend">
+        <span><b style="color:var(--cyan);">Inform</b> · pre-loaded brief, GenAI mode, detected assets, cap, prompt preview</span>
+        <span><b style="color:var(--lime);">Engage</b> · edit fields, drop photos, toggle ratios, pick logo</span>
+        <span><b style="color:var(--ok);">Invite</b> · Generate → S2</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       S2 · RUN VIEW
+       ============================================================ -->
+  <section class="screen" id="s2">
+    <div class="screen-head">
+      <h2><span class="id">S2</span> Run View — Live Pipeline Log</h2>
+      <span class="state">state: Running</span>
+    </div>
+    <div class="screen-body">
+      <div class="app">
+        <div class="app-bar">
+          <span class="brand">cast</span>
+          <span class="right">
+            <span class="pill cyan">campaign: summer-refresh-2026</span>
+            <span class="pill mute">brand: brisa</span>
+            <span class="pill cyan">streaming…</span>
+          </span>
+        </div>
+        <div style="padding: 16px;">
+          <div class="progress">
+            <span>4 / 12 creatives</span>
+            <div class="bar"><span></span></div>
+            <span style="color: var(--fg-mute);">products × markets × ratios</span>
+          </div>
+
+          <div class="log">
+<span class="ts">12:04:01</span><span class="step">step · run started · clearing outputs/summer-refresh-2026/</span>
+<span class="ts">12:04:01</span><span class="step">step · brief.json written</span>
+<span class="ts">12:04:02</span><span class="step">step · brand profile loaded · brisa (cache miss → fresh)</span>
+<span class="ts">12:04:02</span><span class="res">asset_resolved · brisa-citrus → using local asset (inputs/assets/brisa-citrus.png)</span>
+<span class="ts">12:04:03</span><span class="res miss">asset_resolved · brisa-berry → generating via GenAI (dall-e-3)</span>
+<span class="ts">12:04:18</span><span class="ready">creative_ready · brisa-citrus · us-en · 1x1 → composed</span>
+<span class="ts">12:04:18</span><span class="badge">compliance_result · brisa-citrus · us-en · 1x1 → OK</span>
+<span class="ts">12:04:19</span><span class="ready">creative_ready · brisa-citrus · us-en · 9x16 → composed</span>
+<span class="ts">12:04:19</span><span class="badge">compliance_result · brisa-citrus · us-en · 9x16 → WARN (low contrast on overlay)</span>
+<span class="ts">12:04:20</span><span class="ready">creative_ready · brisa-citrus · us-en · 16x9 → composed</span>
+<span class="ts">12:04:20</span><span class="badge">compliance_result · brisa-citrus · us-en · 16x9 → OK</span>
+<span class="ts">12:04:32</span><span class="step">step · brisa-berry · GenAI complete (12.4s)</span>
+<span class="ts">12:04:33</span><span class="ready">creative_ready · brisa-berry · us-en · 1x1 → composed</span>
+<span class="ts">12:04:33</span><span class="badge">compliance_result · brisa-berry · us-en · 1x1 → OK</span>
+<span class="ts">12:04:34</span><span class="step">step · …</span>
+          </div>
+
+          <div class="anno">
+            grid does NOT render here — hydrates only on terminal <code>complete</code> event (D14).<br>
+            stream idle &gt; 90 s → AbortController → synthesized error → S2′ (D30).
+          </div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><b style="color:var(--cyan);">Inform</b> · NDJSON log, progress count, locked brief</span>
+        <span><b style="color:var(--lime);">Engage</b> · watch (no controls during healthy run)</span>
+        <span><b style="color:var(--ok);">Invite</b> · complete → S3 · error → S2′</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       S2′ · FAILED
+       ============================================================ -->
+  <section class="screen" id="s2p">
+    <div class="screen-head">
+      <h2><span class="id">S2′</span> Failed State</h2>
+      <span class="state">state: Failed</span>
+    </div>
+    <div class="screen-body">
+      <div class="app">
+        <div class="app-bar">
+          <span class="brand">cast</span>
+          <span class="right">
+            <span class="pill bad">run failed</span>
+            <span class="pill mute">cap: 50 / 50 today</span>
+          </span>
+        </div>
+        <div style="padding: 16px;">
+          <div class="err-banner">
+            <div class="title">⚠ pipeline error · stage: stream (D30)</div>
+            <div style="font-family: var(--mono); font-size: 12px; color: var(--fg);">
+              No NDJSON event received for 90s — client aborted the run. Per-creative GenAI failures (timeouts, transient 429/5xx after retries per D31) do <i>not</i> land here; they record into <code>errors[]</code> and the run completes to S3 with a red tile.
+            </div>
+          </div>
+
+          <div class="log" style="max-height: 180px;">
+<span class="ts">12:04:01</span><span class="step">step · run started</span>
+<span class="ts">12:04:02</span><span class="res">asset_resolved · brisa-citrus → local</span>
+<span class="ts">12:04:03</span><span class="res miss">asset_resolved · brisa-berry → generating</span>
+<span class="ts">12:05:33</span><span class="err">error · stage: stream · idle &gt; 90s, client aborted (D30)</span>
+          </div>
+
+          <div class="btn-row" style="margin-top: 16px;">
+            <button class="btn">← Edit brief</button>
+            <button class="btn disabled" title="daily cap reached">Retry (cap reached)</button>
+          </div>
+          <div class="anno">
+            Retry disabled when <code>GET /api/cap remaining: 0</code> AND the failed stage would consume cap on retry (any per-creative <code>genai</code> entry in <code>errors[]</code>, or a <code>stream</code>-stage abort mid-run). Other terminal failure shapes (<code>resolve</code> at startup, validation) leave Retry enabled.<br>
+            Both Generate and Retry clear <code>outputs/[campaign]/</code> recursively (D15). Cap file at <code>outputs/.cap.json</code> is untouched.
+          </div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><b style="color:var(--cyan);">Inform</b> · error message, failing stage, log to point of failure</span>
+        <span><b style="color:var(--lime);">Engage</b> · Edit brief · Retry (gated by cap)</span>
+        <span><b style="color:var(--ok);">Invite</b> · Edit → S1 · Retry → S2</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       S3 · OUTPUT GRID
+       ============================================================ -->
+  <section class="screen" id="s3">
+    <div class="screen-head">
+      <h2><span class="id">S3</span> Output Grid</h2>
+      <span class="state">state: Complete</span>
+    </div>
+    <div class="screen-body">
+      <div class="app">
+        <div class="app-bar">
+          <span class="brand">cast</span>
+          <span class="right">
+            <span class="pill cyan">campaign: summer-refresh-2026</span>
+            <span class="pill ok">complete</span>
+          </span>
+        </div>
+        <div style="padding: 16px;">
+
+          <div class="summary">
+            <span><b>12</b> requested</span>
+            <span style="color: var(--ok);"><b>10</b> passed</span>
+            <span style="color: var(--warn);"><b>1</b> flagged</span>
+            <span style="color: var(--bad);"><b>1</b> failed</span>
+            <span style="margin-left: auto; color: var(--fg-mute);">5 reused · 6 generated · 1 errored</span>
+          </div>
+
+          <div class="section-h">us-en</div>
+          <div class="out-grid">
+            <div class="product-row">
+              <div class="product-label">brisa-citrus</div>
+              <div class="tile r-1x1"><span class="ratio-label">1:1 · IG</span><span class="badge ok">OK</span><div class="preview">[ image ]</div></div>
+              <div class="tile r-9x16"><span class="ratio-label">9:16 · Stories</span><span class="badge warn">WARN</span><div class="preview">[ image ]<br>low contrast</div></div>
+              <div class="tile r-16x9"><span class="ratio-label">16:9 · FB</span><span class="badge ok">OK</span><div class="preview">[ image ]</div></div>
+            </div>
+            <div class="product-row">
+              <div class="product-label">brisa-berry</div>
+              <div class="tile r-1x1"><span class="ratio-label">1:1 · IG</span><span class="badge ok">OK</span><div class="preview">[ image · genai ]</div></div>
+              <div class="tile r-9x16 failed"><span class="ratio-label">9:16 · Stories</span><div class="preview">✕ failed<br>stage: genai<br>timeout</div></div>
+              <div class="tile r-16x9"><span class="ratio-label">16:9 · FB</span><span class="badge ok">OK</span><div class="preview">[ image · genai ]</div></div>
+            </div>
+          </div>
+
+          <div class="section-h" style="margin-top: 20px;">mx-es</div>
+          <div class="out-grid">
+            <div class="product-row">
+              <div class="product-label">brisa-citrus</div>
+              <div class="tile r-1x1"><span class="ratio-label">1:1 · IG</span><span class="badge ok">OK</span><div class="preview">[ image ]</div></div>
+              <div class="tile r-9x16"><span class="ratio-label">9:16</span><span class="badge ok">OK</span><div class="preview">[ image ]</div></div>
+              <div class="tile r-16x9"><span class="ratio-label">16:9</span><span class="badge ok">OK</span><div class="preview">[ image ]</div></div>
+            </div>
+            <div class="product-row">
+              <div class="product-label">brisa-berry</div>
+              <div class="tile r-1x1"><span class="ratio-label">1:1</span><span class="badge ok">OK</span><div class="preview">[ image · genai ]</div></div>
+              <div class="tile r-9x16"><span class="ratio-label">9:16</span><span class="badge ok">OK</span><div class="preview">[ image · genai ]</div></div>
+              <div class="tile r-16x9"><span class="ratio-label">16:9</span><span class="badge ok">OK</span><div class="preview">[ image · genai ]</div></div>
+            </div>
+          </div>
+
+          <div class="path-bar">
+            output:&nbsp;<code>outputs/[campaign]/</code>
+            <button class="btn ghost" style="margin-left: auto;">⧉ copy</button>
+            <button class="btn">↗ Reveal in file explorer</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn">← Edit brief &amp; re-run</button>
+          </div>
+          <div class="anno">
+            click flagged tile (WARN/FAIL) → S4 compliance mode · click failed tile (red placeholder) → S4 error mode (path === null routes mode)
+          </div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><b style="color:var(--cyan);">Inform</b> · grid · badges · summary · path</span>
+        <span><b style="color:var(--lime);">Engage</b> · click tile · copy path · reveal · re-run</span>
+        <span><b style="color:var(--ok);">Invite</b> · tile → S4 · reveal → S5 · re-run → S1</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       S4 · CREATIVE DETAIL — COMPLIANCE MODE
+       ============================================================ -->
+  <section class="screen" id="s4c">
+    <div class="screen-head">
+      <h2><span class="id">S4</span> Creative Detail — Compliance Mode</h2>
+      <span class="state">state: DetailOpen · modal over S3</span>
+    </div>
+    <div class="screen-body">
+      <div class="modal-bg">
+        <div class="modal">
+          <div class="modal-head">
+            <div>
+              <div style="font-family: var(--mono); font-size: 13px;">brisa-citrus · us-en · 9:16</div>
+              <div style="color: var(--fg-mute); font-size: 11px; font-family: var(--mono);">outputs/…/us-en/brisa-citrus/9x16.png</div>
+            </div>
+            <span class="pill warn">WARN</span>
+          </div>
+
+          <div class="row">
+            <div class="col" style="flex: 0 0 200px;">
+              <div class="tile r-9x16" style="aspect-ratio: 9/16; height: 320px;">
+                <span class="ratio-label">9:16</span>
+                <div class="preview">[ creative preview ]</div>
+              </div>
+            </div>
+            <div class="col">
+              <div class="check"><span class="name">Logo present</span><span class="res pass">✓ pass</span></div>
+              <div class="check">
+                <span class="name">Brand colors</span>
+                <span style="display: flex; gap: 4px; margin-right: 8px;">
+                  <span class="sw" style="background:#06b6d4; width:18px; height:18px;" title="expected"></span>
+                  <span class="sw" style="background:#5b8aa3; width:18px; height:18px;" title="found"></span>
+                </span>
+                <span class="res fail">✕ fail · contrast 3.1:1 on overlay</span>
+              </div>
+              <div class="check"><span class="name">Banned words</span><span class="res pass">✓ pass · none flagged</span></div>
+              <div class="anno">checks come from <code>compliance_result</code> NDJSON event · result also in report.json</div>
+            </div>
+          </div>
+
+          <div style="text-align: right; margin-top: 16px;">
+            <button class="btn ghost">close ✕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       S4 · CREATIVE DETAIL — ERROR MODE
+       ============================================================ -->
+  <section class="screen" id="s4e">
+    <div class="screen-head">
+      <h2><span class="id">S4</span> Creative Detail — Error Mode</h2>
+      <span class="state">state: DetailOpen · modal over S3 · path === null</span>
+    </div>
+    <div class="screen-body">
+      <div class="modal-bg">
+        <div class="modal">
+          <div class="modal-head">
+            <div>
+              <div style="font-family: var(--mono); font-size: 13px;">brisa-berry · us-en · 9:16</div>
+              <div style="color: var(--fg-mute); font-size: 11px; font-family: var(--mono);">path: null · errors[] entry attached</div>
+            </div>
+            <span class="pill bad">FAILED</span>
+          </div>
+
+          <div class="row">
+            <div class="col" style="flex: 0 0 200px;">
+              <div class="tile r-9x16 failed" style="aspect-ratio: 9/16; height: 320px;">
+                <span class="ratio-label">9:16</span>
+                <div class="preview">✕<br>no image on disk</div>
+              </div>
+            </div>
+            <div class="col">
+              <div class="box">
+                <div class="label">stage</div>
+                <div class="field"><b style="color: var(--bad);">genai</b> <span style="color: var(--fg-mute);">(closed enum: resolve | genai | resize | compose | compliance | write)</span></div>
+                <div class="label">message</div>
+                <div class="field">OpenAI request timed out after 60s</div>
+              </div>
+              <div class="anno">
+                compliance checks NOT shown — failure occurred before <code>compliance</code> stage.<br>
+                only <code>write</code>-stage failures carry a compliance object (D19).
+              </div>
+            </div>
+          </div>
+
+          <div style="text-align: right; margin-top: 16px;">
+            <button class="btn ghost">close ✕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       S5 · REVEAL — server action, not a screen
+       ============================================================ -->
+  <section class="screen" id="s5">
+    <div class="screen-head">
+      <h2><span class="id">S5</span> Reveal in File Explorer</h2>
+      <span class="state">action · not a screen</span>
+    </div>
+    <div class="screen-body">
+      <div class="row">
+        <div class="col">
+          <div class="box">
+            <div class="label">Trigger (from S3)</div>
+            <button class="btn">↗ Reveal in file explorer</button>
+            <div class="anno">→ server action <code>revealOutputFolder(absPath)</code></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="box">
+            <div class="label">OS handoff</div>
+            <div class="field">macOS: <code style="color:var(--cyan);">open</code></div>
+            <div class="field">Windows: <code style="color:var(--cyan);">explorer.exe</code></div>
+            <div class="field">Linux: <code style="color:var(--cyan);">xdg-open</code></div>
+            <div class="anno">execFile · explicit argv · path validated against ROOTS.outputs</div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="box">
+            <div class="label">Fallback (always present)</div>
+            <div class="field" style="color: var(--cyan);">outputs/[campaign]/</div>
+            <button class="btn ghost">⧉ copy</button>
+            <div class="anno">copyable code block on S3 · always works even if shell handoff fails</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="subtitle" style="margin-top: 24px; text-align: center;">
+    Cast · rough wireframes v1 · derived from
+    <a href="user-stories.md" style="color: var(--cyan);">user-stories</a> →
+    <a href="system-map.md" style="color: var(--cyan);">system-map</a> →
+    <a href="flow-diagrams.md" style="color: var(--cyan);">flow-diagrams</a> →
+    <a href="attributes-screen-requirements.md" style="color: var(--cyan);">attributes-screens</a>
+  </p>
+</div>
+</body>
+</html>
