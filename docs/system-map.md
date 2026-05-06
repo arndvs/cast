@@ -114,7 +114,6 @@ graph TB
             GenerateAPI["POST /api/generate<br/>(NDJSON stream)"]
             BrandsAPI["GET /api/brands<br/>(brand selector list)"]
             BrandDetailAPI["GET /api/brands/[slug]<br/>(union banned-words + logo variants)<br/>+ GET /api/brands/[slug]/logos/[id]<br/>(safeJoin proxy — not a static tree)"]
-            CapAPI["GET /api/cap<br/>(daily limit + mode)"]
         end
 
         subgraph Actions["Server actions"]
@@ -181,9 +180,9 @@ How a single click on **Generate** moves a brief through the system and back to 
 >
 > **Failure semantics.** Step-level failures (GenAI error, Sharp error, compliance exception) append to `errors[]` and the run continues — never aborts. The grid hydrates from the manifest delivered in the NDJSON `complete` event, not from a second filesystem read.
 >
-> **GenAI retry (D31).** Transient failures (`429`, `5xx`, `ETIMEDOUT`/`ECONNRESET`) retry with bounded exponential backoff (3 attempts: 1 s → 4 s → 16 s, ±25% jitter). `Retry-After` is honored, capped at 30 s so a stuck creative can't block the run past D30's 90 s stream-idle window. Non-transient `4xx` (content-policy, schema rejection) does not retry. Daily cap (D22) increments once per successful call, not per attempt. On exhaustion `errors[].message` carries the upstream failure verbatim: HTTP responses use `<status> <provider error string>`; non-HTTP transport failures (e.g. `ETIMEDOUT`/`ECONNRESET`) use `OpenAI <code>: <message>`. **Provider-swap fallback is out of scope** — aspect-ratio fidelity (D9) and intra-campaign visual consistency (Story 2) outrank provider uptime in a POC; `CAST_GENAI_MODE` is the operator-time toggle, not runtime.
+> **GenAI retry (D31).** Transient failures (`429`, `5xx`, `ETIMEDOUT`/`ECONNRESET`) retry with bounded exponential backoff (3 attempts: 1 s → 4 s → 16 s, ±25% jitter). `Retry-After` is honored, capped at 30 s so a stuck creative can't block the run past D30's 90 s stream-idle window. Non-transient `4xx` (content-policy, schema rejection) does not retry. On exhaustion `errors[].message` carries the upstream failure verbatim: HTTP responses use `<status> <provider error string>`; non-HTTP transport failures (e.g. `ETIMEDOUT`/`ECONNRESET`) use `OpenAI <code>: <message>`. **Provider-swap fallback is out of scope** — aspect-ratio fidelity (D9) and intra-campaign visual consistency (Story 2) outrank provider uptime in a POC; `CAST_GENAI_MODE` is the operator-time toggle, not runtime.
 >
-> **Run idempotency (D15).** Generate (S1) and Retry (S2′) both clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). Validated through `safeJoin` against the `outputs` ROOT; `SLUG_RE` validates the campaign segment first. The cap file at `outputs/.cap.json` (D22) sits one level above and is unaffected.
+> **Run idempotency (D15).** Generate (S1) and Retry (S2′) both clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). Validated through `safeJoin` against the `outputs` ROOT; `SLUG_RE` validates the campaign segment first.
 
 ```mermaid
 sequenceDiagram
@@ -288,7 +287,6 @@ A sanity check that every user-story verb has a home in the system map. **Source
 | pick a brand for this campaign                                     | Brand selector → `GET /api/brands`                                     | Story 1 ("selects Brisa")                    |
 | fetch brand detail (union banned-words + logo variants)            | Brand selector → `GET /api/brands/[slug]`                              | Design addition (D11, D21, D27)              |
 | select logo variant for the campaign                               | Logo picker → `brief.logoVariant` (cross-validated server-side)        | Design addition (D27)                        |
-| see remaining daily GenAI allocation                               | Daily allocation indicator → `GET /api/cap`                            | Design addition (README: Daily spend cap)    |
 | look up input assets in `inputs/assets/`                           | Asset Resolver                                                         | Story 1                                      |
 | read brand profile (colors, voice, logo, font)                     | Asset Resolver / Prompt Builder / Compositor → `inputs/brands/[brand]/` | Story 1                                      |
 | load + integrity-check brand profile                               | Run Orchestrator → `loadBrandProfile` (Zod via `brandProfileSchema`)    | Design addition (flow §4.3 D11)              |

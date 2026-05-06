@@ -223,7 +223,6 @@
           <span class="brand">cast</span>
           <span class="right">
             <span class="pill cyan">mode: dall-e-3</span>
-            <span class="pill mute">cap: 38 / 50 today · run will use ~6</span>
           </span>
         </div>
         <div style="padding: 16px;">
@@ -319,15 +318,6 @@
               <div class="asset-row"><span>brisa-berry</span><span class="status miss">⚠ missing · will generate via GenAI</span></div>
               <div class="anno">re-fetches: mount · upload · brief edit (300 ms debounce)</div>
 
-              <div class="section-h">Daily allocation</div>
-              <div class="box">
-                <div style="font-family: var(--mono); font-size: 12px;">
-                  remaining today: <b style="color: var(--cyan);">12</b><br>
-                  this run will use: <b style="color: var(--lime);">~6</b>
-                  <span style="color: var(--fg-mute);"> (2 products × 3 ratios, 1 has local asset)</span>
-                </div>
-              </div>
-
               <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
                 <button class="btn primary">Generate →</button>
               </div>
@@ -416,7 +406,6 @@
           <span class="brand">cast</span>
           <span class="right">
             <span class="pill bad">run failed</span>
-            <span class="pill mute">cap: 50 / 50 today</span>
           </span>
         </div>
         <div style="padding: 16px;">
@@ -436,17 +425,17 @@
 
           <div class="btn-row" style="margin-top: 16px;">
             <button class="btn">← Edit brief</button>
-            <button class="btn disabled" title="daily cap reached">Retry (cap reached)</button>
+            <button class="btn">Retry ↻</button>
           </div>
           <div class="anno">
-            Retry disabled when <code>GET /api/cap remaining: 0</code> AND the failed stage would consume cap on retry (any per-creative <code>genai</code> entry in <code>errors[]</code>, or a <code>stream</code>-stage abort mid-run). Other terminal failure shapes (<code>resolve</code> at startup, validation) leave Retry enabled.<br>
-            Both Generate and Retry clear <code>outputs/[campaign]/</code> recursively (D15). Cap file at <code>outputs/.cap.json</code> is untouched.
+            S2′ is reached on run-level aborts only (stream idle — D30 — startup `resolve` failures, brief validation). Per-creative GenAI failures (timeouts, transient `429`/`5xx` after retries per D31) record into <code>errors[]</code> and the run completes to S3 with a red tile, never landing here.<br>
+            Both Generate and Retry clear <code>outputs/[campaign]/</code> recursively (D15).
           </div>
         </div>
       </div>
       <div class="legend">
         <span><b style="color:var(--cyan);">Inform</b> · error message, failing stage, log to point of failure</span>
-        <span><b style="color:var(--lime);">Engage</b> · Edit brief · Retry (gated by cap)</span>
+        <span><b style="color:var(--lime);">Engage</b> · Edit brief · Retry</span>
         <span><b style="color:var(--ok);">Invite</b> · Edit → S1 · Retry → S2</span>
       </div>
     </div>
