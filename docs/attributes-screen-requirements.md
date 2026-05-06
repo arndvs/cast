@@ -75,6 +75,17 @@ Loaded by `loadBrandProfile(brand)` at `/api/generate` entry; validated against 
 
 Cached in-process for 90 s. Missing directory → `BrandNotFoundError` → `400`. Missing required file → `BrandIncompleteError` → `400`. Schema violation → `BrandInvalidError` → `400`.
 
+### Daily Cap
+
+Persistent state for the GenAI spend gate ([D22](flow-diagrams.md#appendix-a--design-decision-register)).
+
+- date (`YYYY-MM-DD`, UTC)
+- count (integer — GenAI calls used today)
+- limit (env `DAILY_GENERATION_LIMIT`, default 50)
+- mode (`'default' | 'cheap'` — derived from `CAST_GENAI_MODE`)
+
+Source of truth: `outputs/.cap.json` (one level above any campaign root, so [D15](flow-diagrams.md#appendix-a--design-decision-register)'s recursive campaign clear cannot wipe it). Atomic tmp-file rename on increment; UTC date rollover resets `count` to 0. Read endpoint: `GET /api/cap`. Browser LocalStorage is an optimistic UI cache only, never authoritative.
+
 ### Run Log
 
 - steps (array of: type, message, timestamp)
@@ -99,7 +110,7 @@ Using the Inform → Engage → Invite framework.
 **Inform — what the user sees:**
 
 - Pre-loaded example brief in a JSON editor (editable)
-- GenAI mode badge — reads `NEXT_PUBLIC_CAST_GENAI_MODE` (default | cheap) at build time. Read-only; surfaces which model the run will hit before Generate fires. No runtime endpoint — the env is inlined at build, so the badge renders without a network round-trip.
+- GenAI mode badge — reads `CAST_GENAI_MODE` (default | cheap) via `GET /api/cap`. Read-only; surfaces which model the run will hit before Generate fires.
 - Campaign name, brand, audience, message fields surfaced as readable form
 - Brand selector — dropdown listing every directory under `inputs/brands/` (slug + display name from `GET /api/brands`). Required; one brand per brief. Demo ships two profiles (`brisa`, `volt`) modeling sub-brands of the fictional Onda Beverages portfolio. On selection, S1 fetches `GET /api/brands/[slug]` to populate palette swatches, voice preview, the **union banned-words list** (lib defaults + brand file), the logo picker (D27), and the prompt preview shown elsewhere on the screen.
 - Markets field — typeahead input accepting any conforming `<region>-<lang>` value; suggestion list seeds common values (`us-en`, `mx-es`, `de-de`, `jp-ja`)
@@ -114,6 +125,7 @@ Using the Inform → Engage → Invite framework.
 - Pre-flight banned-words check — always active. The selected brand's union list (`lib/banned-words.ts` defaults + `inputs/brands/[brand]/banned-words.json` if present) is fetched via `GET /api/brands/[slug]`; if any locale's `message` contains a banned word, the Generate button is disabled with an inline warning naming the term and locale. The defaults floor (violence, hate, NSFW, weapons, drugs, self-harm) applies to every brand — a brand without `banned-words.json` still gets the floor; the indicator does not have a "checks skipped" state. Pre-flight (S1) and server-side compliance (per-creative) call the **same** `containsBannedWord` symbol from `lib/banned-words.ts` against the same union list — see [flow-diagrams.md "Single-source rule (D29)"](flow-diagrams.md#compliance--banned-words-d21).
 - Generate button (enabled when brief is valid + no banned-word violations)
 - Validation badge on brief (valid / invalid)
+- Daily allocation indicator — reads `GET /api/cap` on mount and after each `complete` event. Format: "remaining today: **X** (this run will use **~Y**)". `Y` is computed client-side from the brief + Detected Assets state: for each product without a local asset, count `ratios.length` calls in default mode or `1` in cheap mode; sum across products. Projection recomputes on brief edit (debounced) and on detected-assets refresh, so Maya sees whether her run fits before clicking Generate. LocalStorage caches the last server value for instant first paint only — never authoritative.
 
 **Engage — what the user can do:**
 
@@ -171,13 +183,14 @@ Using the Inform → Engage → Invite framework.
 - Which step failed (from the log)
 - Log up to the failure point still visible
 - Two recovery actions clearly presented
+- Retry availability — when `GET /api/cap` reports `remaining: 0` **and** the failed stage was `genai`, the Retry button is disabled with an inline note: "daily cap reached — edit brief or wait for UTC rollover". Edit brief remains enabled in this state.
 
 **Engage — what the user can do:**
 
 - Click "Edit brief" — go back to S1 to fix the brief
-- Click "Retry" — rerun the same brief
+- Click "Retry" — rerun the same brief (disabled when cap is exhausted on a `genai`-stage failure, per Inform above)
 
-**Run idempotency (D15):** Both **Generate** (from S1) and **Retry** (from S2′) clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products of the run, not preserved artifacts — the recursive clear ensures a failed run never leaves a stale `report.json` on disk claiming success. End state of any successful run is invariant under retry; on mid-run failure the partial creatives plus the new `brief.json` describe the current attempt and the prior `report.json` is gone. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call, and the campaign slug is regex-validated (`SLUG_RE`) before it enters `safeJoin`.
+**Run idempotency (D15):** Both **Generate** (from S1) and **Retry** (from S2′) clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products of the run, not preserved artifacts — the recursive clear ensures a failed run never leaves a stale `report.json` on disk claiming success. End state of any successful run is invariant under retry; on mid-run failure the partial creatives plus the new `brief.json` describe the current attempt and the prior `report.json` is gone. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call, and the campaign slug is regex-validated (`SLUG_RE`) before it enters `safeJoin`. The cap file at `outputs/.cap.json` (D22) sits one level above the campaign root and is not touched by the clear.
 
 **Invite — how they move to the next screen:**
 
@@ -280,10 +293,11 @@ Dual-mode modal: **compliance violation** (badge ∈ WARN / FAIL, path is a real
 | select logo variant     | S1      | Logo picker (radio grid, fed by `GET /api/brands/[slug]` `logos.variants[]`; writes `brief.logoVariant`) — D27 |
 | drop product photos     | S1      | Per-product drop zone                |
 | confirm assets detected | S1      | Detected Assets panel                |
-| sees GenAI mode         | S1      | GenAI mode badge (reads `NEXT_PUBLIC_CAST_GENAI_MODE` build-time env) |
+| sees GenAI mode         | S1      | GenAI mode badge (reads `CAST_GENAI_MODE` via `GET /api/cap`) |
+| sees remaining daily allocation | S1 | Daily allocation indicator (`GET /api/cap` + client-side projection) |
 | click Generate          | S1      | Generate button (invite)             |
 | watch pipeline log      | S2      | Live NDJSON log stream               |
-| recover from failure    | S2′     | Error message + Edit / Retry buttons |
+| recover from failure    | S2′     | Error message + Edit / Retry buttons (Retry disabled when cap exhausted on `genai`-stage failure) |
 | review output grid      | S3      | Product × ratio grid                 |
 | read compliance badges  | S3      | Per-tile badge (OK / WARN / FAIL)    |
 | click flagged tile      | S3      | Tile onClick → S4 modal (compliance mode) |
