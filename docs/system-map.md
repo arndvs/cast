@@ -83,7 +83,7 @@ The verbs from the stories cluster into seven subsystems. Anything inside the da
 graph TB
     subgraph External["External / filesystem"]
         Inputs[("inputs/assets/<br/>product photos")]
-        BrandProfile[("inputs/brands/[brand]/<br/>brand.json · voice.json · logo · font · banned-words.json?<br/>loaded via loadBrandProfile · Zod-validated · 90s in-process cache")]
+        BrandProfile[("inputs/brands/[brand]/<br/>brand.json · voice.json · logos/ + logos.json · font · banned-words.json?<br/>loaded via loadBrandProfile · Zod-validated · 90s in-process cache")]
         subgraph CampaignOut["outputs/[campaign]/"]
             Outputs[("[market]/[product]/[ratio].png")]
             BriefFile[("brief.json")]
@@ -278,6 +278,7 @@ A sanity check that every user-story verb has a home in the system map. **Source
 | drop product photos in UI                                          | Drop Zone → `POST /api/upload`                                         | Story 1                                      |
 | see detected vs missing assets                                     | Detected Assets panel → `GET /api/detected-assets`                     | Design addition (supports Story 1 drop verb) |
 | pick a brand for this campaign                                     | Brand selector → `GET /api/brands`                                     | Story 1 ("selects Brisa")                    |
+| select logo variant for the campaign                               | Logo picker → `brief.logoVariant` (cross-validated server-side)        | Design addition (D27)                        |
 | see remaining daily GenAI allocation                               | Daily allocation indicator → `GET /api/cap`                            | Design addition (README: Daily spend cap)    |
 | look up input assets in `inputs/assets/`                           | Asset Resolver                                                         | Story 1                                      |
 | read brand profile (colors, voice, logo, font)                     | Asset Resolver / Prompt Builder / Compositor → `inputs/brands/[brand]/` | Story 1                                      |

@@ -122,7 +122,12 @@ Drop a directory under `inputs/brands/`:
 inputs/brands/[brand-slug]/
 ├── brand.json          # primary/accent colors (hex), tokens
 ├── voice.json          # tone, do/don't lists, prompt fragments
-├── logo.png            # corner-composited logo
+├── logos/              # corner-composited logo variants (D27)
+│   ├── primary-on-light.png
+│   ├── primary-on-dark.png
+│   ├── mono-white.png
+│   └── mono-black.png
+├── logos.json          # { default: variantId, variants: [{ id, displayName, file }] }
 ├── font.ttf            # OFL display font
 └── banned-words.json?  # optional, brand-specific
 ```

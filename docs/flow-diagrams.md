@@ -303,6 +303,10 @@ export const briefSchema = z
     audience: z.string().min(1).max(500),
     message: z.record(z.string().regex(/^[a-z]{2}$/), z.string().min(1)),
     ratios: z.array(RATIO).min(1),
+    // Optional logo variant id; cross-validated against the loaded brand
+    // at /api/generate entry (briefSchema alone has no brand state). When
+    // omitted, the orchestrator falls back to `brandProfile.defaultLogoId`. (D27)
+    logoVariant: z.string().regex(SLUG_RE).optional(),
   })
   .superRefine((brief, ctx) => {
     // Every market's locale (suffix after `-`) must have a message string.
@@ -437,7 +441,12 @@ Cast serves arbitrary clients; brand identity is a per-campaign input, not a con
 inputs/brands/[brand-slug]/
 ├── brand.json          # primary/accent colors (hex), tokens
 ├── voice.json          # tone, do/don't lists, prompt fragments
-├── logo.png            # corner-composited logo (PNG with alpha)
+├── logos/              # corner-composited logo variants (PNG with alpha) — D27
+│   ├── primary-on-light.png
+│   ├── primary-on-dark.png
+│   ├── mono-white.png
+│   └── mono-black.png
+├── logos.json          # { default: variantId, variants: [{ id, displayName, file }] }
 ├── font.ttf            # OFL-licensed display font for text overlay (D10)
 └── banned-words.json?  # optional brand-specific term list
 ```
@@ -461,7 +470,7 @@ The handler enumerates `inputs/brands/*/`, validates each subdirectory's slug ag
 **Brand existence + integrity check (server-side at `/api/generate` entry).** `briefSchema` validates the slug shape, not its presence on disk. Before the run starts, the orchestrator calls `loadBrandProfile(brief.brand)` which:
 
 - Verifies `inputs/brands/[brand]/` exists → else throws `BrandNotFoundError` → mapped to `400 { errors: [{ path: ['brand'], message: 'unknown brand: ...' }] }`.
-- Verifies required files exist (`brand.json`, `voice.json`, `logo.png`, `font.ttf`) → else throws `BrandIncompleteError` → mapped to `400 { errors: [{ path: ['brand', '<missing-file>'], message: '...' }] }`.
+- Verifies required files exist (`brand.json`, `voice.json`, `logos.json`, at least one PNG referenced by `logos.json` `variants[].file` under `logos/`, `font.ttf`) → else throws `BrandIncompleteError` → mapped to `400 { errors: [{ path: ['brand', '<missing-file>'], message: '...' }] }`.
 - Validates `brand.json` and `voice.json` against `brandProfileSchema` (see [Brand profile schema](#brand-profile-schema)) → else throws `BrandInvalidError` → mapped to `400` with the Zod issue path.
 - On success, returns the parsed `BrandProfile` and caches it in-process for 90 s (cheap reads on repeat runs in the same `next dev` session).
 
@@ -498,13 +507,47 @@ export const voiceJsonSchema = z.object({
 
 export const bannedWordsSchema = z.array(z.string().min(1));
 
+export const logoVariantSchema = z.object({
+  id: z.string().regex(SLUG_RE),
+  displayName: z.string().min(1),
+  file: z.string().regex(/^[a-z0-9-]+\.png$/), // safeJoin-resolved against logos/
+});
+
+export const logosManifestSchema = z
+  .object({
+    default: z.string().regex(SLUG_RE),
+    variants: z.array(logoVariantSchema).min(1),
+  })
+  .superRefine((m, ctx) => {
+    const ids = new Set(m.variants.map((v) => v.id));
+    if (!ids.has(m.default)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["default"],
+        message: `default "${m.default}" not found in variants[]`,
+      });
+    }
+    const seen = new Set<string>();
+    m.variants.forEach((v, i) => {
+      if (seen.has(v.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["variants", i, "id"],
+          message: `duplicate variant id "${v.id}"`,
+        });
+      }
+      seen.add(v.id);
+    });
+  });
+
 // Aggregator — the external contract `loadBrandProfile` validates against.
-// system-map §3 references this symbol by name; the three per-file schemas
+// system-map §3 references this symbol by name; the per-file schemas
 // above are its building blocks.
 export const brandProfileSchema = z.object({
   brand: brandJsonSchema,
   voice: voiceJsonSchema,
   bannedWords: bannedWordsSchema.default([]),
+  logos: logosManifestSchema,
 });
 
 export type BrandProfile = {
@@ -512,7 +555,8 @@ export type BrandProfile = {
   brand: z.infer<typeof brandJsonSchema>;
   voice: z.infer<typeof voiceJsonSchema>;
   bannedWords: string[]; // [] when banned-words.json is absent
-  logoPath: string; // absolute, safeJoin-validated
+  logoVariants: { id: string; displayName: string; path: string }[]; // each path safeJoin-validated
+  defaultLogoId: string;
   fontPath: string; // absolute, safeJoin-validated
 };
 ```
@@ -690,7 +734,7 @@ Captured here so the POC's omissions are deliberate, not accidental:
 | D8  | Locale / market field shape                      | `markets: string[]` (form `<region>-<lang>`, validated by `MARKET_RE`). `message: Record<lang, string>`. No separate `locales` field; no singular `region`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | D9  | GenAI provider                                   | OpenAI Images API. `dall-e-3` default (3 native sizes, 1 call per ratio); `gpt-image-1` when `CAST_GENAI_MODE=cheap` (1 call total + Sharp center-crop).                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | D10 | Display font                                     | OFL-licensed `font.ttf` shipped per brand at `inputs/brands/[brand]/font.ttf`. Compositor loads it; no system-font fallback (deterministic across machines).                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| D11 | Per-brand profile                                | `inputs/brands/[brand]/` directory contract: `brand.json`, `voice.json`, `logo.png`, `font.ttf`, optional `banned-words.json`. Validated by `brandProfileSchema`. Demo brands `brisa` and `volt` ship with the repo (sub-brands of fictional Onda Beverages).                                                                                                                                                                                                                                                                                                                                                                     |
+| D11 | Per-brand profile                                | `inputs/brands/[brand]/` directory contract: `brand.json`, `voice.json`, `logos/` + `logos.json` (D27), `font.ttf`, optional `banned-words.json`. Validated by `brandProfileSchema`. Demo brands `brisa` and `volt` ship with the repo (sub-brands of fictional Onda Beverages).                                                                                                                                                                                                                                                                                                                                                                     |
 | D12 | Path safety: `safeJoin`                          | Every filesystem write resolves through `safeJoin(rootKey, ...segments)` against `ROOTS = { inputs, outputs }`; mismatch throws.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | D13 | Path safety: regex-validated tokens + `execFile` | `[campaign]`, `[brand]`, `[product-slug]`, `[market]` validated against `SLUG_RE` / `MARKET_RE` before `safeJoin`. Shell calls use `execFile` + explicit argv.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | D14 | Streaming render mode                            | S2 log + progress update incrementally on each NDJSON event; output grid hydrates only on the terminal `complete` event (no flicker, clean S2→S3 transition).                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -706,6 +750,7 @@ Captured here so the POC's omissions are deliberate, not accidental:
 | D24 | Markets typeahead                                | Schema stays `markets: string[]` with `MARKET_RE`. S1 UI offers a typeahead with seed values (`us-en`, `mx-es`, `de-de`, `jp-ja`); users may type any conforming value.                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | D25 | Ratio picker                                     | Schema enum locked to `[1x1, 9x16, 16x9]` for v1. S1 exposes pill toggles, default all checked, at least one required. `4x5` / `2x1` deferred to v1.5 (out of POC).                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | D26 | Animated formats                                 | `.gif`, `.mp4`, `.webm` rejected at upload (415) and ignored at resolve. Output creatives are always `.png`. Motion creatives are v2 (Future scope §8).                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| D27 | Logo variants                                    | Per-brand `inputs/brands/[brand]/logos/` directory + `logos.json` manifest (`{ default, variants[] }`). Brief carries optional `logoVariant: string` — cross-validated against the loaded brand at `/api/generate` entry; absent → falls back to `brandProfile.defaultLogoId`. Variants served via `GET /api/brands/[slug]/logos/[id]` (safeJoin proxy; `inputs/` is not a static tree). Replaces the singular `logo.png` from earlier drafts. Manual picker only; automatic per-creative selection by hero luminance is v2 (§8).                                                                                              |
 
 ---
 
