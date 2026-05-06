@@ -157,7 +157,7 @@ function buildCounts(creatives, brief, genaiMode) {
 }
 
 // ====================== NDJSON-STYLE LOG ======================
-// Stages match docs: init → brand → resolve → genai → resize → composite → compliance → write → complete
+// Stages match docs: init → brand → resolve → genai → resize → compose → compliance → write → complete
 
 function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
   const lines = [];
@@ -207,7 +207,7 @@ function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
       }
     });
     push("step", "resize", "resizing assets to 3 aspect ratios");
-    push("step", "composite", `compositing creatives for ${brand.products.length} products`);
+    push("step", "compose", `compositing creatives for ${brand.products.length} products`);
 
     brand.products.forEach((p) => {
       brief.ratios.forEach((r) => {
