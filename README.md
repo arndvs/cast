@@ -133,7 +133,7 @@ inputs/brands/[brand-slug]/
 └── banned-words.json?  # optional brand-specific terms (added on top of lib defaults — union, never replacement)
 ```
 
-Reference it from a brief: `"brand": "[brand-slug]"`. No code change. The repo ships two demo profiles — `inputs/brands/brisa/` (sparkling water) and `inputs/brands/volt/` (energy) — representing two sub-brands of the fictional Onda Beverages portfolio. Use them as templates.
+Reference it from a brief: `"brand": "[brand-slug]"`. No code change. The repo ships two demo profiles — `inputs/brands/brisa/` (sparkling water) and `inputs/brands/volt/` (energy) — representing two sub-brands of the fictional Onda Beverages portfolio. Use them as templates. The recipe for reducing a brand book (HTML, PDF, Figma) into the JSON files above is in [docs/brand-extraction.md](docs/brand-extraction.md).
 
 S1's brand selector lists every directory found under `inputs/brands/`, so adding a new profile makes it available in the UI on the next page load.
 
