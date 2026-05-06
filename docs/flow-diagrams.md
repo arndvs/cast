@@ -584,6 +584,8 @@ This is a string check, not OCR — the server composited the text itself, so OC
 
 Because S1/S2/S3 are states of one page, here is the state machine for the main route `/`. Useful for the next step (wireframes) so we know what each state needs to render.
 
+> **Retry guard.** The `Failed --> Running` transition below is gated: when `GET /api/cap` reports `remaining: 0` AND the failed `errors[].stage` was `genai`, the Retry button is disabled and only `Failed --> Editing` remains available (D22; mirrors the S2′ Inform attribute in [attributes-screen-requirements.md](attributes-screen-requirements.md)).
+
 ```mermaid
 stateDiagram-v2
     [*] --> Editing
@@ -593,10 +595,10 @@ stateDiagram-v2
     Running --> Complete: run finishes
     Running --> Failed: run errors
     Failed --> Editing: click "edit brief"
-    Failed --> Running: click "retry"
+    Failed --> Running: click "retry" [cap > 0 or stage ≠ genai]
     Complete: S3 — Grid visible<br/>badges rendered<br/>tiles clickable
-    Complete --> DetailOpen: click flagged tile
-    DetailOpen: S4 — Compliance modal over grid
+    Complete --> DetailOpen: click flagged or failed tile
+    DetailOpen: S4 — Creative Detail modal over grid
     DetailOpen --> Complete: close modal
     Complete --> Editing: click "edit brief & re-run"
 ```
@@ -611,15 +613,19 @@ Final sanity pass. If any verb lacks a screen, the flow diagram is broken.
 | ----------------------------------- | -------------------------------- | ----------------------------------- |
 | open app                            | S1                               | Editing                             |
 | edit brief                          | S1                               | Editing                             |
+| selects brand                       | S1 (Brand selector → `/api/brands`) | Editing                          |
 | **drop product photos onto rows**   | S1 (drop zone → `/api/upload`)   | Editing                             |
 | pre-place files in `inputs/assets/` | (filesystem path — Aaron's demo) | confirmed via Detected Assets panel |
 | confirm assets will be picked up    | S1 (Detected Assets panel)       | Editing                             |
+| sees GenAI mode                     | S1 (mode badge → `/api/cap`)     | Editing                             |
+| sees remaining daily allocation     | S1 (Daily allocation indicator → `/api/cap`) | Editing                  |
 | click Generate                      | S1                               | Editing → Running                   |
 | watch pipeline log                  | S2                               | Running                             |
 | recover from a run failure          | S2′                              | Failed                              |
 | review output grid                  | S3                               | Complete                            |
 | read compliance badge               | S3                               | Complete                            |
 | click flagged tile                  | S3 → S4                          | Complete → DetailOpen               |
+| click failed tile (`path === null`) | S3 → S4                          | Complete → DetailOpen (error mode)  |
 | read compliance detail              | S4                               | DetailOpen                          |
 | reveal output folder                | S3 → S5                          | Complete (server action)            |
 | copy absolute output path           | S3                               | Complete                            |
