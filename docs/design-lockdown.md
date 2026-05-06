@@ -26,7 +26,7 @@ PR #1 is documentation only. Audit + research review surfaced 4 critical contrac
 | D12 | `safeJoin` ROOTS | Two keys: `inputs`, `outputs`. Each maps to `path.resolve(process.cwd(), key)`. |
 | D13 | Campaign slug validation | Validated as-is against `SLUG_RE`. Reject on fail. No server-side sluggification. |
 | D14 | NDJSON render mode | Log + progress update incrementally on each event. Output grid hydrates only on `complete`. |
-| D15 | Retry semantics | Retry clears `outputs/[campaign]/` recursively before re-run. Runs are idempotent. |
+| D15 | Retry semantics | Both Generate and Retry clear `outputs/[campaign]/` recursively at run start, then rewrite `brief.json` and `report.json` as run-scoped products. The clear is what prevents stale `report.json` files from a prior failed run misrepresenting current state. End state of any successful run is invariant under retry. The cap file at `outputs/.cap.json` (D22) is one level above the campaign root and is not affected. |
 | D16 | `.gitignore` | Add `coverage/`, `.swc/`. Allowlist demo brand directory. `outputs/` fully ignored. |
 
 ### Enrichment

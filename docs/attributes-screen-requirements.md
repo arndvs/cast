@@ -158,7 +158,7 @@ Using the Inform → Engage → Invite framework.
 - Click "Edit brief" — go back to S1 to fix the brief
 - Click "Retry" — rerun the same brief
 
-**Run idempotency (D15):** Both **Generate** (from S1) and **Retry** (from S2′) clear `outputs/[campaign]/` recursively before re-running. Every run produces the same output tree shape regardless of prior attempts — there is no partial-resume, and no orphan folders from products removed across runs. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call. The campaign slug is regex-validated (`SLUG_RE`) before it enters `safeJoin`.
+**Run idempotency (D15):** Both **Generate** (from S1) and **Retry** (from S2′) clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products of the run, not preserved artifacts — the recursive clear ensures a failed run never leaves a stale `report.json` on disk claiming success. End state of any successful run is invariant under retry; on mid-run failure the partial creatives plus the new `brief.json` describe the current attempt and the prior `report.json` is gone. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call, and the campaign slug is regex-validated (`SLUG_RE`) before it enters `safeJoin`. The cap file at `outputs/.cap.json` (D22) sits one level above the campaign root and is not touched by the clear.
 
 **Invite — how they move to the next screen:**
 
