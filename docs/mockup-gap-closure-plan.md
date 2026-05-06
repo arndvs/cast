@@ -1,11 +1,11 @@
 # Cast mockup — gap-closure plan (vanilla React iteration)
 
 > **Status.** Active. Rough lo-fi mockup phase — no real Next.js, no real backend.
-> Iterate `cast/cast-{app,data,screens}.jsx` until all slices land, then port to shadcn/Next.js.
+> Iterate `docs/prototype/cast-{app,data,screens}.jsx` until all slices land, then port to shadcn/Next.js.
 
 ## Context
 
-`cast/cast-prototype.html` is a vanilla React (Babel-in-browser) prototype that drives S1 / S2 / S2′ / S3 / S4 from the [flow diagrams](../docs/flow-diagrams.md) using `cast-data.jsx` fixtures. After a [browser audit](#audit-summary) against the requirements doc + user stories, ten gaps were identified. This plan closes them inside the mockup before any production code is written.
+`docs/prototype/cast-prototype.html` is a vanilla React (Babel-in-browser) prototype that drives S1 / S2 / S2′ / S3 / S4 from the [flow diagrams](./flow-diagrams.md) using `cast-data.jsx` fixtures. After a [browser audit](#audit-summary) against the requirements doc + user stories, ten gaps were identified. This plan closes them inside the mockup before any production code is written.
 
 ## Audit summary
 
@@ -39,8 +39,8 @@
 
 | Decision | Choice |
 |---|---|
-| Where this work lives | `cast/cast-{app,data,screens}.jsx`. Vanilla React + Babel-in-browser. No Next.js port yet. |
-| v1 archive | `cast-{app,data,screens}-v1.jsx` + `cast-prototype-v1.html` move to `cast/_archive/` (recoverable). |
+| Where this work lives | `docs/prototype/cast-{app,data,screens}.jsx`. Vanilla React + Babel-in-browser. No Next.js port yet. |
+| v1 archive | The earlier `cast-{app,data,screens}-v1.jsx` + `cast-prototype-v1.html` were tracked under `cast/_archive/` during iteration; removed when the `cast/` working tree was retired. |
 | Per-locale editor shape | One row per active market's locale, derived from `brief.markets`. Adding a market spawns an empty locale row. Removing a market is non-destructive (keeps message text in `messageByLocale` but stops rendering). |
 | Drop zone behavior | Real `<input type="file">` + DnD handlers. `FileReader` → dataURL into `uploadedAssets[slug]`. **No upload** — purely client-side state for the mockup. Tiles render the actual dropped image. |
 | Prompt preview source | Pure function `buildPromptPreview({ brand, product, market, ratio })` in `cast-data.jsx`. Deterministic. |

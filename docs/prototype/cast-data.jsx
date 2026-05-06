@@ -184,7 +184,7 @@ function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
       push("step", "init", `market: ${mkt} \u2014 locale=${mkt.split("-").pop()}`);
       push("step", "resolve", `resolving assets for ${brand.products.length} products`);
       push("step", "genai", cheap
-        ? "generating 1 master via dall-e-3 (Sharp downsizes 3 ratios)"
+        ? "generating 1 master via gpt-image-1 (Sharp downsizes 3 ratios)"
         : "generating fallback asset via dall-e-3");
     });
     push("warn", "genai", "\u2014 no NDJSON for 60s \u2014 stream considered idle (D30)");
@@ -201,9 +201,9 @@ function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
       } else {
         push("warn", "resolve", `missing hero asset for product: ${p.name}`, { sku: p.sku });
         push("step", "genai", cheap
-          ? `generating 1 master via dall-e-3 (Sharp downsizes 3 ratios)`
+          ? `generating 1 master via gpt-image-1 (Sharp downsizes 3 ratios)`
           : `generating fallback asset via dall-e-3`,
-          { sku: p.sku, mode: cheap ? "dall-e-3+sharp" : "dall-e-3" });
+          { sku: p.sku, mode: cheap ? "gpt-image-1+sharp" : "dall-e-3" });
       }
     });
     push("step", "resize", "resizing assets to 3 aspect ratios");
@@ -242,7 +242,7 @@ function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
 
 function buildPromptPreview({ brand, product, market, ratio }) {
   const lang = (ALL_MARKETS.find((m) => m.code === market) || {}).language || "en";
-  const palette = brand.palette ? Object.values(brand.palette).slice(0, 3).join(", ") : "brand palette";
+  const palette = brand.colors ? Object.values(brand.colors).slice(0, 3).join(", ") : "brand palette";
   const voice = brand.voice || "on-brand";
   const ratioHint = ratio === "1:1" ? "square" : ratio === "9:16" ? "tall (story format)" : "wide (landscape)";
   return [
