@@ -1,6 +1,6 @@
 # User Stories — Cast: Creative Automation Pipeline
 
-### Local Next.js App · POC · v1
+### Local Next.js App · POC · v5
 
 ---
 
@@ -10,7 +10,7 @@ The three personas below are how Cast addresses the brief's business goals and p
 
 - **Maya (Story 1)** — campaign velocity + marketing ROI. Drops the per-campaign hours from manual Photoshop variants to a single Generate click.
 - **Priya (Story 2)** — brand consistency at scale. Per-creative compliance badges replace the 40-frame Figma review pass.
-- **Aaron (Story 3)** — demo'ability + the surface for future actionable-insights work (run logs, `report.json` already structured for analytics).
+- **Aaron (Story 3)** — demoability + the surface for future actionable-insights work (run logs, `report.json` already structured for analytics).
 
 The Onda Beverages multi-brand framing (Brisa, Volt as sub-brands) is deliberate — it directly addresses the decentralized-process pain point by making **brand identity a per-campaign input**, not a baked-in constant. Adding a sub-brand is a directory drop under `inputs/brands/`, not a code change.
 
@@ -78,4 +78,4 @@ Success looks like: Aaron **opens** `localhost:3000`, **clicks Generate** with t
 
 ---
 
-_Cast · User Stories v1 · Adobe FDE Take-Home · Aaron Davis · 2026_
+_Cast · User Stories v5 · Adobe FDE Take-Home · Aaron Davis · 2026_
