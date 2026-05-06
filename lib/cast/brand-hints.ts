@@ -40,3 +40,50 @@ export function brandHintFor(error: BrandLoadError): string {
   void _exhaustive
   return BRAND_HINTS.invalid
 }
+
+/**
+ * Serialization-safe descriptor for a brand-load failure. The thrown
+ * `BrandLoadError` instances carry runtime-only state (Error stack, class
+ * identity) that React refuses to serialize across the server→client
+ * boundary; this is the plain-object shape the banner consumes.
+ */
+export type BrandLoadErrorInfo =
+  | { kind: "notFound"; slug: string; message: string }
+  | { kind: "incomplete"; slug: string; message: string; missing: string }
+  | {
+      kind: "invalid"
+      slug: string
+      message: string
+      file: string
+      issues: { path: (string | number)[]; message: string }[]
+    }
+
+export function toBrandLoadErrorInfo(error: BrandLoadError): BrandLoadErrorInfo {
+  if (error instanceof BrandNotFoundError) {
+    return { kind: "notFound", slug: error.slug, message: error.message }
+  }
+  if (error instanceof BrandIncompleteError) {
+    return {
+      kind: "incomplete",
+      slug: error.slug,
+      message: error.message,
+      missing: error.missing,
+    }
+  }
+  if (error instanceof BrandInvalidError) {
+    return {
+      kind: "invalid",
+      slug: error.slug,
+      message: error.message,
+      file: error.file,
+      issues: error.issues,
+    }
+  }
+  const _exhaustive: never = error
+  void _exhaustive
+  throw new Error("unreachable")
+}
+
+export function brandHintForKind(kind: BrandLoadErrorInfo["kind"]): string {
+  return BRAND_HINTS[kind]
+}

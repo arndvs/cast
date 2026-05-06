@@ -1,32 +1,22 @@
 import { Topbar } from "@/components/cast/topbar"
 import { S1Shell } from "@/components/cast/s1-shell"
 import { loadDemoBrief } from "@/lib/cast/server/brief-loader"
-import { loadBrandProfile } from "@/lib/cast/server/brand-loader"
 import {
-  BrandIncompleteError,
-  BrandInvalidError,
-  BrandNotFoundError,
-} from "@/lib/cast/errors"
-import type { BrandProfile } from "@/lib/cast/schemas"
+  listBrandSlugs,
+  tryLoadBrand,
+} from "@/lib/cast/server/brand-loader"
+import { toBrandLoadErrorInfo } from "@/lib/cast/brand-hints"
 
 export default async function Page() {
   const brief = await loadDemoBrief()
 
-  // Best-effort brand load. Failures fall back to `brand: null` so the editor
-  // renders without the logo grid; the missing-brand banner ships in a
-  // follow-up PR. Throw-back on unexpected (non-brand) errors.
-  let brand: BrandProfile | null = null
-  try {
-    brand = await loadBrandProfile(brief.brand)
-  } catch (err) {
-    if (
-      !(err instanceof BrandNotFoundError) &&
-      !(err instanceof BrandIncompleteError) &&
-      !(err instanceof BrandInvalidError)
-    ) {
-      throw err
-    }
-  }
+  // Parallel: brand-load and the available-slugs list run independently.
+  // `tryLoadBrand` returns a discriminated value instead of throwing so the
+  // editor can render with a `MissingBrandBanner` when the fixture is bad.
+  const [brandResult, brandsAvailable] = await Promise.all([
+    tryLoadBrand(brief.brand),
+    listBrandSlugs(),
+  ])
 
   return (
     <div className="flex min-h-svh flex-col">
@@ -34,14 +24,14 @@ export default async function Page() {
       <S1Shell
         initialBrief={brief}
         brand={
-          brand
+          brandResult.ok
             ? {
-                defaultLogoId: brand.defaultLogoId,
+                defaultLogoId: brandResult.profile.defaultLogoId,
                 // Strip server-only fields (`path` is an absolute fs path
                 // resolved via `safeJoin`) before crossing the
                 // server→client boundary. The editor only needs the
                 // identifying triple to render variant tiles.
-                logoVariants: brand.logoVariants.map((v) => ({
+                logoVariants: brandResult.profile.logoVariants.map((v) => ({
                   id: v.id,
                   displayName: v.displayName,
                   theme: v.theme,
@@ -49,6 +39,10 @@ export default async function Page() {
               }
             : null
         }
+        brandLoadError={
+          brandResult.ok ? null : toBrandLoadErrorInfo(brandResult.error)
+        }
+        brandsAvailable={brandsAvailable}
       />
     </div>
   )
