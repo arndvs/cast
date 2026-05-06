@@ -33,6 +33,13 @@ export type RunErrorStage = ErrorStage | "stream" | "validation"
 
 export type RunState = "editing" | "running" | "complete" | "failed"
 
+/**
+ * Which screen is mounted. Independent of `runState` — the terminal
+ * `complete` event leaves `screen: "S2"` until the user clicks
+ * "view output grid →" (matches prototype). `goto-edit` resets both.
+ */
+export type Screen = "S1" | "S2" | "S3"
+
 export type LogoVariantId =
   | "primary-on-light"
   | "primary-on-dark"
@@ -73,6 +80,8 @@ export interface S1State {
   manifest: Manifest | null
   /** Last terminal failure (network, validation, idle abort). */
   runError: { stage: RunErrorStage; message: string } | null
+  /** Which screen is mounted. Default `"S1"`. */
+  screen: Screen
 }
 
 // ---------------------------------------------------------------------------
@@ -95,6 +104,9 @@ export type S1Action =
   | { type: "pipeline-event"; event: PipelineEvent }
   | { type: "run-error"; stage: RunErrorStage; message: string }
   | { type: "run-reset" }
+  | { type: "goto-run" }
+  | { type: "goto-grid" }
+  | { type: "goto-edit" }
 
 // ---------------------------------------------------------------------------
 // Reducer
@@ -199,12 +211,31 @@ export function s1Reducer(state: S1State, action: S1Action): S1State {
     case "replaceBrief":
       return { ...state, brief: action.brief }
     case "generate":
+    case "goto-run":
       // V4: flip to running and clear any previous run's artifacts. The
       // shell's run-effect picks up the transition and opens the NDJSON
-      // stream against `/api/generate`.
+      // stream against `/api/generate`. V5c: also flip the screen to S2 so
+      // the run view mounts as the network call starts.
       return {
         ...state,
         runState: "running",
+        events: [],
+        manifest: null,
+        runError: null,
+        screen: "S2",
+      }
+    case "goto-grid":
+      // Only meaningful once the run has terminally completed. Ignored
+      // otherwise so a stray dispatch can't strand the user on an empty grid.
+      if (state.runState !== "complete") return state
+      return { ...state, screen: "S3" }
+    case "goto-edit":
+      // Discard the prior run's artifacts and return the editor to the
+      // initial `editing` state. Brief, brand, uploads stay intact.
+      return {
+        ...state,
+        screen: "S1",
+        runState: "editing",
         events: [],
         manifest: null,
         runError: null,

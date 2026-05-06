@@ -34,6 +34,7 @@ const IDLE_TIMEOUT_MS = 90_000
 export function useRunController(
   state: S1State,
   dispatch: React.Dispatch<S1Action>,
+  cancelRef?: React.RefObject<(() => void) | null>,
 ): void {
   // Track the active controller so a re-run or unmount cancels in-flight work.
   const controllerRef = React.useRef<AbortController | null>(null)
@@ -43,6 +44,10 @@ export function useRunController(
 
     const controller = new AbortController()
     controllerRef.current = controller
+    if (cancelRef) {
+      cancelRef.current = () =>
+        controller.abort(new DOMException("cancelled", "AbortError"))
+    }
     let idleTimer: ReturnType<typeof setTimeout> | null = null
     let cancelled = false
 
@@ -125,14 +130,17 @@ export function useRunController(
         if (cancelled) return
         const isAbort =
           err instanceof DOMException && err.name === "AbortError"
+        const isUserCancel = isAbort && err.message === "cancelled"
         dispatch({
           type: "run-error",
           stage: "stream",
-          message: isAbort
-            ? `stream idle for ${Math.round(IDLE_TIMEOUT_MS / 1000)}s`
-            : err instanceof Error
-              ? err.message
-              : String(err),
+          message: isUserCancel
+            ? "run cancelled"
+            : isAbort
+              ? `stream idle for ${Math.round(IDLE_TIMEOUT_MS / 1000)}s`
+              : err instanceof Error
+                ? err.message
+                : String(err),
         })
       } finally {
         if (idleTimer) clearTimeout(idleTimer)
@@ -146,6 +154,7 @@ export function useRunController(
       if (idleTimer) clearTimeout(idleTimer)
       controller.abort()
       controllerRef.current = null
+      if (cancelRef) cancelRef.current = null
     }
     // We deliberately depend only on the run-state transition. The brief
     // snapshot is captured at run start; mid-run edits don't restart the run.

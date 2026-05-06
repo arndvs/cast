@@ -1,7 +1,6 @@
 import * as React from "react"
 
 import { Badge } from "@/components/ui/badge"
-import { ThemeToggle } from "@/components/cast/theme-toggle"
 import { Wordmark } from "@/components/cast/wordmark"
 import { cn } from "@/lib/utils"
 
@@ -35,7 +34,6 @@ export function Topbar({ crumb, className, ...props }: TopbarProps) {
         ) : null}
       </div>
       <div className="flex items-center gap-3">
-        <ThemeToggle />
         <Badge
           variant="outline"
           className="font-mono text-[0.6875rem] uppercase tracking-[0.12em]"
