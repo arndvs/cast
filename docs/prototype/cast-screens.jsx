@@ -3,14 +3,28 @@ const { useState, useMemo, useEffect, useRef } = React;
 
 function Badge({ kind, children }) { return <span className={`badge b-${kind}`}>{children}</span>; }
 
+// Tokenize JSON for read-only syntax-highlighted display. Returns an array of
+// React nodes (escaped automatically) — never use innerHTML here: the brief
+// contains user-typed strings (headline, cta, locale messages) which would
+// otherwise be a stored-XSS vector via the S1 JSON tab.
 function syntaxHighlightJSON(obj) {
   const json = JSON.stringify(obj, null, 2);
-  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (m) => {
+  const re = /("(?:\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g;
+  const out = [];
+  let last = 0;
+  let m;
+  let i = 0;
+  while ((m = re.exec(json)) !== null) {
+    if (m.index > last) out.push(json.slice(last, m.index));
+    const tok = m[0];
     let cls = "n";
-    if (/^"/.test(m)) cls = /:$/.test(m) ? "k" : "s";
-    else if (/true|false|null/.test(m)) cls = "p";
-    return `<span class="${cls}">${m}</span>`;
-  });
+    if (/^"/.test(tok)) cls = /:$/.test(tok) ? "k" : "s";
+    else if (/^(?:true|false|null)$/.test(tok)) cls = "p";
+    out.push(<span key={i++} className={cls}>{tok}</span>);
+    last = m.index + tok.length;
+  }
+  if (last < json.length) out.push(json.slice(last));
+  return out;
 }
 
 // ====================== S1: BRIEF EDITOR (FORM-FIRST + JSON TOGGLE) ======================
@@ -235,7 +249,7 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
         </div>
 
         {jsonMode ? (
-          <div className="json-editor" style={{ minHeight: 380 }} dangerouslySetInnerHTML={{ __html: syntaxHighlightJSON(brief) }} />
+          <pre className="json-editor" style={{ minHeight: 380 }}>{syntaxHighlightJSON(brief)}</pre>
         ) : (
           <>
             {/* Campaign info */}

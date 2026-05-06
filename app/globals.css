@@ -1,0 +1,144 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* =========================================================
+   Cast design tokens — ported from
+   docs/design/cast-brand-guidelines.html (single source of truth).
+   Default theme is LIGHT. Add `.dark` to <html> to flip.
+   ========================================================= */
+
+@theme inline {
+  /* Type — same names the brand book uses. */
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /* Brand */
+  --color-brand-cyan: var(--brand-cyan);
+  --color-brand-lime: var(--brand-lime);
+
+  /* Semantic surfaces */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Status (compliance, legal, run state) */
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+
+  /* Foreground tiers — matches brand book fg-1..fg-4 */
+  --color-fg-1: var(--fg-1);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-fg-4: var(--fg-4);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+}
+
+:root {
+  color-scheme: light;
+
+  /* Brand: cyan → lime gradient signals signal + transmission. */
+  --brand-cyan: oklch(0.78 0.14 210);
+  --brand-cyan-hex: #06b6d4;
+  --brand-lime: oklch(0.88 0.21 125);
+  --brand-lime-hex: #a3e635;
+
+  /* Light surfaces (default) */
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.13 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.13 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.13 0 0);
+  --primary: var(--brand-cyan);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.955 0 0);
+  --secondary-foreground: oklch(0.13 0 0);
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: oklch(0.94 0 0);
+  --accent-foreground: oklch(0.13 0 0);
+  --destructive: oklch(0.62 0.22 25);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.92 0 0);
+  --input: oklch(0.91 0 0);
+  --ring: var(--brand-cyan);
+
+  /* Status — used by brand-compliance and legal checks. */
+  --ok: oklch(0.72 0.17 155);
+  --ok-hex: #34d399;
+  --warn: oklch(0.78 0.16 80);
+  --warn-hex: #fbbf24;
+  --bad: oklch(0.62 0.22 25);
+  --bad-hex: #f87171;
+
+  /* Foreground tiers */
+  --fg-1: oklch(0.13 0 0);
+  --fg-2: oklch(0.2 0 0);
+  --fg-3: oklch(0.5 0 0);
+  --fg-4: oklch(0.65 0 0);
+
+  --radius: 0.625rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 25px 50px -12px rgba(6, 182, 212, 0.25);
+
+  /* Typography fallbacks (next/font sets the actual font-family stacks). */
+  --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
+  --font-display: "Outfit", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.dark {
+  /* Reserved — dark theme tokens will land with the theme switcher. */
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  * {
+    @apply border-border;
+  }
+  html {
+    font-family: var(--font-sans);
+    background: var(--background);
+    color: var(--foreground);
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+  }
+}
