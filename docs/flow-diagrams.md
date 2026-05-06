@@ -400,8 +400,8 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
 
 - `creatives[].path` is repo-relative `string` on success, `null` on failure (D19). The grid renders a red placeholder tile for `null` paths. Join with `manifest.outputDir` (absolute) for filesystem operations; render `path` directly for repo-relative links.
 - `errors[]` is the dedicated failure log: every `null`-path creative has a corresponding entry. Top-level `counts.failed === errors.length`.
-- `source` \u2208 `'local' | 'genai'`. `compliance.badge` \u2208 `'OK' | 'WARN' | 'FAIL'`.
-- `errors[].stage` \u2208 `'resolve' | 'genai' | 'resize' | 'compose' | 'compliance' | 'write'` \u2014 names the pipeline stage that threw. Closed enum; do not invent new values without updating this table:
+- `source` ∈ `'local' | 'genai'`. `compliance.badge` ∈ `'OK' | 'WARN' | 'FAIL'`.
+- `errors[].stage` ∈ `'resolve' | 'genai' | 'resize' | 'compose' | 'compliance' | 'write'` — names the pipeline stage that threw. Closed enum; do not invent new values without updating this table:
 
   | stage         | When it fires                                                                 |
   | ------------- | ----------------------------------------------------------------------------- |
@@ -425,7 +425,7 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
 
 ## 4.3 Implementation primitives
 
-The contract layer above is what the user sees. These are the server-side primitives the implementer must wire \u2014 each one resolves a specific design decision so PR #2 opens with zero ambiguity.
+The contract layer above is what the user sees. These are the server-side primitives the implementer must wire — each one resolves a specific design decision so PR #2 opens with zero ambiguity.
 
 ### Per-brand profile (D11)
 
@@ -433,11 +433,11 @@ Cast serves arbitrary clients; brand identity is a per-campaign input, not a con
 
 ```
 inputs/brands/[brand-slug]/
-\u251c\u2500\u2500 brand.json          # primary/accent colors (hex), tokens
-\u251c\u2500\u2500 voice.json          # tone, do/don't lists, prompt fragments
-\u251c\u2500\u2500 logo.png            # corner-composited logo (PNG with alpha)
-\u251c\u2500\u2500 font.ttf            # OFL-licensed display font for text overlay (D10)
-\u2514\u2500\u2500 banned-words.json?  # optional brand-specific term list
+├── brand.json          # primary/accent colors (hex), tokens
+├── voice.json          # tone, do/don't lists, prompt fragments
+├── logo.png            # corner-composited logo (PNG with alpha)
+├── font.ttf            # OFL-licensed display font for text overlay (D10)
+└── banned-words.json?  # optional brand-specific term list
 ```
 
 The repo ships two demo profiles (`inputs/brands/brisa/` and `inputs/brands/volt/`), modeling the sub-brands of a fictional Onda Beverages portfolio. Onboarding a new brand is a directory drop — no code change. The Asset Resolver, prompt builder, and compliance checker all read from this directory based on `brief.brand`.
@@ -465,11 +465,113 @@ The handler enumerates `inputs/brands/*/`, validates each subdirectory's slug ag
 
 This is the security boundary for the brand axis: every field that becomes a path segment is regex-validated by the schema **and** existence-validated by the loader before anything touches the filesystem.
 
-### Brand profile schema (D11 \u2014 contract)\n\nThe brand directory is a typed contract, not a free-form folder. `loadBrandProfile(brand)` Zod-validates each file on first read and caches the parsed result for 90 s.\n\n```ts\nimport { z } from 'zod'\n\nconst HEX = /^#[0-9a-fA-F]{6}$/\n\nexport const brandColorsSchema = z.object({\n  primary: z.string().regex(HEX),\n  accent: z.string().regex(HEX),\n  background: z.string().regex(HEX).optional(),\n  text: z.string().regex(HEX).optional(),\n})\n\nexport const brandJsonSchema = z.object({\n  displayName: z.string().min(1),\n  colors: brandColorsSchema,\n  tokens: z.record(z.string(), z.string()).optional(),\n})\n\nexport const voiceJsonSchema = z.object({\n  tone: z.string().min(1),\n  do: z.array(z.string()).default([]),\n  dont: z.array(z.string()).default([]),\n  promptFragments: z.array(z.string()).default([]),\n})\n\nexport const bannedWordsSchema = z.array(z.string().min(1))\n\nexport type BrandProfile = {\n  slug: string\n  brand: z.infer<typeof brandJsonSchema>\n  voice: z.infer<typeof voiceJsonSchema>\n  bannedWords: string[]   // [] when banned-words.json is absent\n  logoPath: string         // absolute, safeJoin-validated\n  fontPath: string         // absolute, safeJoin-validated\n}\n```\n\n**Missing `banned-words.json`** is allowed. The loader returns `bannedWords: []`, the orchestrator emits a `step` event \u2014 `{ \"type\": \"step\", \"message\": \"no banned-words list for brand X \u2014 skipping pre-flight + per-creative checks\" }` \u2014 and both client-side pre-flight and server-side per-creative checks become no-ops for that run. Optional means optional; visibility comes from the log line, not a blocked Generate.\n\n### GenAI provider (D9)
+### Brand profile schema (D11 — contract)
+
+The brand directory is a typed contract, not a free-form folder. `loadBrandProfile(brand)` Zod-validates each file on first read and caches the parsed result for 90 s.
+
+```ts
+import { z } from 'zod'
+
+const HEX = /^#[0-9a-fA-F]{6}$/
+
+export const brandColorsSchema = z.object({
+  primary: z.string().regex(HEX),
+  accent: z.string().regex(HEX),
+  background: z.string().regex(HEX).optional(),
+  text: z.string().regex(HEX).optional(),
+})
+
+export const brandJsonSchema = z.object({
+  displayName: z.string().min(1),
+  colors: brandColorsSchema,
+  tokens: z.record(z.string(), z.string()).optional(),
+})
+
+export const voiceJsonSchema = z.object({
+  tone: z.string().min(1),
+  do: z.array(z.string()).default([]),
+  dont: z.array(z.string()).default([]),
+  promptFragments: z.array(z.string()).default([]),
+})
+
+export const bannedWordsSchema = z.array(z.string().min(1))
+
+export type BrandProfile = {
+  slug: string
+  brand: z.infer<typeof brandJsonSchema>
+  voice: z.infer<typeof voiceJsonSchema>
+  bannedWords: string[]   // [] when banned-words.json is absent
+  logoPath: string         // absolute, safeJoin-validated
+  fontPath: string         // absolute, safeJoin-validated
+}
+```
+
+**Missing `banned-words.json`** is allowed. The loader returns `bannedWords: []`, the orchestrator emits a `step` event — `{ \"type\": \"step\", \"message\": \"no banned-words list for brand X — skipping pre-flight + per-creative checks\" }` — and both client-side pre-flight and server-side per-creative checks become no-ops for that run. Optional means optional; visibility comes from the log line, not a blocked Generate.
+
+### GenAI provider (D9)
 
 OpenAI Images API. Model: `dall-e-3` for the default path; `gpt-image-1` when `CAST_GENAI_MODE=cheap`.
 
-| Mode             | Model           | Calls per missing product | Sizes                                                                   |\n| ---------------- | --------------- | -------------------------- | ---------------------------------------------------------------------- |\n| Default          | `dall-e-3`      | One per requested ratio    | `1024x1024` (1x1), `1792x1024` (16x9), `1024x1792` (9x16) \u2014 native    |\n| `cheap`          | `gpt-image-1`   | One per missing product    | `1024x1024` only; Sharp center-crops to 9x16 / 16x9                    |\n\nMode is selected by env var **`CAST_GENAI_MODE`** (`default` | `cheap`, default `default`); the chosen mode is exposed to the UI via `GET /api/cap` so S1 renders a read-only mode badge. There is no CLI flag \u2014 this is a Next.js app, not a CLI. A missing product with all three ratios requested costs three API calls in default mode (no upscale loss, no center-crop). The `cheap` path costs one call, trading edge fidelity for spend.\n\n### Prompt construction (D18)\n\nThree-layer assembly, deterministic, no LLM-on-LLM:\n\n1. Brand layer \u2014 read `inputs/brands/[brand]/voice.json` for tone, mood, banned imagery.\n2. Product layer \u2014 merge per-product `promptOverrides` from the brief (environment, mood adjectives).\n3. Template fn \u2014 a pure function `buildPrompt({ brandVoice, product, market, ratio })` returns the final string.\n\nS1 renders the assembled prompt read-only beneath each missing product so the user sees what will hit the API before clicking Generate.\n\n### Storage abstraction (D17)\n\nOne interface, one POC implementation:\n\n```ts\ninterface Storage {\n  read(key: string): Promise<Buffer>\n  write(key: string, data: Buffer): Promise<void>\n  list(prefix: string): Promise<string[]>\n  exists(key: string): Promise<boolean>\n}\n```\n\nPOC ships `LocalFsStorage` resolving keys against `ROOTS = { inputs, outputs }` via `safeJoin`. S3 / Azure / Dropbox are single-class swaps documented as v2.\n\n### Path safety primitives (D12, D13)\n\n- `ROOTS = { inputs: path.resolve(cwd, 'inputs'), outputs: path.resolve(cwd, 'outputs') }`.\n- `safeJoin(rootKey, ...segments)` resolves the absolute path then asserts `result.startsWith(ROOTS[rootKey] + path.sep)`. Mismatch \u2192 throw.\n- Every `[campaign]`, `[brand]`, `[product-slug]`, `[market]` token is validated against its regex (`SLUG_RE` or `MARKET_RE`) **before** entering `safeJoin`.\n- Shell calls (`revealOutputFolder`) use `execFile` with explicit argv \u2014 never `exec` with a composed string.\n\n### Compliance + banned-words (D21)\n\nBanned words are checked twice:\n\n- **Client-side, pre-flight** \u2014 the editor in S1 cross-references the brief's message strings against `inputs/brands/[brand]/banned-words.json`. Hits disable the Generate button with an inline warning.\n- **Server-side, post locale-resolution** \u2014 for each `(market, ratio)` the compliance checker re-checks the **resolved overlay string** (the exact string the compositor will draw, after locale lookup) against the brand's banned-words list. Hits flag the creative with `WARN` (or `FAIL` for high-severity terms) and append to `report.json`'s `errors[]`.\n\nThis is a string check, not OCR \u2014 the server composited the text itself, so OCR'ing the rendered PNG would be redundant and unreliable on stylized fonts. Catches both authoring mistakes (early) and locale-map errors that slip past pre-flight (late).\n\n### Daily generation cap (D22)\n\n- Env var `DAILY_GENERATION_LIMIT` (default `50`).\n- **Source of truth: `outputs/.cap.json`** \u2014 a tiny file `{ \"date\": \"YYYY-MM-DD\", \"count\": N }` (UTC). The orchestrator reads it on every GenAI call, increments atomically (read \u2192 mutate \u2192 write via tmp-file rename), and rolls over to `count: 0` on date change. Survives `next dev` restarts.\n- **Endpoint: `GET /api/cap`** \u2014 returns `{ remaining: number, limit: number, mode: 'default' | 'cheap' }`. Called by S1 on mount and after every `complete` event so the indicator stays accurate without manual refresh.\n- **LocalStorage** is demoted to an **optimistic UI cache** \u2014 read-through for instant first paint, overwritten by the first `/api/cap` response. Never authoritative.\n- Reaching the cap blocks new GenAI calls server-side; affected creatives emit an `error` event with `stage: 'genai'` and a human-readable cap message.\n- Cap exists to keep demo spend deterministic.\n\n---\n\n## 5. Screen-state map \u2014 what changes within a screen
+| Mode             | Model           | Calls per missing product | Sizes                                                                   |
+| ---------------- | --------------- | -------------------------- | ---------------------------------------------------------------------- |
+| Default          | `dall-e-3`      | One per requested ratio    | `1024x1024` (1x1), `1792x1024` (16x9), `1024x1792` (9x16) — native    |
+| `cheap`          | `gpt-image-1`   | One per missing product    | `1024x1024` only; Sharp center-crops to 9x16 / 16x9                    |
+
+Mode is selected by env var **`CAST_GENAI_MODE`** (`default` | `cheap`, default `default`); the chosen mode is exposed to the UI via `GET /api/cap` so S1 renders a read-only mode badge. There is no CLI flag — this is a Next.js app, not a CLI. A missing product with all three ratios requested costs three API calls in default mode (no upscale loss, no center-crop). The `cheap` path costs one call, trading edge fidelity for spend.
+
+### Prompt construction (D18)
+
+Three-layer assembly, deterministic, no LLM-on-LLM:
+
+1. Brand layer — read `inputs/brands/[brand]/voice.json` for tone, mood, banned imagery.
+2. Product layer — merge per-product `promptOverrides` from the brief (environment, mood adjectives).
+3. Template fn — a pure function `buildPrompt({ brandVoice, product, market, ratio })` returns the final string.
+
+S1 renders the assembled prompt read-only beneath each missing product so the user sees what will hit the API before clicking Generate.
+
+### Storage abstraction (D17)
+
+One interface, one POC implementation:
+
+```ts
+interface Storage {
+  read(key: string): Promise<Buffer>
+  write(key: string, data: Buffer): Promise<void>
+  list(prefix: string): Promise<string[]>
+  exists(key: string): Promise<boolean>
+}
+```
+
+POC ships `LocalFsStorage` resolving keys against `ROOTS = { inputs, outputs }` via `safeJoin`. S3 / Azure / Dropbox are single-class swaps documented as v2.
+
+### Path safety primitives (D12, D13)
+
+- `ROOTS = { inputs: path.resolve(cwd, 'inputs'), outputs: path.resolve(cwd, 'outputs') }`.
+- `safeJoin(rootKey, ...segments)` resolves the absolute path then asserts `result.startsWith(ROOTS[rootKey] + path.sep)`. Mismatch → throw.
+- Every `[campaign]`, `[brand]`, `[product-slug]`, `[market]` token is validated against its regex (`SLUG_RE` or `MARKET_RE`) **before** entering `safeJoin`.
+- Shell calls (`revealOutputFolder`) use `execFile` with explicit argv — never `exec` with a composed string.
+
+### Compliance + banned-words (D21)
+
+Banned words are checked twice:
+
+- **Client-side, pre-flight** — the editor in S1 cross-references the brief's message strings against `inputs/brands/[brand]/banned-words.json`. Hits disable the Generate button with an inline warning.
+- **Server-side, post locale-resolution** — for each `(market, ratio)` the compliance checker re-checks the **resolved overlay string** (the exact string the compositor will draw, after locale lookup) against the brand's banned-words list. Hits flag the creative with `WARN` (or `FAIL` for high-severity terms) and append to `report.json`'s `errors[]`.
+
+This is a string check, not OCR — the server composited the text itself, so OCR'ing the rendered PNG would be redundant and unreliable on stylized fonts. Catches both authoring mistakes (early) and locale-map errors that slip past pre-flight (late).
+
+### Daily generation cap (D22)
+
+- Env var `DAILY_GENERATION_LIMIT` (default `50`).
+- **Source of truth: `outputs/.cap.json`** — a tiny file `{ \"date\": \"YYYY-MM-DD\", \"count\": N }` (UTC). The orchestrator reads it on every GenAI call, increments atomically (read → mutate → write via tmp-file rename), and rolls over to `count: 0` on date change. Survives `next dev` restarts.
+- **Endpoint: `GET /api/cap`** — returns `{ remaining: number, limit: number, mode: 'default' | 'cheap' }`. Called by S1 on mount and after every `complete` event so the indicator stays accurate without manual refresh.
+- **LocalStorage** is demoted to an **optimistic UI cache** — read-through for instant first paint, overwritten by the first `/api/cap` response. Never authoritative.
+- Reaching the cap blocks new GenAI calls server-side; affected creatives emit an `error` event with `stage: 'genai'` and a human-readable cap message.
+- Cap exists to keep demo spend deterministic.
+
+---
+
+## 5. Screen-state map — what changes within a screen
 
 Because S1/S2/S3 are states of one page, here is the state machine for the main route `/`. Useful for the next step (wireframes) so we know what each state needs to render.
 
