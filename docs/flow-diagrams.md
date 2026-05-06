@@ -241,7 +241,7 @@ Constraints (enforced server-side, single source of truth):
     (NOT derived from filename — derived from MIME)
   - On write: delete inputs/assets/[slug].{png,jpg,jpeg,webp} first, then write
     the canonical extension. One slug → one file on disk at a time.
-  - Path constructed via safeJoin("inputs", `${slug}.${ext}`) — rejects
+  - Path constructed via safeJoin("inputs", "assets", `${slug}.${ext}`) — rejects
     traversal even if SLUG_RE is bypassed.
 
 GET /api/detected-assets?slugs=brisa-citrus,brisa-berry
@@ -252,7 +252,7 @@ Response: [
   — called on S1 mount (immediate), on brief edit (300ms debounced),
     and after each successful upload (immediate)
   — every slug in the query string is validated with SLUG_RE before
-    any filesystem call; lookups go through safeJoin("inputs", ...).
+    any filesystem call; lookups go through safeJoin("inputs", "assets", ...).
 
 POST /api/generate
 Content-Type: application/json
@@ -353,7 +353,7 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
 {
   "campaign": "summer-refresh-2026",
   "brand": "brisa",
-  "outputDir": "/Users/aaron/dev/clients/adobe/cast/outputs/summer-refresh-2026",
+  "outputDir": "/abs/path/to/cast/outputs/summer-refresh-2026",
   "counts": {
     "requested": 12,
     "succeeded": 11,
