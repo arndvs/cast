@@ -316,6 +316,12 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
                   const uploadObj = (upload && typeof upload === "object") ? upload : null;
                   const has = !!upload || (i !== 0);
                   const fileName = uploadObj ? uploadObj.name : `${p.slug}.png`;
+                  const willGenerate = !has;
+                  const previewMarket = brief.markets[0] || "us-en";
+                  const previewRatio  = brief.ratios[0]  || "1:1";
+                  const promptPreview = willGenerate
+                    ? CAST.buildPromptPreview({ brand, product: p, market: previewMarket, ratio: previewRatio })
+                    : null;
                   return (
                     <div className="product-row" key={p.sku}>
                       <div className="prod-meta">
@@ -336,6 +342,13 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
                           onUpload={(payload) => dispatch({ type: "upload", slug: p.slug, payload })}
                         />
                         <span className="src-pill">{has ? "local" : "→ GenAI"}</span>
+                        {willGenerate && (
+                          <details className="prompt-preview">
+                            <summary>Show prompt (D18)</summary>
+                            <pre className="prompt-text">{promptPreview}</pre>
+                            <div className="prompt-foot">previewing {previewMarket} · {previewRatio}</div>
+                          </details>
+                        )}
                       </div>
                       <button className="rm-btn" title="Remove from brief" onClick={() => dispatch({ type: "removeProduct", sku: p.sku })}>✕</button>
                     </div>

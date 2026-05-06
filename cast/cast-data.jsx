@@ -236,4 +236,23 @@ function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
   return lines;
 }
 
-window.CAST = { BRANDS, ALL_MARKETS, DEFAULT_BRIEF, buildCreatives, buildCounts, buildLogLines };
+// ====================== PROMPT PREVIEW (D18) ======================
+// Pure, deterministic — what /api/generate would send to dall-e-3 if this
+// product had no local asset. Surfaced via the S1 "Show prompt" disclosure.
+
+function buildPromptPreview({ brand, product, market, ratio }) {
+  const lang = (ALL_MARKETS.find((m) => m.code === market) || {}).language || "en";
+  const palette = brand.palette ? Object.values(brand.palette).slice(0, 3).join(", ") : "brand palette";
+  const voice = brand.voice || "on-brand";
+  const ratioHint = ratio === "1:1" ? "square" : ratio === "9:16" ? "tall (story format)" : "wide (landscape)";
+  return [
+    `Hero product photo of ${product.name} (${product.sku}).`,
+    `Brand: ${brand.displayName} — ${voice}.`,
+    `Color palette: ${palette}.`,
+    `Composition: clean studio background, room for headline overlay, ${ratioHint} (${ratio}).`,
+    `Locale: ${market} (${lang}). No on-image text — text is composited at the resize step.`,
+    `Avoid: ${(brand.bannedWords || []).slice(0, 4).join(", ")}.`,
+  ].join(" ");
+}
+
+window.CAST = { BRANDS, ALL_MARKETS, DEFAULT_BRIEF, buildCreatives, buildCounts, buildLogLines, buildPromptPreview };
