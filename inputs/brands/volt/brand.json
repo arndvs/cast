@@ -1,0 +1,19 @@
+{
+  "displayName": "Volt",
+  "colors": {
+    "primary": "#E8FF1A",
+    "accent": "#F0A93B",
+    "background": "#F4F4F2",
+    "text": "#0B0B0F"
+  },
+  "tokens": {
+    "voltDeep": "#B8CC00",
+    "amber": "#F0A93B",
+    "amberSoft": "#FFD93D",
+    "ion": "#00D4FF",
+    "plasma": "#FF5A1F",
+    "flag": "#FF3B3B",
+    "paper": "#FFFFFF",
+    "carbon": "#0B0B0F"
+  }
+}

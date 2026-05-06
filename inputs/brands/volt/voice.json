@@ -1,0 +1,25 @@
+{
+  "tone": "Punchy, direct, charged. The current — short, charged, confident. Verbs first, numbers second, adjectives last. Volt is the loudest brand in the room without ever raising its voice into aggression. We are not wellness-soft, gym-bro, hustle-porn, or ironic.",
+  "do": [
+    "Lead with verbs — pull, crack, lift, run, shift, finish.",
+    "Use numbers and nouns over adjectives (200mg, zero sugar).",
+    "Keep sentences short, declarative, and charged.",
+    "Be confident without being aggressive.",
+    "Stay specific — call out the can, the dose, the action."
+  ],
+  "dont": [
+    "Don't make function claims (improves focus, boosts metabolism, replaces sleep).",
+    "Don't use macho or gym-bro language (beast mode, alpha, dominate, gains).",
+    "Don't lean on hustle clichés (rise and grind, hustle harder, unlock your potential).",
+    "Don't borrow Brisa's soft, mineral, sensory tone.",
+    "Don't co-lockup with the Onda parent on consumer surfaces."
+  ],
+  "promptFragments": [
+    "high-contrast hard light, single key source",
+    "carbon black background, deep shadows",
+    "electric volt-yellow accent, charged highlight",
+    "studio product shot, single can, sharp edge",
+    "metallic surface, anodized texture, no condensation",
+    "minimal composition, type-led, registry-precise"
+  ]
+}
