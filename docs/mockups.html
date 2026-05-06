@@ -421,9 +421,9 @@
         </div>
         <div style="padding: 16px;">
           <div class="err-banner">
-            <div class="title">⚠ pipeline error · stage: genai</div>
+            <div class="title">⚠ pipeline error · stage: stream (D30)</div>
             <div style="font-family: var(--mono); font-size: 12px; color: var(--fg);">
-              OpenAI request timed out after 60s while generating hero for <b>brisa-berry</b>.
+              No NDJSON event received for 90s — client aborted the run. Per-creative GenAI failures (timeouts, transient 429/5xx after retries per D31) do <i>not</i> land here; they record into <code>errors[]</code> and the run completes to S3 with a red tile.
             </div>
           </div>
 
@@ -431,7 +431,7 @@
 <span class="ts">12:04:01</span><span class="step">step · run started</span>
 <span class="ts">12:04:02</span><span class="res">asset_resolved · brisa-citrus → local</span>
 <span class="ts">12:04:03</span><span class="res miss">asset_resolved · brisa-berry → generating</span>
-<span class="ts">12:05:03</span><span class="err">error · stage: genai · OpenAI request timed out after 60s</span>
+<span class="ts">12:05:33</span><span class="err">error · stage: stream · idle &gt; 90s, client aborted (D30)</span>
           </div>
 
           <div class="btn-row" style="margin-top: 16px;">
@@ -439,7 +439,7 @@
             <button class="btn disabled" title="daily cap reached">Retry (cap reached)</button>
           </div>
           <div class="anno">
-            Retry disabled when <code>GET /api/cap remaining: 0</code> AND failed stage was <code>genai</code>.<br>
+            Retry disabled when <code>GET /api/cap remaining: 0</code> AND the failed stage would consume cap on retry (any per-creative <code>genai</code> entry in <code>errors[]</code>, or a <code>stream</code>-stage abort mid-run). Other terminal failure shapes (<code>resolve</code> at startup, validation) leave Retry enabled.<br>
             Both Generate and Retry clear <code>outputs/[campaign]/</code> recursively (D15). Cap file at <code>outputs/.cap.json</code> is untouched.
           </div>
         </div>
@@ -512,7 +512,7 @@
           </div>
 
           <div class="path-bar">
-            output:&nbsp;<code>/Users/aaron/dev/cast/outputs/summer-refresh-2026/</code>
+            output:&nbsp;<code>outputs/[campaign]/</code>
             <button class="btn ghost" style="margin-left: auto;">⧉ copy</button>
             <button class="btn">↗ Reveal in file explorer</button>
           </div>
@@ -658,7 +658,7 @@
         <div class="col">
           <div class="box">
             <div class="label">Fallback (always present)</div>
-            <div class="field" style="color: var(--cyan);">/Users/aaron/dev/cast/outputs/summer-refresh-2026/</div>
+            <div class="field" style="color: var(--cyan);">outputs/[campaign]/</div>
             <button class="btn ghost">⧉ copy</button>
             <div class="anno">copyable code block on S3 · always works even if shell handoff fails</div>
           </div>
