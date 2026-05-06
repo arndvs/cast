@@ -1,6 +1,6 @@
-# Cast
+# Cast - Creative Automation Studio Toolchain
 
-> From brief to broadcast. A creative-automation pipeline that turns one campaign brief into on-brand, localized social ad creatives at three aspect ratios.
+> From brief to broadcast. A creative automation studio toolchain that turns one campaign brief into on-brand, localized social ad creatives at three aspect ratios.
 
 **POC · Aaron Davis · 2026**
 

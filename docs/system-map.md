@@ -1,4 +1,4 @@
-# System Map — Cast: Creative Automation Pipeline
+# System Map — Cast: Creative Automation Studio Toolchain
 
 ### Local Next.js App · POC · v1
 
