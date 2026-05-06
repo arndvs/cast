@@ -88,6 +88,9 @@ File path shape: `outputs/[campaign]/[market]/[product]/[ratio].png`. The locale
 | **Path I/O safety**   | `safeJoin` helper + `SLUG_RE` validation at every boundary                  | `revealOutputFolder`, `/api/upload`, `/api/detected-assets`, and Sharp file reads all interpolate user-influenced strings. Validating every path is a child of a known root prevents traversal. `execFile` with explicit argv prevents shell injection.   |
 | **Upload limits**     | 5 MB max, MIME-allowlisted (PNG / JPEG / WebP), canonical extension mapping | Sharp can OOM on very large files. Canonical extension mapping (`jpeg → .jpg`) prevents stale-shadow files when re-uploading.                                                                                                                             |
 | **Compliance checks** | Heuristic — logo presence, brand-color sampling, banned-word list         | Demonstrates the surface; not a substitute for legal review.                                                                                                                                                                                              |
+| **Per-brand profile** | Required `brand` slug → `inputs/brands/[brand]/` directory                  | Cast serves arbitrary clients. Brand identity (colors, voice, logo, font, banned words) lives per-brand on disk; a new brand is a directory drop, not a code change. Demo brand `sparkling-co` ships with the repo.                                       |
+| **GenAI provider**    | OpenAI — `dall-e-3` default (3 native ratios), `gpt-image-1` on `--cheap` | `dall-e-3` natively renders 1024×1024 / 1792×1024 / 1024×1792, so the three ratios are three API calls with no center-crop loss. `--cheap` collapses to one `gpt-image-1` call + Sharp center-crop for budget-constrained demos.                       |
+| **Daily spend cap**   | `DAILY_GENERATION_LIMIT` env (default 50)                                  | POC demo discipline. Hard cap on GenAI calls per local day; counter is browser-LocalStorage for S1 read-out plus in-memory server counter for enforcement.                                                                                                |
 
 See [docs/](docs/) for the full design trail: [user stories](docs/user-stories.md) → [system map](docs/system-map.md) → [flow diagrams](docs/flow-diagrams.md) → [attributes & screens](docs/attributes-screen-requirements.md). Visual reference: [docs/cast-brand-guidelines.html](docs/cast-brand-guidelines.html).
 
@@ -98,11 +101,29 @@ See [docs/](docs/) for the full design trail: [user stories](docs/user-stories.m
 - **Single-machine, single-user, no auth.** Runs against `localhost:3000`. No multi-tenancy, no session, no role separation.
 - **Local filesystem only.** No S3 / Azure / Dropbox in the POC. The brief permits any of these; chosen scope cut.
 - **One asset per product slug at a time.** Re-uploading a photo for the same product overwrites the previous file (and its alternate-extension siblings).
-- **GenAI provider: OpenAI `gpt-image-1`.** The Asset Resolver calls the OpenAI Images API behind `OPENAI_API_KEY`. Single endpoint, single model — provider abstraction is deferred to v2.
+- **GenAI provider: OpenAI Images API.** Default model `dall-e-3` calls one of three native sizes (1024×1024 / 1792×1024 / 1024×1792) per requested ratio, behind `OPENAI_API_KEY`. The `--cheap` flag swaps to `gpt-image-1` + Sharp center-crop. Provider abstraction is deferred to v2.
+- **Static raster only.** Output creatives are PNG. Animated formats (GIF, MP4, WebM) are rejected at upload (`415`) and ignored by the resolver. Motion creatives are a separate capability, out of POC scope.
 - **Compliance checks are heuristic, not a legal review.** Logo presence is detected by template match in a configurable corner; brand-color check samples dominant colors; banned-word check is a flat list scan against the rendered overlay text.
 - **No run history.** Each Generate run is independent. No multi-run comparison view in the POC.
 - **Symlinks under `inputs/` and `outputs/` are not followed safely.** Production hardening would add `realpath` re-validation; out of POC scope.
 - **Localized message support is provided-not-translated.** The brief carries a locale → string map; the pipeline composites the right one. It does not call a translation API.
+
+---
+
+## Onboarding a new brand
+
+Drop a directory under `inputs/brands/`:
+
+```
+inputs/brands/[brand-slug]/
+├── brand.json          # primary/accent colors (hex), tokens
+├── voice.json          # tone, do/don't lists, prompt fragments
+├── logo.png            # corner-composited logo
+├── font.ttf            # OFL display font
+└── banned-words.json?  # optional, brand-specific
+```
+
+Reference it from a brief: `"brand": "[brand-slug]"`. No code change. The repo ships `inputs/brands/sparkling-co/` for the demo — use it as a template.
 
 ---
 

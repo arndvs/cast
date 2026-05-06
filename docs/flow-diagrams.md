@@ -337,7 +337,30 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
 
 ---
 
-## 5. Screen-state map — what changes within a screen
+## 4.3 Implementation primitives
+
+The contract layer above is what the user sees. These are the server-side primitives the implementer must wire \u2014 each one resolves a specific design decision so PR #2 opens with zero ambiguity.
+
+### Per-brand profile (D11)
+
+Cast serves arbitrary clients; brand identity is a per-campaign input, not a constant. The brief's required `brand` slug points to a directory:
+
+```
+inputs/brands/[brand-slug]/
+\u251c\u2500\u2500 brand.json          # primary/accent colors (hex), tokens
+\u251c\u2500\u2500 voice.json          # tone, do/don't lists, prompt fragments
+\u251c\u2500\u2500 logo.png            # corner-composited logo (PNG with alpha)
+\u251c\u2500\u2500 font.ttf            # OFL-licensed display font for text overlay (D10)
+\u2514\u2500\u2500 banned-words.json?  # optional brand-specific term list
+```
+
+The repo ships `inputs/brands/sparkling-co/` for the demo. Onboarding a new brand is a directory drop \u2014 no code change. The Asset Resolver, prompt builder, and compliance checker all read from this directory based on `brief.brand`.
+
+### GenAI provider (D9)
+
+OpenAI Images API. Model: `dall-e-3` for the default path; `gpt-image-1` for the `--cheap` flag.
+
+| Mode             | Model           | Calls per missing product | Sizes                                                                   |\n| ---------------- | --------------- | -------------------------- | ---------------------------------------------------------------------- |\n| Default          | `dall-e-3`      | One per requested ratio    | `1024x1024` (1x1), `1792x1024` (16x9), `1024x1792` (9x16) \u2014 native    |\n| `--cheap` flag   | `gpt-image-1`   | One per missing product    | `1024x1024` only; Sharp center-crops to 9x16 / 16x9                    |\n\nA missing product with all three ratios requested costs three API calls in default mode (no upscale loss, no center-crop). The `--cheap` path costs one call, trading edge fidelity for spend.\n\n### Prompt construction (D18)\n\nThree-layer assembly, deterministic, no LLM-on-LLM:\n\n1. Brand layer \u2014 read `inputs/brands/[brand]/voice.json` for tone, mood, banned imagery.\n2. Product layer \u2014 merge per-product `promptOverrides` from the brief (environment, mood adjectives).\n3. Template fn \u2014 a pure function `buildPrompt({ brandVoice, product, market, ratio })` returns the final string.\n\nS1 renders the assembled prompt read-only beneath each missing product so the user sees what will hit the API before clicking Generate.\n\n### Storage abstraction (D17)\n\nOne interface, one POC implementation:\n\n```ts\ninterface Storage {\n  read(key: string): Promise<Buffer>\n  write(key: string, data: Buffer): Promise<void>\n  list(prefix: string): Promise<string[]>\n  exists(key: string): Promise<boolean>\n}\n```\n\nPOC ships `LocalFsStorage` resolving keys against `ROOTS = { inputs, outputs }` via `safeJoin`. S3 / Azure / Dropbox are single-class swaps documented as v2.\n\n### Path safety primitives (D12, D13)\n\n- `ROOTS = { inputs: path.resolve(cwd, 'inputs'), outputs: path.resolve(cwd, 'outputs') }`.\n- `safeJoin(rootKey, ...segments)` resolves the absolute path then asserts `result.startsWith(ROOTS[rootKey] + path.sep)`. Mismatch \u2192 throw.\n- Every `[campaign]`, `[brand]`, `[product-slug]`, `[market]` token is validated against its regex (`SLUG_RE` or `MARKET_RE`) **before** entering `safeJoin`.\n- Shell calls (`revealOutputFolder`) use `execFile` with explicit argv \u2014 never `exec` with a composed string.\n\n### Compliance + banned-words (D21)\n\nBanned words are checked twice:\n\n- **Client-side, pre-flight** \u2014 the editor in S1 cross-references the brief's message strings against `inputs/brands/[brand]/banned-words.json`. Hits disable the Generate button with an inline warning.\n- **Server-side, per creative** \u2014 the compliance checker scans the rendered overlay text on each composited PNG. Hits flag the creative with a `WARN` badge and append to `report.json`'s `errors[]` if severity is `FAIL`.\n\nThis catches both authoring mistakes (caught early) and compositing artifacts (caught late).\n\n### Daily generation cap (D22)\n\n- Env var `DAILY_GENERATION_LIMIT` (default `50`).\n- Counter persisted to `LocalStorage` (browser-side; resets at local midnight) for S1 read-out, plus in-memory server counter for hard cap.\n- Reaching the cap blocks new GenAI calls; missing-asset products return an `error` event explaining the cap.\n- Cap exists to keep demo spend deterministic.\n\n---\n\n## 5. Screen-state map \u2014 what changes within a screen
 
 Because S1/S2/S3 are states of one page, here is the state machine for the main route `/`. Useful for the next step (wireframes) so we know what each state needs to render.
 
