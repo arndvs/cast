@@ -26,7 +26,7 @@ Fields are defined by the canonical Zod `briefSchema` in [flow-diagrams.md §4.2
 - name
 - slug (derived: lowercase, hyphens, validated against `SLUG_RE`)
 - sku
-- promptOverrides (optional — see [flow-diagrams.md “Implementation primitives”](flow-diagrams.md#implementation-primitives))
+- promptOverrides (optional — see [flow-diagrams.md “Implementation primitives”](flow-diagrams.md#43-implementation-primitives))
 
 ### Input Asset
 
