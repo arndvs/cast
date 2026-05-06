@@ -220,7 +220,8 @@ Using the Inform → Engage → Invite framework.
 
 **Invite — how they move to the next screen:**
 
-- Click flagged tile → DetailOpen (S4 modal)
+- Click flagged tile (WARN / FAIL) → DetailOpen (S4 modal · compliance mode)
+- Click failed tile (red placeholder, `path === null`) → DetailOpen (S4 modal · error mode)
 - Click reveal → S5 OS handoff
 - Click edit & re-run → Editing (S1)
 

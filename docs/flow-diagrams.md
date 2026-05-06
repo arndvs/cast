@@ -16,7 +16,7 @@ Working from the system map, the seven subsystems collapse into **five screens**
 | S2  | **Run View** (Live Pipeline Log)                       | Run Orchestrator → Live Log                      | Maya/Aaron watch pipeline run step by step                                                                               |
 | S2′ | **Failed state** (within S2)                           | Run Orchestrator (error path)                    | Demo-safety: a thrown error gets a visible message + recovery, not a hung spinner                                        |
 | S3  | **Output Grid**                                        | Output Grid + Badge UI                           | Maya reviews creatives; Priya scans badges                                                                               |
-| S4  | **Compliance Detail** (modal over S3)                  | Compliance Checker → Badge UI                    | Priya drills into a flagged creative                                                                                     |
+| S4  | **Creative Detail** (modal over S3)                    | Compliance Checker → Badge UI · Reporter `errors[]` | Priya drills into a flagged creative; Maya drills into a failed creative (dual-mode: compliance violation OR pipeline error)                  |
 | S5  | **Reveal in File Explorer** (action, not a screen)     | Server action + copyable path                    | Maya grabs the files to ship                                                                                             |
 
 > **Practical note:** S1, S2, and S3 are _states of a single Next.js page_ (`/`), not separate routes. S4 is a modal/drawer over S3. S5 is a _server action_ triggered from S3 that opens the OS file explorer at the campaign output folder, with the absolute path also rendered as a copyable code block for fallback. The diagrams below treat them as logical screens for clarity.
@@ -68,7 +68,7 @@ flowchart TB
     S3 -->|click flagged tile| S4
     S4 -->|close| S3
 
-    subgraph S4["S4 · Compliance Detail"]
+    subgraph S4["S4 · Creative Detail"]
         Which["Which check failed<br/>(logo · palette · banned word)"]
         Why["Why it failed<br/>+ creative preview"]
         Which --> Why
@@ -132,7 +132,7 @@ flowchart LR
     B --> C["S1 · clicks Generate<br/>(no editing needed)"]
     C --> D["S2 · narrates live log<br/>'this is the resize step…'"]
     D --> E["S3 · points at output grid<br/>'and here are the badges'"]
-    E --> F["S4 · clicks one tile<br/>to show compliance detail"]
+    E --> F["S4 · clicks one tile<br/>to show creative detail"]
 ```
 
 **Covered.** The pre-populated brief means S1 is a 0-second screen for Aaron — he goes straight to Generate. The live log on S2 is the demo's centerpiece.
@@ -152,7 +152,7 @@ flowchart TB
     S2["S2 · Run View<br/>(live pipeline log)"]:::mvp
     S2Err["S2′ · Failed state<br/>error message + retry/edit"]:::mvp
     S3["S3 · Output Grid<br/>(creatives + badges + path)"]:::mvp
-    S4["S4 · Compliance Detail<br/>(drill-in on flagged tile)"]:::mvp
+    S4["S4 · Creative Detail<br/>(drill-in on flagged or failed tile)"]:::mvp
     S5["S5 · Reveal in file explorer<br/>(server action + copyable path)"]:::mvp
 
     History["Run history / past runs"]:::later
