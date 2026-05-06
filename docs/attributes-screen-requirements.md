@@ -203,9 +203,9 @@ Using the Inform → Engage → Invite framework.
 
 - Grid: one row per product, three columns (1:1 · 9:16 · 16:9)
 - Each cell: generated image + compliance badge (OK / WARN / FAIL)
-- **Failed tile rendering** — cells where `creatives[].path === null` ([D19](flow-diagrams.md#appendix-a--design-decision-register)) render as a red placeholder with the failing pipeline `stage` label (e.g. "genai timeout", "resize failed"). Distinct from a compliance FAIL badge: pipeline error and compliance violation are orthogonal axes. A failed tile has no compliance result.
+- **Failed tile rendering** — cells where `creatives[].path === null` ([D19](flow-diagrams.md#appendix-a--design-decision-register)) render as a red placeholder with the failing pipeline `stage` label (e.g. "genai timeout", "resize failed"). Distinct from a compliance FAIL badge: pipeline error and compliance violation are orthogonal axes. The `compliance` field is stage-dependent: failures before the `compliance` stage (`resolve | genai | resize | compose`) omit it; failures at or after `compliance` may carry the result through. The grid never renders a compliance badge for a failed tile — the red placeholder + stage label takes its place.
 - Ratio label on each cell (1:1 · Instagram, 9:16 · Stories, 16:9 · Facebook)
-- Summary bar (canonical `counts` keys from [§4.2 / D3](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview)): "6 requested · 4 passed · 1 flagged · 1 failed". `passed = succeeded - flagged`; `flagged` and `failed` are independent.
+- Summary bar — display string "6 requested · 4 passed · 1 flagged · 1 failed". Driven by canonical `counts` keys from [§4.2 / D3](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview): `requested`, `succeeded`, `flagged`, `failed`. `passed` is a derived UI metric: `passed = succeeded - flagged`. `flagged` and `failed` are independent.
 - Absolute output path as a copyable code block
 - "Reveal in file explorer" button
 - "Edit brief & re-run" button
@@ -247,7 +247,7 @@ Dual-mode modal: **compliance violation** (badge ∈ WARN / FAIL, path is a real
 - Product name + market + ratio label (the failure coordinates)
 - Pipeline `stage` from the matching `errors[]` entry — closed enum from [§4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview): `resolve | genai | resize | compose | compliance | write`
 - Human-readable `message` from the same `errors[]` entry (e.g. "OpenAI request timed out after 60s")
-- No per-check results — compliance was never run on this creative
+- Per-check results: shown only when `errors[].stage` is `write` and a `compliance` object is present on the failed creative; otherwise omitted (compliance was not reached or did not complete)
 
 **Engage — what the user can do:**
 

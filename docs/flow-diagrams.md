@@ -71,7 +71,7 @@ flowchart TB
     subgraph S4["S4 · Creative Detail (dual mode)"]
         Mode{"tile.path === null?"}
         Mode -->|no — compliance mode| Which["Which check failed<br/>(logo · palette · banned word)"]
-        Mode -->|yes — error mode| Stage["Failed stage<br/>(genai · compose · compliance · io)"]
+        Mode -->|yes — error mode| Stage["Failed stage<br/>(resolve · genai · resize · compose · compliance · write)"]
         Which --> Why["Why it failed<br/>+ creative preview"]
         Stage --> ErrMsg["errors[].message<br/>+ red placeholder"]
     end
