@@ -12,23 +12,21 @@ The "things" the system stores, moves, and renders. Pulled from the user-story v
 
 ```mermaid
 graph LR
-    Brief["Brief<br/>brand · products · markets<br/>audience · message · ratios"]
+    Brief["Brief<br/>brand · products · markets<br/>audience · message (locale → copy) · ratios"]
     Product["Product<br/>name · sku"]
     InputAsset["Input Asset<br/>inputs/assets/[product-slug].{png,jpg,jpeg,webp}"]
     HeroImage["Hero Image<br/>GenAI fallback"]
     Creative["Output Creative<br/>1:1 · 9:16 · 16:9"]
-    Message["Localized Message<br/>per locale"]
     Compliance["Compliance Result<br/>OK · WARN · FAIL"]
     RunLog["Run Log<br/>streamed steps"]
     Report["Report<br/>report.json"]
 
     Brief -->|lists| Product
-    Brief -->|carries| Message
+    Brief -.->|message composited onto| Creative
     Product -->|resolves to| InputAsset
     Product -.->|falls back to| HeroImage
     InputAsset -->|source for| Creative
     HeroImage -->|source for| Creative
-    Message -->|composited onto| Creative
     Creative -->|evaluated by| Compliance
     Creative -->|listed in| Report
     Compliance -->|listed in| Report
