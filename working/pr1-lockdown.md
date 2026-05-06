@@ -1,6 +1,6 @@
 # Design Lockdown Plan — Cast POC
 
-> **Historical** — captures the lockdown decisions made during PR #1 (doc-only). The **canonical decision register** lives in [flow-diagrams.md Appendix A](flow-diagrams.md#appendix-a--design-decision-register). When this doc and Appendix A disagree, Appendix A wins.
+> **Historical** — captures the lockdown decisions made during PR #1 (doc-only). The **canonical decision register** lives in [flow-diagrams.md Appendix A](../docs/flow-diagrams.md#appendix-a--design-decision-register). When this doc and Appendix A disagree, Appendix A wins.
 >
 > Status: locked decisions, doc-only PR. Application code lands in PR #2.
 > References: [README.md](../README.md), [docs/flow-diagrams.md](../docs/flow-diagrams.md), [docs/system-map.md](../docs/system-map.md), [docs/attributes-screen-requirements.md](../docs/attributes-screen-requirements.md), [docs/user-stories.md](../docs/user-stories.md), [creative-automation-for-scalable-social-ad-campaigns.md](../creative-automation-for-scalable-social-ad-campaigns.md).
@@ -18,7 +18,7 @@ PR #1 is documentation only. Audit + research review surfaced 4 critical contrac
 | D1 | Markets × locales × tree shape | Output tree adds `[market]` segment. Locale derived: `locale = market.split('-').pop()`. Brief rejected if any market's locale is missing from `message{}`. |
 | D2 | Brief schema | Single Zod `briefSchema` defined once in `flow-diagrams.md` §4.2. README example is canonical. Attributes Step 4 references the schema. |
 | D3 | Manifest + report.json shape | One canonical object. `manifest` (in `complete` event) === `report.json` content. CamelCase. Includes `counts`, per-creative `source`/`compliance`/`path` (nullable), `errors[]`. |
-| D4 | JPEG handling | Read-only acceptance for pre-placed `.jpeg`. Uploads canonicalize to `.jpg`. Resolver lookup: `{png, jpg, jpeg, webp}`. Write extensions: `{png, jpg, webp}`. |
+| D4 | JPEG handling | Read-only acceptance for pre-placed `.jpeg`. Uploads canonicalize to `.jpg`. Resolver lookup: `{png, jpg, jpeg, webp}`. Write extensions: `{png, jpg, jpeg, webp}`. |
 | D5 | Asset path placeholder | `inputs/assets/[product-slug].{png,jpg,jpeg,webp}` everywhere. |
 | D6 | Output path leading slash | Drop leading `/` in tree visuals (paths are repo-relative). Absolute paths only in `manifest.outputDir`. |
 | D7 | Ratio naming | `1x1`/`9x16`/`16x9` for data, filenames, schema enum. `1:1`/`9:16`/`16:9` only in display strings. |
