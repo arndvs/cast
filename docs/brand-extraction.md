@@ -4,6 +4,8 @@
 
 The reduction is hand-curated and peer-reviewed via PR. There is no scripted parser — `n = 2` brands ship with the POC, HTML structure varies brand-to-brand, ROI is poor. Treat this doc as the recipe; the actual JSON values are populated in PR #2 alongside the implementation. ([D28](flow-diagrams.md#appendix-a--design-decision-register))
 
+> **v2 supersession.** A front-end **Brand onboarding UI** is listed in [flow-diagrams.md §8](flow-diagrams.md#8-future-scope-v2--explicitly-out-of-poc) — a form-driven flow (logo uploads, banned-words textarea, color pickers, voice fields) that writes the same directory atomically via `POST /api/brands`. Until that ships, this hand-curated recipe is the onboarding path.
+
 ---
 
 ## Scope
