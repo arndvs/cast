@@ -4,6 +4,8 @@
 
 **POC · Aaron Davis · 2026**
 
+> **Status: spec-locked, app coming next.** This branch ships the full architectural spec (briefSchema, output tree, manifest, GenAI primitives, streaming contract). Runtime scaffolding (`package.json`, `inputs/`, route handlers) lands in PR #3. The Quick Start below describes the **target** developer experience the spec resolves to.
+
 ---
 
 ## Quick Start
