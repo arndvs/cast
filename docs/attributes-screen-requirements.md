@@ -126,9 +126,11 @@ Using the Inform → Engage → Invite framework.
   - `creative_ready` → cyan line: "sparkling-citrus 1:1 → composed"
   - `compliance_result` → badge line: "sparkling-citrus 1:1 — OK"
   - `error` → red line: error message
-- Progress indicator — products × ratios (e.g. "4 of 6 creatives done")
+- Progress indicator — products × markets × ratios (e.g. "4 of 12 creatives done")
 - Brief is locked — editor not visible, shows campaign name only
 - No Generate button (pipeline running)
+
+**Streaming render mode (D14):** the log and progress indicator update **incrementally** on each NDJSON event. The output grid is **not** rendered yet — it hydrates only on the terminal `complete` event so all tiles appear together with their final compliance badges. This avoids a flicker of partially-resolved tiles and keeps S2 → S3 as a clean state transition.
 
 **Engage — what the user can do:**
 
@@ -154,6 +156,8 @@ Using the Inform → Engage → Invite framework.
 
 - Click "Edit brief" — go back to S1 to fix the brief
 - Click "Retry" — rerun the same brief
+
+**Retry idempotency (D15):** Retry clears `outputs/[campaign]/` recursively before re-running. Every run produces the same output tree shape regardless of prior attempts. There is no partial-resume — a fresh run is the only run. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call.
 
 **Invite — how they move to the next screen:**
 
