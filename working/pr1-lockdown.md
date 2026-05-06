@@ -2,12 +2,12 @@
 
 > **Historical** — captures the lockdown decisions made during PR #1 (doc-only). The **canonical decision register** lives in [flow-diagrams.md Appendix A](../docs/flow-diagrams.md#appendix-a--design-decision-register). When this doc and Appendix A disagree, Appendix A wins.
 >
-> Status: locked decisions, doc-only PR. Application code lands in PR #2.
+> Status: locked decisions, doc-only PR. Application code lands in the follow-up implementation PR.
 > References: [README.md](../README.md), [docs/flow-diagrams.md](../docs/flow-diagrams.md), [docs/system-map.md](../docs/system-map.md), [docs/attributes-screen-requirements.md](../docs/attributes-screen-requirements.md), [docs/user-stories.md](../docs/user-stories.md), [creative-automation-for-scalable-social-ad-campaigns.md](../creative-automation-for-scalable-social-ad-campaigns.md).
 
 ## Context
 
-PR #1 is documentation only. Audit + research review surfaced 4 critical contract gaps, 7 inconsistencies, and 12 missing implementation primitives. This plan locks every decision so the implementer (PR #2) opens to zero unresolved contracts. No code lands in PR #1.
+PR #1 is documentation only. Audit + research review surfaced 4 critical contract gaps, 7 inconsistencies, and 12 missing implementation primitives. This plan locks every decision so the implementer (the follow-up implementation PR) opens to zero unresolved contracts. No code lands in PR #1.
 
 ## Locked decisions
 
