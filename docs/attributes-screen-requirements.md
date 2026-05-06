@@ -171,6 +171,7 @@ Using the Inform → Engage → Invite framework.
 - `complete` event received → transitions to Complete (S3)
 - `error` event received → transitions to Failed (S2′)
 - Stream closes without a terminal `complete` or `error` event (network drop, server crash) → treated as a stream-level failure → transitions to Failed (S2′). Mirrors [flow-diagrams.md §4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview).
+- Stream idle for 90 s with no events (D30) → client aborts the `fetch` via `AbortController` and synthesizes a terminal `error` event with `stage: 'stream'` → transitions to Failed (S2′). Prevents an indefinite spinner on a hung GenAI call or mid-stream server crash.
 
 ---
 
