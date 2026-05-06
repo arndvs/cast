@@ -644,7 +644,7 @@ Banned words are checked twice, both passes operating on the same union list (li
 
 This is a string check, not OCR — the server composited the text itself, so OCR'ing the rendered PNG would be redundant and unreliable on stylized fonts. Catches both authoring mistakes (early) and locale-map errors that slip past pre-flight (late).
 
-**Single-source rule (D29).** Both passes import the same `containsBannedWord(text, list)` symbol from `lib/banned-words.ts`. Route handlers (`/api/brands/[slug]`, `/api/generate`) and the S1 client must not re-implement substring matching, normalization, or the union composition — they call the shared symbol against the union list returned by `loadBrandProfile`. Drift between client pre-flight and server compliance produces the worst possible UX: "S1 said clean, the badge says flagged" (or vice versa). The parity test in [§4.3 / D29](#appendix-a--design-decision-register) makes the import path enforceable at PR time.
+**Single-source rule (D29).** Both passes import the same `containsBannedWord(text, list)` symbol from `lib/banned-words.ts`. Route handlers (`/api/brands/[slug]`, `/api/generate`) and the S1 client must not re-implement substring matching, normalization, or the union composition — they call the shared symbol against the union list returned by `loadBrandProfile`. Drift between client pre-flight and server compliance produces the worst possible UX: "S1 said clean, the badge says flagged" (or vice versa). The parity test in [Appendix A / D29](#appendix-a--design-decision-register) makes the import path enforceable at PR time.
 
 ---
 
