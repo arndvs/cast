@@ -44,7 +44,7 @@ What she wants: after the pipeline runs, **see** a compliance badge on every cre
 
 Success looks like: Priya **looks at** the output grid, **sees** 5 of 6 creatives with a green badge and one amber flagged for low contrast, **clicks** the flagged creative to read the compliance detail, and **only reviews** that one instead of all six.
 
-**Scope.** Priya's review surface is the current run only. There is no multi-run history view, no cross-run flagged-rate trend, no delta-since-last-run. Each Generate run is independent (see [README assumptions](../README.md#assumptions--limitations) and [flow-diagrams.md §8 Future scope](flow-diagrams.md#8-future-scope)) — multi-run history is explicitly v2.
+**Scope.** Priya's review surface is the current run only. There is no multi-run history view, no cross-run flagged-rate trend, no delta-since-last-run. Each Generate run is independent (see [README assumptions](../README.md#assumptions--limitations) and [flow-diagrams.md §8 Future scope](flow-diagrams.md#8-future-scope-v2--explicitly-out-of-poc)) — multi-run history is explicitly v2.
 
 **Key verbs:** views output grid, reads compliance badges, clicks flagged item, reads compliance detail
 
