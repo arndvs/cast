@@ -263,7 +263,7 @@ graph LR
     Grid --> Scan{"All green?"}
     Scan -->|yes| Ship["ship"]
     Scan -->|no| Click["click flagged tile"]
-    Click --> Detail["Compliance Detail<br/>which check failed · why"]
+    Click --> Detail["Creative Detail<br/>which check failed · why"]
     Detail -.->|open for full detail| ReportFile["report.json<br/>per-creative compliance · errors[]"]
     Detail --> Decide{"fixable in brief?"}
     Decide -->|yes| EditBrief["edit brief<br/>(re-run)"]
@@ -300,7 +300,7 @@ A sanity check that every user-story verb has a home in the system map. **Source
 | open output folder / grab files                                    | Reveal in folder → `revealOutputFolder` server action → OS shell      | Story 1 ("opens the output folder")          |
 | check logo / colors / prohibited words                             | Compliance Checker                                                     | Story 2 (Priya)                              |
 | badge each output OK / WARN / FAIL                                 | Compliance Checker → Badge UI                                          | Story 2                                      |
-| drill into flagged creative for full detail                        | Compliance Detail → `report.json`                                      | Story 2 ("opens the report")                 |
+| drill into flagged creative for full detail                        | Creative Detail → `report.json`                                        | Story 2 ("opens the report")                 |
 | write `brief.json`                                                 | Run Orchestrator                                                       | Story 1                                      |
 | write `report.json` (counts, creatives[], errors[])                | Reporter                                                               | Story 1 + Story 2                            |
 | aggregate step failures into `errors[]` (run never aborts)         | Run Orchestrator → Reporter                                            | Story 1 ("not blocked") + README             |
