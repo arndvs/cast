@@ -179,8 +179,8 @@ Two input paths, one folder, one resolver. Maya doesn't have to learn the slug r
 **Asset filename convention** (single source of truth — used by Resolver, Upload route, and Detected Assets panel):
 
 - Product name → slug: lowercase, non-alphanumeric runs collapsed to `-`, leading/trailing `-` stripped.
-  - `"Sparkling Citrus"` → `sparkling-citrus`
-  - `"Energy Drink Pro"` → `energy-drink-pro`
+  - `"Brisa Citrus"` → `brisa-citrus`
+  - `"Volt Original"` → `volt-original`
 - Slugs must match `SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/` server-side. Non-conforming → 400.
 - **Asset extension matrix** — the only authoritative answer to “which extensions are allowed where?”:
 
@@ -207,8 +207,8 @@ Two input paths, one folder, one resolver. Maya doesn't have to learn the slug r
 
 | Brief product        | Resolver looks for                     | Panel shows                                       |
 | -------------------- | -------------------------------------- | ------------------------------------------------- |
-| `"Sparkling Citrus"` | `sparkling-citrus.{png,jpg,jpeg,webp}` | found: `sparkling-citrus.png` (using local asset) |
-| `"Energy Drink Pro"` | `energy-drink-pro.{png,jpg,…}`         | no asset found — will generate via GenAI          |
+| `"Brisa Citrus"`     | `brisa-citrus.{png,jpg,jpeg,webp}`     | found: `brisa-citrus.png` (using local asset)     |
+| `"Brisa Berry"`      | `brisa-berry.{png,jpg,…}`              | no asset found — will generate via GenAI          |
 
 The panel re-scans whenever the brief's product list changes _or_ an upload completes. This makes the resolver's behavior _visible before commitment_, which kills a whole class of "why did it generate when I had a photo?" demo questions.
 
@@ -229,9 +229,9 @@ Three endpoints, two of them tiny:
 ```
 POST /api/upload
 Content-Type: multipart/form-data
-Fields: productSlug=sparkling-citrus, file=<binary>
+Fields: productSlug=brisa-citrus, file=<binary>
 
-Response: { "ok": true, "path": "inputs/assets/sparkling-citrus.png" }
+Response: { "ok": true, "path": "inputs/assets/brisa-citrus.png" }
 
 Constraints (enforced server-side, single source of truth):
   - productSlug must match SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/ → else 400
@@ -244,10 +244,10 @@ Constraints (enforced server-side, single source of truth):
   - Path constructed via safeJoin("inputs", `${slug}.${ext}`) — rejects
     traversal even if SLUG_RE is bypassed.
 
-GET /api/detected-assets?slugs=sparkling-citrus,energy-drink-pro
+GET /api/detected-assets?slugs=brisa-citrus,brisa-berry
 Response: [
-  { "slug": "sparkling-citrus", "foundFile": "sparkling-citrus.png" },
-  { "slug": "energy-drink-pro", "foundFile": null }
+  { "slug": "brisa-citrus", "foundFile": "brisa-citrus.png" },
+  { "slug": "brisa-berry", "foundFile": null }
 ]
   — called on S1 mount (immediate), on brief edit (300ms debounced),
     and after each successful upload (immediate)
@@ -261,9 +261,9 @@ Body: <brief JSON> (validated against briefSchema — single Zod schema
 
 Response: text/x-ndjson  (streamed)
   { "type": "step", "message": "run started" }
-  { "type": "asset_resolved", "product": "sparkling-citrus", "source": "local" }
-  { "type": "creative_ready", "product": "sparkling-citrus", "market": "us-en", "ratio": "1x1", "path": "outputs/..." }
-  { "type": "compliance_result", "product": "sparkling-citrus", "market": "us-en", "ratio": "1x1", "badge": "OK", "checks": {...} }
+  { "type": "asset_resolved", "product": "brisa-citrus", "source": "local" }
+  { "type": "creative_ready", "product": "brisa-citrus", "market": "us-en", "ratio": "1x1", "path": "outputs/..." }
+  { "type": "compliance_result", "product": "brisa-citrus", "market": "us-en", "ratio": "1x1", "badge": "OK", "checks": {...} }
   ...
   { "type": "complete", "manifest": { "campaign": "...", "brand": "...", "outputDir": "/abs/path/outputs/...", "creatives": [...] } }
 ```
@@ -333,7 +333,7 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
 ```json
 {
   "campaign": "summer-refresh-2026",
-  "brand": "sparkling-co",
+  "brand": "brisa",
   "outputDir": "/Users/aaron/dev/clients/adobe/cast/outputs/summer-refresh-2026",
   "counts": {
     "requested": 12,
@@ -345,18 +345,18 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
   },
   "creatives": [
     {
-      "product": "sparkling-citrus",
+      "product": "brisa-citrus",
       "market": "us-en",
       "ratio": "1x1",
       "source": "local",
-      "path": "outputs/summer-refresh-2026/us-en/sparkling-citrus/1x1.png",
+      "path": "outputs/summer-refresh-2026/us-en/brisa-citrus/1x1.png",
       "compliance": {
         "badge": "OK",
         "checks": { "logoPresent": true, "colorsOk": true, "bannedWords": [] }
       }
     },
     {
-      "product": "sparkling-berry",
+      "product": "brisa-berry",
       "market": "mx-es",
       "ratio": "9x16",
       "source": "genai",
@@ -369,7 +369,7 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
   ],
   "errors": [
     {
-      "product": "sparkling-berry",
+      "product": "brisa-berry",
       "market": "mx-es",
       "ratio": "9x16",
       "stage": "genai",
@@ -411,7 +411,11 @@ inputs/brands/[brand-slug]/
 \u2514\u2500\u2500 banned-words.json?  # optional brand-specific term list
 ```
 
-The repo ships `inputs/brands/sparkling-co/` for the demo. Onboarding a new brand is a directory drop \u2014 no code change. The Asset Resolver, prompt builder, and compliance checker all read from this directory based on `brief.brand`.
+The repo ships two demo profiles (`inputs/brands/brisa/` and `inputs/brands/volt/`), modeling the sub-brands of a fictional Onda Beverages portfolio. Onboarding a new brand is a directory drop — no code change. The Asset Resolver, prompt builder, and compliance checker all read from this directory based on `brief.brand`.
+
+**One brand per brief.** A brief targets exactly one brand; portfolio runs are sequential briefs (Brisa run → Volt run → ...). Mixing brands in one brief breaks the brand-voice promise: each sub-brand has its own palette, banned-words list, and tone. Multi-brand briefs are listed in [§8 Future scope](#8-future-scope-v2--explicitly-out-of-poc).
+
+**Brand discovery in S1.** S1's brand selector lists every directory found under `inputs/brands/`. Either expose this via a tiny endpoint (`GET /api/brands` → `[{ slug, displayName }]` from `brand.json`) or fold it into the existing detected-assets read. Adding a profile makes it available in the UI on next page load — no rebuild.
 
 ### GenAI provider (D9)
 
@@ -498,6 +502,7 @@ Captured here so the POC's omissions are deliberate, not accidental:
 - **Translation API** — auto-fill `message{}` for missing locales.
 - **Multi-logo per brand** — primary/secondary/dark/light variants selected per ratio.
 - **Per-market brand variations** — region-specific palette/voice overrides under `inputs/brands/[brand]/markets/[market]/`.
+- **Multi-brand campaign briefs** — single brief targeting multiple sub-brands in one run (e.g. an Onda portfolio launch covering both Brisa and Volt). Requires a `brands[]` field, per-product brand tagging, an extra `[brand]` segment in the output tree, and per-product compliance switching. Out of POC because it changes the campaign contract and dilutes the brand-voice promise; portfolio runs today are sequential single-brand briefs.
 - **Motion creatives** — animated outputs (5-second loops, `.gif` and `.mp4` parallel to `.png` per ratio). Pipeline fan-out becomes `(product × market × ratio × format)`. Resolver, compositor, and storage each gain a format axis. Compliance gains motion-specific checks (frame-1 logo presence, looping integrity).
 
 ---

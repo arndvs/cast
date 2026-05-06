@@ -83,13 +83,13 @@ Using the Inform → Engage → Invite framework.
 
 - Pre-loaded example brief in a JSON editor (editable)
 - Campaign name, brand, audience, message fields surfaced as readable form
-- Brand slug field with validation against `inputs/brands/[brand]/` (errors inline if missing)
+- Brand selector \u2014 dropdown listing every directory under `inputs/brands/` (slug + display name from each brand's `brand.json`). Required; one brand per brief. Demo ships two profiles (`brisa`, `volt`) modeling sub-brands of the fictional Onda Beverages portfolio. Selection drives palette swatches, voice preview, banned-words list, and prompt preview shown elsewhere on the screen.
 - Markets field — typeahead input accepting any conforming `<region>-<lang>` value; suggestion list seeds common values (`us-en`, `mx-es`, `de-de`, `jp-ja`)
 - Ratios picker — three pill toggles (`1:1`, `9:16`, `16:9`); default all checked; at least one must remain selected
 - Products list — each row shows: name, sku, slug preview
 - Per-product drop zone (shadcn-dropzone) — drag target visible
 - Detected Assets panel — per-product status:
-  - found: `sparkling-citrus.png` — using local asset
+  - found: `brisa-citrus.png` — using local asset
   - missing: no asset found — will generate via GenAI
 - Read-only prompt preview — shows the prompt that will hit OpenAI per missing product (assembled from brand `voice.json` + product overrides)
 - Pre-flight banned-words check — if any locale's `message` contains a banned word for this brand, the Generate button is disabled with an inline warning
@@ -122,9 +122,9 @@ Using the Inform → Engage → Invite framework.
 
 - Live pipeline log — NDJSON events rendered as they stream:
   - `step` → grey log line: "Parsing brief..."
-  - `asset_resolved` → green/amber line: "sparkling-citrus — using local asset" / "energy-drink — generating via GenAI"
-  - `creative_ready` → cyan line: "sparkling-citrus 1:1 → composed"
-  - `compliance_result` → badge line: "sparkling-citrus 1:1 — OK"
+  - `asset_resolved` → green/amber line: "brisa-citrus — using local asset" / "brisa-berry — generating via GenAI"
+  - `creative_ready` → cyan line: "brisa-citrus 1:1 → composed"
+  - `compliance_result` → badge line: "brisa-citrus 1:1 — OK"
   - `error` → red line: error message
 - Progress indicator — products × markets × ratios (e.g. "4 of 12 creatives done")
 - Brief is locked — editor not visible, shows campaign name only

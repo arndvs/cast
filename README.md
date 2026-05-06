@@ -28,10 +28,10 @@ The app starts with `inputs/brief.json` pre-loaded. Click **Generate** to run th
 ```json
 {
   "campaign": "summer-refresh-2026",
-  "brand": "sparkling-co",
+  "brand": "brisa",
   "products": [
-    { "name": "Sparkling Citrus", "sku": "SPK-CIT-12" },
-    { "name": "Sparkling Berry", "sku": "SPK-BRY-12" }
+    { "name": "Brisa Citrus", "sku": "BRS-CIT-12" },
+    { "name": "Brisa Berry", "sku": "BRS-BRY-12" }
   ],
   "markets": ["us-en", "mx-es"],
   "audience": "18-34, urban, health-conscious",
@@ -51,20 +51,20 @@ Drop product photos into the per-product drop zone in the UI (or pre-place files
 outputs/
 └── summer-refresh-2026/
     ├── us-en/
-    │   ├── sparkling-citrus/
+    │   ├── brisa-citrus/
     │   │   ├── 1x1.png
     │   │   ├── 9x16.png
     │   │   └── 16x9.png
-    │   └── sparkling-berry/
+    │   └── brisa-berry/
     │       ├── 1x1.png
     │       ├── 9x16.png
     │       └── 16x9.png
     ├── mx-es/
-    │   ├── sparkling-citrus/
+    │   ├── brisa-citrus/
     │   │   ├── 1x1.png
     │   │   ├── 9x16.png
     │   │   └── 16x9.png
-    │   └── sparkling-berry/
+    │   └── brisa-berry/
     │       ├── 1x1.png
     │       ├── 9x16.png
     │       └── 16x9.png
@@ -88,7 +88,7 @@ File path shape: `outputs/[campaign]/[market]/[product]/[ratio].png`. The locale
 | **Path I/O safety**   | `safeJoin` helper + `SLUG_RE` validation at every boundary                  | `revealOutputFolder`, `/api/upload`, `/api/detected-assets`, and Sharp file reads all interpolate user-influenced strings. Validating every path is a child of a known root prevents traversal. `execFile` with explicit argv prevents shell injection.   |
 | **Upload limits**     | 5 MB max, MIME-allowlisted (PNG / JPEG / WebP), canonical extension mapping | Sharp can OOM on very large files. Canonical extension mapping (`jpeg → .jpg`) prevents stale-shadow files when re-uploading.                                                                                                                             |
 | **Compliance checks** | Heuristic — logo presence, brand-color sampling, banned-word list         | Demonstrates the surface; not a substitute for legal review.                                                                                                                                                                                              |
-| **Per-brand profile** | Required `brand` slug → `inputs/brands/[brand]/` directory                  | Cast serves arbitrary clients. Brand identity (colors, voice, logo, font, banned words) lives per-brand on disk; a new brand is a directory drop, not a code change. Demo brand `sparkling-co` ships with the repo.                                       |
+| **Per-brand profile** | Required `brand` slug → `inputs/brands/[brand]/` directory                  | Cast serves arbitrary clients. Brand identity (colors, voice, logo, font, banned words) lives per-brand on disk; a new brand is a directory drop, not a code change. The demo ships two profiles — `brisa` (sparkling water) and `volt` (energy) — sub-brands of the fictional Onda Beverages parent. One brief targets one brand; portfolio runs are sequential briefs.                                       |
 | **GenAI provider**    | OpenAI — `dall-e-3` default (3 native ratios), `gpt-image-1` on `--cheap` | `dall-e-3` natively renders 1024×1024 / 1792×1024 / 1024×1792, so the three ratios are three API calls with no center-crop loss. `--cheap` collapses to one `gpt-image-1` call + Sharp center-crop for budget-constrained demos.                       |
 | **Daily spend cap**   | `DAILY_GENERATION_LIMIT` env (default 50)                                  | POC demo discipline. Hard cap on GenAI calls per local day; counter is browser-LocalStorage for S1 read-out plus in-memory server counter for enforcement.                                                                                                |
 
@@ -123,7 +123,9 @@ inputs/brands/[brand-slug]/
 └── banned-words.json?  # optional, brand-specific
 ```
 
-Reference it from a brief: `"brand": "[brand-slug]"`. No code change. The repo ships `inputs/brands/sparkling-co/` for the demo — use it as a template.
+Reference it from a brief: `"brand": "[brand-slug]"`. No code change. The repo ships two demo profiles — `inputs/brands/brisa/` (sparkling water) and `inputs/brands/volt/` (energy) — representing two sub-brands of the fictional Onda Beverages portfolio. Use them as templates.
+
+S1's brand selector lists every directory found under `inputs/brands/`, so adding a new profile makes it available in the UI on the next page load.
 
 ---
 

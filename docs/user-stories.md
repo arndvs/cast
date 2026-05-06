@@ -6,17 +6,19 @@
 
 ## Story 1 — Maya, Creative Producer
 
-Maya is a creative producer at a global consumer goods company. This month she needs to ship a campaign for two products — a sparkling water and an energy drink — across multiple markets. That's 2 products × 3 aspect ratios per market, and she has four other campaigns on her plate.
+Maya is a creative producer at Onda Beverages, a global beverage holding company whose portfolio includes Brisa (sparkling water), Volt (energy), and several other sub-brands. Each sub-brand has its own voice, palette, logo, and banned-words list — her job is to keep them straight while shipping fast.
+
+This month she's running a Brisa summer refresh — two flavors (Brisa Citrus, Brisa Berry) across multiple markets. That's 2 products × 3 aspect ratios per market, and she has four other campaigns on her plate — some Brisa, some Volt.
 
 Today she opens a brief from the brand team in a Google Doc, downloads the product photography from Dropbox, opens Photoshop, and manually resizes and re-lays out every variant. By the time she renders the 9:16 TikTok cut she's already off-brand on the 1:1 because she forgot to update the headline copy. She misses the launch window.
 
-What she wants: **open** the app in her browser, **edit** the campaign brief in the UI — products, region, audience, message — **drop** her product photos into the inputs folder, and **click Generate**. The app runs the pipeline, shows her what's happening step by step, and displays the finished creatives organized by product and ratio right in the browser. If a product photo is missing the tool generates a stand-in hero image so she's not blocked.
+What she wants: **open** the app in her browser, **pick the brand** this campaign is for from a list of Onda's sub-brands, **edit** the campaign brief in the UI — products, markets, audience, message — **drop** her product photos into the inputs folder, and **click Generate**. The app runs the pipeline against the selected brand's profile (colors, voice, logo, font, banned words), shows her what's happening step by step, and displays the finished creatives organized by market, product, and ratio right in the browser. If a product photo is missing the tool generates a stand-in hero image so she's not blocked.
 
 The brief supports localized messages — Maya can provide copy in multiple locales and the pipeline composites the right message for each market run without her touching Photoshop.
 
-Success looks like: Maya **clicks Generate**, **watches** the pipeline log run in real time, **reviews** the 1:1 / 9:16 / 16:9 output grid for each product in the browser, and **opens** the output folder to grab the files — all in under three minutes.
+Success looks like: Maya **selects Brisa**, **clicks Generate**, **watches** the pipeline log run in real time, **reviews** the 1:1 / 9:16 / 16:9 output grid for each product in the browser, and **opens** the output folder to grab the files — all in under three minutes. Tomorrow she'll do the same thing for Volt without learning a new tool.
 
-**Key verbs:** opens app, edits brief, clicks generate, watches pipeline log, reviews output grid, downloads files
+**Key verbs:** opens app, selects brand, edits brief, clicks generate, watches pipeline log, reviews output grid, downloads files
 
 ---
 

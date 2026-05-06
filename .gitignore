@@ -22,10 +22,12 @@ next-env.d.ts
 /inputs/assets/*
 !/inputs/assets/.gitkeep
 
-# Per-brand profiles — ignore by default, allowlist demo brand
+# Per-brand profiles — ignore by default, allowlist demo brands (Onda portfolio)
 /inputs/brands/*/
-!/inputs/brands/sparkling-co/
-!/inputs/brands/sparkling-co/**
+!/inputs/brands/brisa/
+!/inputs/brands/brisa/**
+!/inputs/brands/volt/
+!/inputs/brands/volt/**
 
 # Test + build caches
 coverage/
