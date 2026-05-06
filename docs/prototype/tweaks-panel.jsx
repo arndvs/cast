@@ -286,7 +286,32 @@ function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
     window.addEventListener('mouseup', up);
   };
 
-  if (!open) return null;
+  if (!open) {
+    // Standalone mode: when the prototype is not embedded in a host frame,
+    // the postMessage protocol can never deliver __activate_edit_mode, so
+    // expose an in-page gear button as the documented entry point.
+    let isStandalone = false;
+    try { isStandalone = window.parent === window; } catch (_) { /* cross-origin: hosted */ }
+    if (!isStandalone) return null;
+    return (
+      <>
+        <style>{__TWEAKS_STYLE}</style>
+        <button
+          type="button"
+          className="twk-gear"
+          aria-label="Open tweaks panel"
+          title="Open tweaks panel"
+          onClick={() => setOpen(true)}
+          style={{
+            position: 'fixed', right: 16, bottom: 16, zIndex: 9999,
+            width: 40, height: 40, borderRadius: 20, border: '1px solid #444',
+            background: '#1f1f22', color: '#eee', fontSize: 18, cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          }}
+        >⚙</button>
+      </>
+    );
+  }
   return (
     <>
       <style>{__TWEAKS_STYLE}</style>

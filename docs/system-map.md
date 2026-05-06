@@ -134,7 +134,6 @@ graph TB
     Editor -->|brief| GenerateAPI
     Editor -->|brand list| BrandsAPI
     Editor -->|brand detail · banned-words union · logo variants| BrandDetailAPI
-    Editor -->|cap + mode| CapAPI
     BrandsAPI -->|enumerates| BrandProfile
     BrandDetailAPI -->|reads + Zod-validates| BrandProfile
     GenerateAPI -->|loadBrandProfile · integrity check| BrandProfile
