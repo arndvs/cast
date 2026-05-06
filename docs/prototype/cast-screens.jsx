@@ -331,9 +331,9 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
               <div className="card-b">
                 <div className="chip-row">
                   {[
-                    { v: "1:1",  l: "1:1 · Square" },
-                    { v: "9:16", l: "9:16 · Story" },
-                    { v: "16:9", l: "16:9 · Landscape" },
+                    { v: "1x1",  l: "1:1 · Square" },
+                    { v: "9x16", l: "9:16 · Story" },
+                    { v: "16x9", l: "16:9 · Landscape" },
                   ].map((r) => {
                     const on = brief.ratios.includes(r.v);
                     return (
@@ -382,7 +382,7 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
                   const fileName = uploadObj ? uploadObj.name : `${p.slug}.png`;
                   const willGenerate = !has;
                   const previewMarket = brief.markets[0] || "us-en";
-                  const previewRatio  = brief.ratios[0]  || "1:1";
+                  const previewRatio  = brief.ratios[0]  || "1x1";
                   const promptPreview = willGenerate
                     ? CAST.buildPromptPreview({ brand, product: p, market: previewMarket, ratio: previewRatio })
                     : null;
@@ -528,7 +528,7 @@ function S2RunView({ state, dispatch }) {
 
 function CreativeTile({ creative, brand, uploadedAssets, onClick }) {
   const product = brand.products.find((p) => p.slug === creative.product);
-  const ratioClass = creative.ratio === "9:16" ? "creative-9-16" : creative.ratio === "16:9" ? "creative-16-9" : "";
+  const ratioClass = creative.ratio === "9x16" ? "creative-9-16" : creative.ratio === "16x9" ? "creative-16-9" : "";
   const isFailed = creative.path === null;
   const klass = isFailed ? "failed" : creative.badge === "WARN" ? "warn" : "";
   const upload = uploadedAssets && uploadedAssets[creative.product];
@@ -552,7 +552,7 @@ function CreativeTile({ creative, brand, uploadedAssets, onClick }) {
           <>
             <div className="product-name">{creative.productName}</div>
             <div className="message">{creative.message}</div>
-            {creative.subheadline && creative.ratio !== "9:16" && (
+            {creative.subheadline && creative.ratio !== "9x16" && (
               <div className="sub-message">{creative.subheadline}</div>
             )}
             {creative.cta && <div className="cta-pill" style={{ color: product.hex }}>{creative.cta}</div>}
@@ -667,7 +667,7 @@ function S4CreativeDetail({ creative, brand, onClose }) {
   const product = brand.products.find((p) => p.slug === creative.product);
   const stages = ["resolve", "genai", "resize", "compose", "compliance", "write"];
   const failedIdx = isError ? stages.indexOf(creative.stage) : -1;
-  const path = creative.path || `outputs/.../${creative.product}/${creative.ratio.replace(":", "x")}.png`;
+  const path = creative.path || `outputs/.../${creative.product}/${creative.ratio}.png`;
   const copyPath = () => navigator.clipboard && navigator.clipboard.writeText(path);
 
   return (
@@ -681,7 +681,7 @@ function S4CreativeDetail({ creative, brand, onClose }) {
               <>
                 <div className="product-name">{creative.productName}</div>
                 <div className="message">{creative.message}</div>
-                {creative.subheadline && creative.ratio !== "9:16" && (
+                {creative.subheadline && creative.ratio !== "9x16" && (
                   <div className="sub-message">{creative.subheadline}</div>
                 )}
                 {creative.cta && <div className="cta-pill" style={{ color: product.hex }}>{creative.cta}</div>}
