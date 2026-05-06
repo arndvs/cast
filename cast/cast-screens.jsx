@@ -66,6 +66,56 @@ function Dropzone({ slug, fileName, dataUrl, onUpload }) {
   );
 }
 
+function MarketsTypeahead({ brief, dispatch }) {
+  const [q, setQ] = useState("");
+  const [err, setErr] = useState("");
+  const MARKET_RE = /^[a-z]{2}-[a-z]{2}$/;
+  const ql = q.trim().toLowerCase();
+  const suggestions = useMemo(() => {
+    if (!ql) return [];
+    return CAST.ALL_MARKETS.filter((m) => {
+      if (brief.markets.includes(m.code)) return false;
+      return m.code.includes(ql) || m.name.toLowerCase().includes(ql) || (m.language || "").toLowerCase().includes(ql);
+    }).slice(0, 6);
+  }, [ql, brief.markets]);
+
+  const add = (code) => {
+    dispatch({ type: "toggleMarket", code });
+    setQ(""); setErr("");
+  };
+  const onKey = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (suggestions[0]) return add(suggestions[0].code);
+      if (MARKET_RE.test(ql)) return add(ql);
+      setErr(`expected lowercase “xx-yy” (e.g. de-de), got “${q}”`);
+    }
+  };
+
+  return (
+    <div className="market-type">
+      <input
+        className="market-type-input"
+        placeholder="add market — type code or country (e.g. de-de, japan)"
+        value={q}
+        onChange={(e) => { setQ(e.target.value); setErr(""); }}
+        onKeyDown={onKey}
+      />
+      {suggestions.length > 0 && (
+        <div className="market-suggest">
+          {suggestions.map((m) => (
+            <button key={m.code} className="market-suggest-row" onClick={() => add(m.code)} title={`Add ${m.code}`}>
+              <span className="ms-code">{m.code}</span>
+              <span className="ms-name">{m.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {err && <div className="field-error">{err}</div>}
+    </div>
+  );
+}
+
 function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
   const { brand, brief, brandSlug, uploadedAssets, logoVariant } = state;
   const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -248,6 +298,7 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
             <div className="card">
               <div className="card-h">Markets <span className="card-sub">target locales for localized copy</span></div>
               <div className="card-b">
+                <MarketsTypeahead brief={brief} dispatch={dispatch} />
                 <div className="chip-row">
                   {CAST.ALL_MARKETS.map((m) => {
                     const on = brief.markets.includes(m.code);
@@ -257,6 +308,13 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
                       </span>
                     );
                   })}
+                  {brief.markets
+                    .filter((c) => !CAST.ALL_MARKETS.some((m) => m.code === c))
+                    .map((c) => (
+                      <span key={c} className="pick-chip on custom" onClick={() => dispatch({ type: "toggleMarket", code: c })} title="custom market — click to remove">
+                        <span className="ck">✓</span>{c} <span className="ms-tag">custom</span>
+                      </span>
+                    ))}
                 </div>
               </div>
             </div>
