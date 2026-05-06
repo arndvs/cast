@@ -107,6 +107,7 @@ See [docs/](docs/) for the full design trail: [user stories](docs/user-stories.m
 - **No run history.** Each Generate run is independent. No multi-run comparison view in the POC.
 - **Symlinks under `inputs/` and `outputs/` are not followed safely.** Production hardening would add `realpath` re-validation; out of POC scope.
 - **Localized message support is provided-not-translated.** The brief carries a locale → string map; the pipeline composites the right one. It does not call a translation API.
+- **`manifest.outputDir` is an absolute filesystem path exposed to the client by design.** S5 (Reveal in file explorer) needs an absolute path to hand to the OS shell command. Acceptable in a localhost-only POC; for any networked deployment, the manifest would expose only the repo-relative `creatives[].path` and the reveal action would resolve absolutes server-side.
 
 ---
 

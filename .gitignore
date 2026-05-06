@@ -22,6 +22,9 @@ next-env.d.ts
 /inputs/assets/*
 !/inputs/assets/.gitkeep
 
+# Reference brief ships with the repo (Story 3 — Aaron's demo)
+!/inputs/brief.json
+
 # Per-brand profiles — ignore by default, allowlist demo brands (Onda portfolio)
 /inputs/brands/*/
 !/inputs/brands/brisa/
