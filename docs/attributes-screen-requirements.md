@@ -82,6 +82,7 @@ Using the Inform → Engage → Invite framework.
 **Inform — what the user sees:**
 
 - Pre-loaded example brief in a JSON editor (editable)
+- GenAI mode badge — reads `CAST_GENAI_MODE` (default | cheap) via `GET /api/cap`. Read-only; surfaces which model the run will hit before Generate fires.
 - Campaign name, brand, audience, message fields surfaced as readable form
 - Brand selector \u2014 dropdown listing every directory under `inputs/brands/` (slug + display name from each brand's `brand.json`). Required; one brand per brief. Demo ships two profiles (`brisa`, `volt`) modeling sub-brands of the fictional Onda Beverages portfolio. Selection drives palette swatches, voice preview, banned-words list, and prompt preview shown elsewhere on the screen.
 - Markets field — typeahead input accepting any conforming `<region>-<lang>` value; suggestion list seeds common values (`us-en`, `mx-es`, `de-de`, `jp-ja`)
