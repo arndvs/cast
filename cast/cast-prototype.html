@@ -400,6 +400,13 @@
     color: var(--fg-3); text-transform: uppercase;
     letter-spacing: 0.06em;
   }
+  .detected-row .src-pill {
+    padding: 1px 6px; border-radius: 3px; border: 1px solid currentColor;
+    align-self: center; flex-shrink: 0;
+  }
+  .src-pill.src-uploaded { color: var(--accent); }
+  .src-pill.src-preplaced { color: var(--fg-3); border-style: dashed; }
+  .src-pill.src-genai { color: var(--warn, #d97706); border-style: dashed; }
   .dropzone {
     position: relative;
     border: 1px dashed var(--line-2); border-radius: var(--r-sm);
