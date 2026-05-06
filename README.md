@@ -129,7 +129,7 @@ inputs/brands/[brand-slug]/
 │   └── mono-black.png
 ├── logos.json          # { default: variantId, variants: [{ id, displayName, file }] }
 ├── font.ttf            # OFL display font
-└── banned-words.json?  # optional, brand-specific
+└── banned-words.json?  # optional brand-specific terms (added on top of lib defaults — union, never replacement)
 ```
 
 Reference it from a brief: `"brand": "[brand-slug]"`. No code change. The repo ships two demo profiles — `inputs/brands/brisa/` (sparkling water) and `inputs/brands/volt/` (energy) — representing two sub-brands of the fictional Onda Beverages portfolio. Use them as templates.

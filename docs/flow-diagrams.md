@@ -455,17 +455,41 @@ The repo ships two demo profiles (`inputs/brands/brisa/` and `inputs/brands/volt
 
 **One brand per brief.** A brief targets exactly one brand; portfolio runs are sequential briefs (Brisa run → Volt run → ...). Mixing brands in one brief breaks the brand-voice promise: each sub-brand has its own palette, banned-words list, and tone. Multi-brand briefs are listed in [§8 Future scope](#8-future-scope-v2--explicitly-out-of-poc).
 
-**Brand discovery in S1.** S1's brand selector lists every directory found under `inputs/brands/`, served by **`GET /api/brands`**:
+**Brand discovery in S1.** S1's brand selector lists every directory found under `inputs/brands/`, served by **`GET /api/brands`** (list) and **`GET /api/brands/[slug]`** (detail):
 
 ```
 GET /api/brands
 Response: [
-  { "slug": "brisa", "displayName": "Brisa",  "hasBannedWords": true  },
-  { "slug": "volt",  "displayName": "Volt",   "hasBannedWords": false }
+  { "slug": "brisa", "displayName": "Brisa" },
+  { "slug": "volt",  "displayName": "Volt"  }
 ]
+
+GET /api/brands/[slug]
+Response: {
+  "slug": "brisa",
+  "displayName": "Brisa",
+  "bannedWords": [
+    /* union: lib defaults from `lib/banned-words.ts` (`getDefaultBannedWords()`)
+       + brand-specific terms from `inputs/brands/[brand]/banned-words.json`,
+       deduped, lowercased. Defaults always apply — even when the brand file is absent. */
+  ],
+  "logos": {
+    "default": "primary-on-light",
+    "variants": [
+      { "id": "primary-on-light", "displayName": "Primary · on light", "url": "/api/brands/brisa/logos/primary-on-light" },
+      { "id": "primary-on-dark",  "displayName": "Primary · on dark",  "url": "/api/brands/brisa/logos/primary-on-dark"  },
+      { "id": "mono-white",       "displayName": "Mono · white",       "url": "/api/brands/brisa/logos/mono-white"       },
+      { "id": "mono-black",       "displayName": "Mono · black",       "url": "/api/brands/brisa/logos/mono-black"       }
+    ]
+  }
+}
+
+GET /api/brands/[slug]/logos/[id]
+Response: image/png  (the variant file, served through safeJoin against ROOTS.inputs;
+                     `inputs/` is NOT exposed as a static tree — every byte ships through this proxy)
 ```
 
-The handler enumerates `inputs/brands/*/`, validates each subdirectory's slug against `SLUG_RE`, reads `displayName` from `brand.json`, and reports whether `banned-words.json` is present (drives the S1 pre-flight UI). Adding a profile makes it available in the UI on next page load — no rebuild.
+The **list** handler enumerates `inputs/brands/*/`, validates each subdirectory's slug against `SLUG_RE`, and reads `displayName` from `brand.json`. The **detail** handler additionally returns the union banned-words list (lib defaults + brand file) and the parsed `logos.json` with proxied variant URLs. Adding a profile makes it available in the UI on next page load — no rebuild.
 
 **Brand existence + integrity check (server-side at `/api/generate` entry).** `briefSchema` validates the slug shape, not its presence on disk. Before the run starts, the orchestrator calls `loadBrandProfile(brief.brand)` which:
 
@@ -554,14 +578,16 @@ export type BrandProfile = {
   slug: string;
   brand: z.infer<typeof brandJsonSchema>;
   voice: z.infer<typeof voiceJsonSchema>;
-  bannedWords: string[]; // [] when banned-words.json is absent
+  bannedWords: string[]; // union: lib defaults + brand file (deduped, lowercased)
   logoVariants: { id: string; displayName: string; path: string }[]; // each path safeJoin-validated
   defaultLogoId: string;
   fontPath: string; // absolute, safeJoin-validated
 };
 ```
 
-**Missing `banned-words.json`** is allowed. The loader returns `bannedWords: []`, the orchestrator emits a `step` event — `{ \"type\": \"step\", \"message\": \"no banned-words list for brand X — skipping pre-flight + per-creative checks\" }` — and both client-side pre-flight and server-side per-creative checks become no-ops for that run. Optional means optional; visibility comes from the log line, not a blocked Generate.
+**Banned-words composition.** `loadBrandProfile` always returns the **union** of (a) `getDefaultBannedWords()` from `lib/banned-words.ts` — the universal floor covering violence, hate, NSFW, weapons, drugs, self-harm — and (b) the brand-specific terms in `inputs/brands/[brand]/banned-words.json` (when present). The list is deduped and lowercased. Both pre-flight (S1, via `GET /api/brands/[slug]`) and per-creative server-side checks operate on this union; defaults always apply.
+
+**Missing `banned-words.json`** is allowed and means "no brand-specific additions" — **not** "checks disabled." The loader emits a `step` event — `{ \"type\": \"step\", \"message\": \"no brand-specific banned-words for X — running default list only\" }` — and the run proceeds with only the lib defaults. Optional means optional on the brand layer, not on the floor.
 
 ### GenAI provider (D9)
 
@@ -608,10 +634,10 @@ POC ships `LocalFsStorage` resolving keys against `ROOTS = { inputs, outputs }` 
 
 ### Compliance + banned-words (D21)
 
-Banned words are checked twice:
+Banned words are checked twice, both passes operating on the same union list (lib defaults + brand file) returned by `loadBrandProfile`:
 
-- **Client-side, pre-flight** — the editor in S1 cross-references the brief's message strings against `inputs/brands/[brand]/banned-words.json`. Hits disable the Generate button with an inline warning.
-- **Server-side, post locale-resolution** — for each `(market, ratio)` the compliance checker re-checks the **resolved overlay string** (the exact string the compositor will draw, after locale lookup) against the brand's banned-words list. Hits flag the creative with `WARN` (or `FAIL` for high-severity terms) and append to `report.json`'s `errors[]`.
+- **Client-side, pre-flight** — the editor in S1 fetches the brand's union list via `GET /api/brands/[slug]` on selection and cross-references the brief's message strings using `containsBannedWord(text, list)` from `lib/banned-words.ts`. Hits disable the Generate button with an inline warning.
+- **Server-side, post locale-resolution** — for each `(market, ratio)` the compliance checker re-checks the **resolved overlay string** (the exact string the compositor will draw, after locale lookup) against the same union list. Hits flag the creative with `WARN` (or `FAIL` for high-severity terms) and append to `report.json`'s `errors[]`.
 
 This is a string check, not OCR — the server composited the text itself, so OCR'ing the rendered PNG would be redundant and unreliable on stylized fonts. Catches both authoring mistakes (early) and locale-map errors that slip past pre-flight (late).
 
@@ -734,7 +760,7 @@ Captured here so the POC's omissions are deliberate, not accidental:
 | D8  | Locale / market field shape                      | `markets: string[]` (form `<region>-<lang>`, validated by `MARKET_RE`). `message: Record<lang, string>`. No separate `locales` field; no singular `region`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | D9  | GenAI provider                                   | OpenAI Images API. `dall-e-3` default (3 native sizes, 1 call per ratio); `gpt-image-1` when `CAST_GENAI_MODE=cheap` (1 call total + Sharp center-crop).                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | D10 | Display font                                     | OFL-licensed `font.ttf` shipped per brand at `inputs/brands/[brand]/font.ttf`. Compositor loads it; no system-font fallback (deterministic across machines).                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| D11 | Per-brand profile                                | `inputs/brands/[brand]/` directory contract: `brand.json`, `voice.json`, `logos/` + `logos.json` (D27), `font.ttf`, optional `banned-words.json`. Validated by `brandProfileSchema`. Demo brands `brisa` and `volt` ship with the repo (sub-brands of fictional Onda Beverages).                                                                                                                                                                                                                                                                                                                                                                     |
+| D11 | Per-brand profile                                | `inputs/brands/[brand]/` directory contract: `brand.json`, `voice.json`, `logos/` + `logos.json` (D27), `font.ttf`, optional `banned-words.json` (additive on top of `lib/banned-words.ts` defaults — union, never replacement). Validated by `brandProfileSchema`. Demo brands `brisa` and `volt` ship with the repo (sub-brands of fictional Onda Beverages).                                                                                                                                                                                                                                                                                                                                                                     |
 | D12 | Path safety: `safeJoin`                          | Every filesystem write resolves through `safeJoin(rootKey, ...segments)` against `ROOTS = { inputs, outputs }`; mismatch throws.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | D13 | Path safety: regex-validated tokens + `execFile` | `[campaign]`, `[brand]`, `[product-slug]`, `[market]` validated against `SLUG_RE` / `MARKET_RE` before `safeJoin`. Shell calls use `execFile` + explicit argv.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | D14 | Streaming render mode                            | S2 log + progress update incrementally on each NDJSON event; output grid hydrates only on the terminal `complete` event (no flicker, clean S2→S3 transition).                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
