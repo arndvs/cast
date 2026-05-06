@@ -210,7 +210,7 @@ sequenceDiagram
         else asset missing
             Note over Res,AI: mode = dall-e-3 (default) | gpt-image-1 (cheap)<br/>D31: retry 429/5xx ×3 (1s/4s/16s ±25% jitter)<br/>Retry-After honored ≤ 30s; no provider swap
             Res->>AI: generate hero image
-            alt GenAI ok (source = genai, increments generated; cap +1 once)
+            alt GenAI ok (source = genai, increments generated)
                 AI-->>Res: image bytes
             else GenAI failure (retries exhausted or non-transient 4xx)
                 AI-->>Res: error (HTTP status + provider msg preserved)

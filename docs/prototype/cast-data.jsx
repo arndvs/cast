@@ -48,7 +48,7 @@ const DEFAULT_BRIEF = {
     subheadline: "Real fruit. Real fizz. Nothing else.",
     cta: "Find a store",
     messageByLocale: { en: "Crack open something brighter.", es: "Abre algo más brillante." },
-    ratios: ["1:1", "9:16", "16:9"],
+    ratios: ["1x1", "9x16", "16x9"],
   },
   volt: {
     campaign: "launch-spark-2026",
@@ -61,7 +61,7 @@ const DEFAULT_BRIEF = {
     subheadline: "Zero crash. Pure focus.",
     cta: "Get yours",
     messageByLocale: { en: "Charge through the night.", de: "Lade dich auf für die Nacht." },
-    ratios: ["1:1", "9:16", "16:9"],
+    ratios: ["1x1", "9x16", "16x9"],
   },
 };
 
@@ -78,7 +78,7 @@ function buildCreatives(brand, brief, scenario, genaiMode, uploadedAssets) {
       out[mkt][p.slug] = brief.ratios.map((r, ri) => {
         const key = `${mkt}/${p.slug}/${r}`;
         let badge = "OK";
-        let path = `outputs/${brief.campaign}/${mkt}/${p.slug}/${r.replace(":", "x")}.png`;
+        let path = `outputs/${brief.campaign}/${mkt}/${p.slug}/${r}.png`;
         let stage = null;
         let stageMsg = null;
         // Structured compliance checks (mirrors uploads)
@@ -92,7 +92,7 @@ function buildCreatives(brand, brief, scenario, genaiMode, uploadedAssets) {
         if (sc === "all-clean") {
           // leave clean
         } else if (sc === "mixed") {
-          if (pi === 0 && r === "9:16" && mkt === brief.markets[0]) {
+          if (pi === 0 && r === "9x16" && mkt === brief.markets[0]) {
             badge = "WARN";
             checks = checks.map((c) =>
               c.name === "Brand colors"
@@ -100,7 +100,7 @@ function buildCreatives(brand, brief, scenario, genaiMode, uploadedAssets) {
                 : c
             );
           }
-          if (pi === 1 && r === "16:9" && mkt === brief.markets[1]) {
+          if (pi === 1 && r === "16x9" && mkt === brief.markets[1]) {
             badge = "FAIL"; path = null;
             stage = "genai";
             stageMsg = "OpenAI 429 rate limit — retried 3× (1s/4s/16s) then failed";
@@ -184,7 +184,7 @@ function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
       push("step", "init", `market: ${mkt} \u2014 locale=${mkt.split("-").pop()}`);
       push("step", "resolve", `resolving assets for ${brand.products.length} products`);
       push("step", "genai", cheap
-        ? "generating 1 master via dall-e-3 (Sharp downsizes 3 ratios)"
+        ? "generating 1 master via gpt-image-1 (Sharp downsizes 3 ratios)"
         : "generating fallback asset via dall-e-3");
     });
     push("warn", "genai", "\u2014 no NDJSON for 60s \u2014 stream considered idle (D30)");
@@ -201,9 +201,9 @@ function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
       } else {
         push("warn", "resolve", `missing hero asset for product: ${p.name}`, { sku: p.sku });
         push("step", "genai", cheap
-          ? `generating 1 master via dall-e-3 (Sharp downsizes 3 ratios)`
+          ? `generating 1 master via gpt-image-1 (Sharp downsizes 3 ratios)`
           : `generating fallback asset via dall-e-3`,
-          { sku: p.sku, mode: cheap ? "dall-e-3+sharp" : "dall-e-3" });
+          { sku: p.sku, mode: cheap ? "gpt-image-1+sharp" : "dall-e-3" });
       }
     });
     push("step", "resize", "resizing assets to 3 aspect ratios");
@@ -242,9 +242,9 @@ function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
 
 function buildPromptPreview({ brand, product, market, ratio }) {
   const lang = (ALL_MARKETS.find((m) => m.code === market) || {}).language || "en";
-  const palette = brand.palette ? Object.values(brand.palette).slice(0, 3).join(", ") : "brand palette";
+  const palette = brand.colors ? Object.values(brand.colors).slice(0, 3).join(", ") : "brand palette";
   const voice = brand.voice || "on-brand";
-  const ratioHint = ratio === "1:1" ? "square" : ratio === "9:16" ? "tall (story format)" : "wide (landscape)";
+  const ratioHint = ratio === "1x1" ? "square" : ratio === "9x16" ? "tall (story format)" : "wide (landscape)";
   return [
     `Hero product photo of ${product.name} (${product.sku}).`,
     `Brand: ${brand.displayName} — ${voice}.`,
