@@ -372,6 +372,7 @@ function CreativeTile({ creative, brand, onClick }) {
       </div>
       <div className="creative-foot">
         <span className="prod">{creative.productName}</span>
+        {!isFailed && <span className="src-pill" title={`source: ${creative.source}`}>{creative.source}</span>}
         <span className="grow" />
         <span className="coord">{creative.market} · {creative.ratio}</span>
       </div>
@@ -414,9 +415,10 @@ function S3OutputGrid({ state, dispatch }) {
       <div className="summary-cards">
         <div className="summary-card requested"><div className="label">requested</div><div className="num">{counts.requested}</div></div>
         <div className="summary-card succeeded"><div className="label">succeeded</div><div className="num">{counts.succeeded}</div></div>
+        <div className="summary-card reused" title="local assets reused from inputs/assets/"><div className="label">reused</div><div className="num">{counts.reused}</div><div className="sub">from inputs/</div></div>
         <div className="summary-card generated"><div className="label">generated</div><div className="num">{counts.generated}</div><div className="sub">via dall-e-3</div></div>
-        <div className="summary-card flagged"><div className="label">flagged</div><div className="num">{counts.warn}</div></div>
-        <div className="summary-card failed"><div className="label">failed</div><div className="num">{counts.failed}</div></div>
+        <div className="summary-card flagged" title={`WARN + FAIL = ${counts.flagged} flagged (D3)`}><div className="label">WARN</div><div className="num">{counts.warn}</div></div>
+        <div className="summary-card failed"><div className="label">FAIL</div><div className="num">{counts.failed}</div></div>
       </div>
 
       <div className="filter-bar">
