@@ -81,6 +81,14 @@ export const briefSchema = z
     const seen = new Map<string, number>()
     brief.products.forEach((p, i) => {
       const slug = slugify(p.name)
+      if (slug.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["products", i, "name"],
+          message: `product name "${p.name}" slugs to an empty string; need at least one [a-z0-9] character`,
+        })
+        return
+      }
       if (seen.has(slug)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,

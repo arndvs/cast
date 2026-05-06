@@ -63,6 +63,27 @@ describe("briefSchema", () => {
     const result = briefSchema.safeParse(bad)
     expect(result.success).toBe(false)
   })
+
+  it("rejects products whose names slug to an empty string", () => {
+    const bad = {
+      campaign: "x",
+      brand: "brisa",
+      products: [{ name: "!!!", sku: "A-1" }],
+      markets: ["us-en"],
+      audience: "test",
+      message: { en: "hi" },
+      ratios: ["1x1"],
+    }
+    const result = briefSchema.safeParse(bad)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(
+        result.error.issues.some((i) =>
+          i.message.includes("empty string"),
+        ),
+      ).toBe(true)
+    }
+  })
 })
 
 describe("slugify", () => {
