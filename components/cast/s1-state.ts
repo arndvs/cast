@@ -40,11 +40,12 @@ export type RunState = "editing" | "running" | "complete" | "failed"
  */
 export type Screen = "S1" | "S2" | "S3"
 
-export type LogoVariantId =
-  | "primary-on-light"
-  | "primary-on-dark"
-  | "mono-white"
-  | "mono-black"
+/**
+ * Logo variant id. Each brand's `logos.json` manifest declares its own
+ * variant ids; the type is intentionally `string` (validated against
+ * `SLUG_RE` at boundaries) so manifests with N variants are accepted.
+ */
+export type LogoVariantId = string
 
 /**
  * In-memory upload preview for V2.

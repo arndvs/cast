@@ -40,6 +40,7 @@ export async function GET(
           variants: profile.logoVariants.map((v) => ({
             id: v.id,
             displayName: v.displayName,
+            theme: v.theme,
             url: `/api/brands/${profile.slug}/logos/${v.id}`,
           })),
         },

@@ -1,10 +1,11 @@
 {
-  "default": "primary-on-light",
+  "default": "wordmark-on-light",
   "variants": [
-    { "id": "primary-on-light", "displayName": "Primary wordmark · on light", "file": "wordmark-on-light.png" },
-    { "id": "primary-on-dark",  "displayName": "Primary wordmark · on dark",  "file": "wordmark-on-dark.png"  },
-    { "id": "mono-black",       "displayName": "Mono black wordmark",        "file": "wordmark-on-light.png" },
-    { "id": "mono-white",       "displayName": "Mono white wordmark",        "file": "wordmark-on-dark.png"  }
+    { "id": "wordmark-on-light", "displayName": "Wordmark · on light",       "file": "wordmark-on-light.png", "theme": "light" },
+    { "id": "wordmark-on-volt",  "displayName": "Wordmark · on volt yellow", "file": "wordmark-on-volt.png",  "theme": "light" },
+    { "id": "wordmark-on-dark",  "displayName": "Wordmark · on dark",        "file": "wordmark-on-dark.png",  "theme": "dark"  },
+    { "id": "wordmark-on-slate", "displayName": "Wordmark · on slate",       "file": "wordmark-on-slate.png", "theme": "dark"  },
+    { "id": "bolt-on-dark",      "displayName": "Bolt glyph · on dark",      "file": "bolt-on-dark.png",      "theme": "dark"  }
   ]
 }
 

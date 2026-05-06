@@ -90,6 +90,7 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
       id: variant.id,
       displayName: variant.displayName,
       path: variantPath,
+      theme: variant.theme,
     })
   }
 

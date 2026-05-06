@@ -15,14 +15,17 @@ These two are **existence-checked by `loadBrandProfile`** but cannot be auto-gen
 
 ### `logos/*.png`
 
-Four variants per [D27](../../../docs/flow-diagrams.md). Capture by screenshotting the wordmark stages in §02 of the brand HTML. PNG with alpha; sizing is at the screenshotter's discretion. The manifest binds D27 ids to descriptive PNG filenames; additional unmapped PNGs may live alongside for future use.
+One PNG per variant declared in `logos/logos.json`. Brisa ships 7 variants (lockup, wordmark, droplet × light/dark, plus an aqua wordmark). Each entry's `theme: "light" | "dark"` drives the editor's tile background. PNG with alpha; sizing is at the screenshotter's discretion — the compositor resizes per ratio.
 
-| Variant id (D27)   | File                       | Source in brand HTML |
-| ------------------ | -------------------------- | -------------------- |
-| `primary-on-light` | `lockup-on-light.png`      | Primary lockup on foam background |
-| `primary-on-dark`  | `lockup-on-dark.png`       | Primary lockup on mineral background |
-| `mono-black`       | `wordmark-on-light.png`    | Wordmark forced to mineral over light |
-| `mono-white`       | `wordmark-on-dark.png`     | Wordmark forced to white over dark |
+| Variant id              | File                            | Theme | Source in brand HTML |
+| ----------------------- | ------------------------------- | ----- | -------------------- |
+| `lockup-on-light`       | `lockup-on-light.png`           | light | Primary lockup on foam |
+| `lockup-on-dark`        | `lockup-on-dark.png`            | dark  | Primary lockup on mineral |
+| `wordmark-on-light`     | `wordmark-on-light.png`         | light | Wordmark on foam |
+| `wordmark-on-dark`      | `wordmark-on-dark.png`          | dark  | Wordmark on mineral |
+| `wordmark-aqua-on-dark` | `wordmark-aqua-on-dark.png`     | dark  | Aqua wordmark on mineral |
+| `droplet-on-light`      | `droplet-on-light.png`          | light | Droplet glyph on foam |
+| `droplet-on-dark`       | `droplet-on-dark.png`           | dark  | Droplet glyph on mineral |
 
 ## Validation
 

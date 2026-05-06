@@ -1,10 +1,13 @@
 {
-  "default": "primary-on-light",
+  "default": "lockup-on-light",
   "variants": [
-    { "id": "primary-on-light", "displayName": "Primary lockup · on light", "file": "lockup-on-light.png"   },
-    { "id": "primary-on-dark",  "displayName": "Primary lockup · on dark",  "file": "lockup-on-dark.png"    },
-    { "id": "mono-black",       "displayName": "Mono black wordmark",       "file": "wordmark-on-light.png" },
-    { "id": "mono-white",       "displayName": "Mono white wordmark",       "file": "wordmark-on-dark.png"  }
+    { "id": "lockup-on-light",       "displayName": "Lockup · on light",        "file": "lockup-on-light.png",       "theme": "light" },
+    { "id": "lockup-on-dark",        "displayName": "Lockup · on dark",         "file": "lockup-on-dark.png",        "theme": "dark"  },
+    { "id": "wordmark-on-light",     "displayName": "Wordmark · on light",      "file": "wordmark-on-light.png",     "theme": "light" },
+    { "id": "wordmark-on-dark",      "displayName": "Wordmark · on dark",       "file": "wordmark-on-dark.png",      "theme": "dark"  },
+    { "id": "wordmark-aqua-on-dark", "displayName": "Wordmark · aqua on dark",  "file": "wordmark-aqua-on-dark.png", "theme": "dark"  },
+    { "id": "droplet-on-light",      "displayName": "Droplet glyph · on light", "file": "droplet-on-light.png",      "theme": "light" },
+    { "id": "droplet-on-dark",       "displayName": "Droplet glyph · on dark",  "file": "droplet-on-dark.png",       "theme": "dark"  }
   ]
 }
 
