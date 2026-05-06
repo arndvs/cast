@@ -181,6 +181,8 @@ How a single click on **Generate** moves a brief through the system and back to 
 >
 > **Failure semantics.** Step-level failures (GenAI error, Sharp error, compliance exception) append to `errors[]` and the run continues — never aborts. The grid hydrates from the manifest delivered in the NDJSON `complete` event, not from a second filesystem read.
 >
+> **GenAI retry (D31).** Transient failures (`429`, `5xx`, `ETIMEDOUT`/`ECONNRESET`) retry with bounded exponential backoff (3 attempts: 1 s → 4 s → 16 s, ±25% jitter). `Retry-After` is honored, capped at 30 s so a stuck creative can't block the run past D30's 90 s stream-idle window. Non-transient `4xx` (content-policy, schema rejection) does not retry. Daily cap (D22) increments once per successful call, not per attempt. On exhaustion the `errors[]` entry carries the upstream HTTP status + provider error string verbatim. **Provider-swap fallback is out of scope** — aspect-ratio fidelity (D9) and intra-campaign visual consistency (Story 2) outrank provider uptime in a POC; `CAST_GENAI_MODE` is the operator-time toggle, not runtime.
+>
 > **Run idempotency (D15).** Generate (S1) and Retry (S2′) both clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). Validated through `safeJoin` against the `outputs` ROOT; `SLUG_RE` validates the campaign segment first. The cap file at `outputs/.cap.json` (D22) sits one level above and is unaffected.
 
 ```mermaid
@@ -207,13 +209,13 @@ sequenceDiagram
         alt asset found (source = local, increments reused)
             FS-->>Res: file path
         else asset missing
-            Note over Res,AI: mode = dall-e-3 (default) | gpt-image-1 (cheap)
+            Note over Res,AI: mode = dall-e-3 (default) | gpt-image-1 (cheap)<br/>D31: retry 429/5xx ×3 (1s/4s/16s ±25% jitter)<br/>Retry-After honored ≤ 30s; no provider swap
             Res->>AI: generate hero image
-            alt GenAI ok (source = genai, increments generated)
+            alt GenAI ok (source = genai, increments generated; cap +1 once)
                 AI-->>Res: image bytes
-            else GenAI failure
-                AI-->>Res: error
-                Res-->>Rep: push to errors[]
+            else GenAI failure (retries exhausted or non-transient 4xx)
+                AI-->>Res: error (HTTP status + provider msg preserved)
+                Res-->>Rep: push to errors[] · stage: 'genai'
             end
         end
         Res-->>Orc: hero image
