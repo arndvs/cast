@@ -67,7 +67,8 @@ const DEFAULT_BRIEF = {
 
 // ====================== CREATIVES ======================
 
-function buildCreatives(brand, brief, scenario) {
+function buildCreatives(brand, brief, scenario, genaiMode) {
+  const sc = scenario === "stream-idle" ? "mixed" : scenario;
   const out = {};
   brief.markets.forEach((mkt) => {
     out[mkt] = {};
@@ -87,9 +88,9 @@ function buildCreatives(brand, brief, scenario) {
           { name: "Text contrast", status: "OK", message: "WCAG AA" },
         ];
 
-        if (scenario === "all-clean") {
+        if (sc === "all-clean") {
           // leave clean
-        } else if (scenario === "mixed") {
+        } else if (sc === "mixed") {
           if (pi === 0 && r === "9:16" && mkt === brief.markets[0]) {
             badge = "WARN";
             checks = checks.map((c) =>
@@ -103,7 +104,7 @@ function buildCreatives(brand, brief, scenario) {
             stage = "genai";
             stageMsg = "OpenAI 429 rate limit — retried 3× (1s/4s/16s) then failed";
           }
-        } else if (scenario === "stress") {
+        } else if (sc === "stress") {
           if (ri === 1) {
             badge = "WARN";
             checks = checks.map((c) =>
@@ -133,18 +134,22 @@ function buildCreatives(brand, brief, scenario) {
   return out;
 }
 
-function buildCounts(creatives, brief) {
+function buildCounts(creatives, brief, genaiMode) {
   let succeeded = 0, failed = 0, flagged = 0, generated = 0, reused = 0, warn = 0;
+  const genaiProducts = new Set();
   Object.values(creatives).forEach((mkt) =>
     Object.values(mkt).forEach((arr) =>
       arr.forEach((c) => {
         if (c.path === null) failed++;
         else { succeeded++; c.source === "genai" ? generated++ : reused++; }
+        if (c.source === "genai" && c.path !== null) genaiProducts.add(c.product + "|" + c.market);
         if (c.badge === "WARN") { flagged++; warn++; }
         else if (c.badge === "FAIL") { flagged++; }
       })
     )
   );
+  // D9 cheap mode: 1 master image per (product, market), Sharp downsizes the rest.
+  if (genaiMode === "cheap") generated = genaiProducts.size;
   const requested = brief.products.length * brief.markets.length * brief.ratios.length;
   return { requested, succeeded, failed, flagged, warn, generated, reused };
 }
@@ -152,8 +157,9 @@ function buildCounts(creatives, brief) {
 // ====================== NDJSON-STYLE LOG ======================
 // Stages match docs: init → brand → resolve → genai → resize → composite → compliance → write → complete
 
-function buildLogLines(brand, brief, creatives, scenario) {
+function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
   const lines = [];
+  const cheap = genaiMode === "cheap";
   let secs = 0;
   const stamp = (n = 0.4) => {
     secs += n;
@@ -170,7 +176,19 @@ function buildLogLines(brand, brief, creatives, scenario) {
   push("step", "brand", "brand profile loaded — palette, voice, logos, font, banned-words");
   push("step", "init", `outputs/${brief.campaign}/ cleared (D15)`);
   push("step", "init", "brief.json written");
-
+  // D30 \u2014 stream-idle scenario: pipeline starts but never finishes
+  if (scenario === "stream-idle") {
+    brief.markets.slice(0, 1).forEach((mkt) => {
+      push("step", "init", `market: ${mkt} \u2014 locale=${mkt.split("-").pop()}`);
+      push("step", "resolve", `resolving assets for ${brand.products.length} products`);
+      push("step", "genai", cheap
+        ? "generating 1 master via dall-e-3 (Sharp downsizes 3 ratios)"
+        : "generating fallback asset via dall-e-3");
+    });
+    push("warn", "genai", "\u2014 no NDJSON for 60s \u2014 stream considered idle (D30)");
+    push("error", "complete", "pipeline aborted \u2014 stream idle, no completion event received");
+    return lines;
+  }
   brief.markets.forEach((mkt) => {
     push("step", "init", `market: ${mkt} — locale=${mkt.split("-").pop()}`);
     push("step", "resolve", `resolving assets for ${brand.products.length} products`);
@@ -180,7 +198,10 @@ function buildLogLines(brand, brief, creatives, scenario) {
         push("ok", "resolve", `${p.slug} — using local asset (${p.slug}.png)`, { sku: p.sku, source: "local" });
       } else {
         push("warn", "resolve", `missing hero asset for product: ${p.name}`, { sku: p.sku });
-        push("step", "genai", `generating fallback asset via dall-e-3`, { sku: p.sku, mode: "dall-e-3" });
+        push("step", "genai", cheap
+          ? `generating 1 master via dall-e-3 (Sharp downsizes 3 ratios)`
+          : `generating fallback asset via dall-e-3`,
+          { sku: p.sku, mode: cheap ? "dall-e-3+sharp" : "dall-e-3" });
       }
     });
     push("step", "resize", "resizing assets to 3 aspect ratios");
@@ -197,7 +218,7 @@ function buildLogLines(brand, brief, creatives, scenario) {
   });
 
   push("step", "compliance", "running compliance checks");
-  const counts = buildCounts(creatives, brief);
+  const counts = buildCounts(creatives, brief, genaiMode);
   if (counts.flagged > 0) push("warn", "compliance", `${counts.flagged} creative${counts.flagged > 1 ? "s" : ""} flagged for review`);
   else push("ok", "compliance", "all creatives passed compliance");
   push("step", "write", "report.json written");

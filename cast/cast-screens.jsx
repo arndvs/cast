@@ -98,7 +98,7 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
 
         <div className="section-spacer" />
         <div className="section-h">GenAI mode</div>
-        <Badge kind="info-soft">dall-e-3 · 3 native sizes</Badge>
+        <Badge kind="info-soft">{state.genaiMode === "cheap" ? "dall-e-3 · 1 master + Sharp" : "dall-e-3 · 3 native sizes"}</Badge>
       </div>
 
       {/* MAIN */}

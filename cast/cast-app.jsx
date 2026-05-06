@@ -6,6 +6,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/ {
   layout: "tabs",
   brand: "brisa",
   scenario: "mixed",
+  genaiMode: "default",
   autoplay: true,
   logRate: 1,
 }; /*EDITMODE-END*/
@@ -14,14 +15,16 @@ function makeInitialState(tweaks) {
   const brandSlug = tweaks.brand;
   const brand = CAST.BRANDS[brandSlug];
   const brief = JSON.parse(JSON.stringify(CAST.DEFAULT_BRIEF[brandSlug]));
-  const creatives = CAST.buildCreatives(brand, brief, tweaks.scenario);
+  const creatives = CAST.buildCreatives(brand, brief, tweaks.scenario, tweaks.genaiMode);
   return {
     brandSlug,
     brand,
     brief,
     creatives,
-    counts: CAST.buildCounts(creatives, brief),
-    logLines: CAST.buildLogLines(brand, brief, creatives, tweaks.scenario),
+    scenario: tweaks.scenario,
+    genaiMode: tweaks.genaiMode,
+    counts: CAST.buildCounts(creatives, brief, tweaks.genaiMode),
+    logLines: CAST.buildLogLines(brand, brief, creatives, tweaks.scenario, tweaks.genaiMode),
     logCursor: 0,
     runState: "editing",
     screen: "S1",
@@ -32,12 +35,14 @@ function makeInitialState(tweaks) {
 }
 
 function rebuild(state, scenario) {
-  const creatives = CAST.buildCreatives(state.brand, state.brief, scenario);
+  const sc = scenario || state.scenario || "mixed";
+  const creatives = CAST.buildCreatives(state.brand, state.brief, sc, state.genaiMode);
   return {
     ...state,
+    scenario: sc,
     creatives,
-    counts: CAST.buildCounts(creatives, state.brief),
-    logLines: CAST.buildLogLines(state.brand, state.brief, creatives, scenario),
+    counts: CAST.buildCounts(creatives, state.brief, state.genaiMode),
+    logLines: CAST.buildLogLines(state.brand, state.brief, creatives, sc, state.genaiMode),
     logCursor: 0,
   };
 }
@@ -47,15 +52,16 @@ function reducer(state, action) {
     case "setBrand": {
       const brand = CAST.BRANDS[action.slug];
       const brief = JSON.parse(JSON.stringify(CAST.DEFAULT_BRIEF[action.slug]));
-      const creatives = CAST.buildCreatives(brand, brief, "mixed");
+      const sc = state.scenario || "mixed";
+      const creatives = CAST.buildCreatives(brand, brief, sc, state.genaiMode);
       return {
         ...state,
         brandSlug: action.slug,
         brand,
         brief,
         creatives,
-        counts: CAST.buildCounts(creatives, brief),
-        logLines: CAST.buildLogLines(brand, brief, creatives, "mixed"),
+        counts: CAST.buildCounts(creatives, brief, state.genaiMode),
+        logLines: CAST.buildLogLines(brand, brief, creatives, sc, state.genaiMode),
         logCursor: 0,
         runState: "editing",
         screen: "S1",
@@ -121,7 +127,7 @@ function reducer(state, action) {
         return {
           ...state,
           logCursor: state.logLines.length,
-          runState: "complete",
+          runState: state.scenario === "stream-idle" ? "failed" : "complete",
         };
       return { ...state, logCursor: next };
     }
@@ -140,15 +146,18 @@ function reducer(state, action) {
       const brief = JSON.parse(
         JSON.stringify(CAST.DEFAULT_BRIEF[action.brandSlug]),
       );
-      const creatives = CAST.buildCreatives(brand, brief, action.scenario);
+      const gm = action.genaiMode || state.genaiMode || "default";
+      const creatives = CAST.buildCreatives(brand, brief, action.scenario, gm);
       return {
         ...state,
         brandSlug: action.brandSlug,
         brand,
         brief,
         creatives,
-        counts: CAST.buildCounts(creatives, brief),
-        logLines: CAST.buildLogLines(brand, brief, creatives, action.scenario),
+        scenario: action.scenario,
+        genaiMode: gm,
+        counts: CAST.buildCounts(creatives, brief, gm),
+        logLines: CAST.buildLogLines(brand, brief, creatives, action.scenario, gm),
         logCursor: 0,
         runState: "editing",
         screen: "S1",
@@ -440,9 +449,20 @@ function CastApp() {
             value={tweaks.scenario}
             onChange={(v) => {
               setTweak("scenario", v);
-              dispatch({ type: "regen", brandSlug: tweaks.brand, scenario: v });
+              dispatch({ type: "regen", brandSlug: tweaks.brand, scenario: v, genaiMode: tweaks.genaiMode });
             }}
-            options={["all-clean", "mixed", "stress"]}
+            options={["all-clean", "mixed", "stress", "stream-idle"]}
+          />
+        </TweakSection>
+        <TweakSection label="GenAI mode (D9)">
+          <TweakRadio
+            label="Mode"
+            value={tweaks.genaiMode}
+            onChange={(v) => {
+              setTweak("genaiMode", v);
+              dispatch({ type: "regen", brandSlug: tweaks.brand, scenario: tweaks.scenario, genaiMode: v });
+            }}
+            options={["default", "cheap"]}
           />
         </TweakSection>
         <TweakSection label="Playback">
