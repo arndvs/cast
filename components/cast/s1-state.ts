@@ -16,8 +16,17 @@
 
 import { ALL_RATIOS, type AspectRatio } from "@/lib/cast/ratios"
 import { getMarket } from "@/lib/cast/markets"
-import { type Brief } from "@/lib/cast/schemas"
+import { type Brief, type ErrorStage, type Manifest } from "@/lib/cast/schemas"
+import type { PipelineEvent } from "@/lib/cast/events"
 
+/**
+ * Reasons a run can terminally fail. Pipeline-stage failures map to the
+ * canonical `ErrorStage` enum; `"stream"` covers transport-level faults the
+ * client synthesizes (idle abort, NDJSON parse errors, content-type mismatch);
+ * `"validation"` covers server-side 4xx responses where the server returned
+ * JSON instead of opening the NDJSON stream.
+ */
+export type RunErrorStage = ErrorStage | "stream" | "validation"
 // ---------------------------------------------------------------------------
 // State shape
 // ---------------------------------------------------------------------------
@@ -58,6 +67,12 @@ export interface S1State {
   uploads: Record<string, UploadPreview>
   /** Sidebar logo-variant picker — surfaces as `brief.logoVariant` on submit. */
   logoVariant: LogoVariantId
+  /** NDJSON event tape from `/api/generate` (V4). S2 renders this. */
+  events: PipelineEvent[]
+  /** Final run manifest — set when the terminal `complete` event arrives. */
+  manifest: Manifest | null
+  /** Last terminal failure (network, validation, idle abort). */
+  runError: { stage: RunErrorStage; message: string } | null
 }
 
 // ---------------------------------------------------------------------------
@@ -77,6 +92,9 @@ export type S1Action =
   | { type: "removeUpload"; productSlug: string }
   | { type: "replaceBrief"; brief: Brief }
   | { type: "generate" }
+  | { type: "pipeline-event"; event: PipelineEvent }
+  | { type: "run-error"; stage: RunErrorStage; message: string }
+  | { type: "run-reset" }
 
 // ---------------------------------------------------------------------------
 // Reducer
@@ -181,8 +199,42 @@ export function s1Reducer(state: S1State, action: S1Action): S1State {
     case "replaceBrief":
       return { ...state, brief: action.brief }
     case "generate":
-      // V4 will flip this to runState='running' + open the NDJSON stream.
-      return { ...state, runState: "running" }
+      // V4: flip to running and clear any previous run's artifacts. The
+      // shell's run-effect picks up the transition and opens the NDJSON
+      // stream against `/api/generate`.
+      return {
+        ...state,
+        runState: "running",
+        events: [],
+        manifest: null,
+        runError: null,
+      }
+    case "pipeline-event": {
+      const events = [...state.events, action.event]
+      if (action.event.type === "complete") {
+        return {
+          ...state,
+          events,
+          manifest: action.event.manifest,
+          runState: "complete",
+        }
+      }
+      return { ...state, events }
+    }
+    case "run-error":
+      return {
+        ...state,
+        runState: "failed",
+        runError: { stage: action.stage, message: action.message },
+      }
+    case "run-reset":
+      return {
+        ...state,
+        runState: "editing",
+        events: [],
+        manifest: null,
+        runError: null,
+      }
     default: {
       const _exhaustive: never = action
       void _exhaustive

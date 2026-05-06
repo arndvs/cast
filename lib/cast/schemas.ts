@@ -241,3 +241,6 @@ export const manifestSchema = z.object({
 })
 
 export type Manifest = z.infer<typeof manifestSchema>
+export type Creative = z.infer<typeof creativeSchema>
+export type ManifestError = z.infer<typeof manifestErrorSchema>
+export type Counts = z.infer<typeof countsSchema>
