@@ -1,45 +1,92 @@
 /**
  * Banned-words helpers (D21, D29).
  *
- * D29 — referential identity: S1 (client) and `/api/generate` (server) MUST
- * import `containsBannedWord` from this same module. The V4 parity test
- * asserts `import.s1 === import.server`. Do not re-implement either side.
+ * D29 — referential identity: client (S1) and server (`/api/generate`,
+ * `/api/brands/[slug]`) MUST import `containsBannedWord` from this same
+ * module. The V4 parity test asserts referential identity. Do not
+ * re-implement substring matching, normalization, or list composition
+ * anywhere else.
  *
- * Default list is the conservative POC seed; the brand profile's
- * `banned-words.json` is unioned in at the call site (V4 compliance stage).
+ * `getDefaultBannedWords()` is the universal floor (violence, hate, NSFW,
+ * weapons, drugs, self-harm). Brand-specific terms in
+ * `inputs/brands/[brand]/banned-words.json` are unioned in by the brand
+ * loader; defaults always apply.
  */
 
 const DEFAULT_BANNED_WORDS: readonly string[] = Object.freeze([
-  "guarantee",
-  "miracle",
-  "instant",
-  "cure",
-  "free",
+  // Violence / harm
+  "murder",
+  "kill",
+  "assault",
+  "torture",
+  "gore",
+  "mutilate",
+  "dismember",
+  "decapitate",
+  "slaughter",
+  "massacre",
+  "genocide",
+  // Hate speech
+  "nazi",
+  "swastika",
+  "white supremacy",
+  "ethnic cleansing",
+  // Sexual / explicit
+  "pornography",
+  "nude",
+  "naked",
+  "explicit",
+  "nsfw",
+  "hentai",
+  // Weapons / drugs
+  "bomb",
+  "explosive",
+  "meth",
+  "cocaine",
+  "heroin",
+  "fentanyl",
+  // Self-harm
+  "suicide",
+  "self-harm",
+  "cutting",
 ])
 
-/** Stable, deduped, lowercase default list. */
+/** Frozen, deduped, lowercase universal floor. */
 export function getDefaultBannedWords(): readonly string[] {
   return DEFAULT_BANNED_WORDS
 }
 
 /**
- * Whole-word, case-insensitive containment check.
+ * Return every banned-list term that appears in `text`.
  *
- * Matches on word boundaries so "energy" doesn't trigger on "energetic" — but
- * the runtime intentionally keeps the list short and literal; any nuance
- * (stems, locale-specific morphology) is the brand owner's problem.
+ * - Single words match on word boundaries (so "skill" doesn't match "kill").
+ * - Multi-word phrases match as substrings (word boundaries don't compose
+ *   cleanly across spaces).
+ * - Case-insensitive throughout. Empty/whitespace list entries are skipped.
+ *
+ * Returns `[]` when nothing matches; never throws.
  */
-export function containsBannedWord(text: string, list: readonly string[]): string[] {
+export function containsBannedWord(
+  text: string,
+  list: readonly string[],
+): string[] {
   if (!text) return []
-  const haystack = text.toLowerCase()
   const hits: string[] = []
-  for (const word of list) {
-    const w = word.toLowerCase().trim()
-    if (!w) continue
-    const re = new RegExp(`\\b${escapeRegex(w)}\\b`)
-    if (re.test(haystack)) hits.push(w)
+  const seen = new Set<string>()
+  for (const raw of list) {
+    const word = raw.toLowerCase().trim()
+    if (!word || seen.has(word)) continue
+    seen.add(word)
+    if (buildMatcher(word).test(text)) hits.push(word)
   }
   return hits
+}
+
+function buildMatcher(word: string): RegExp {
+  if (word.includes(" ")) {
+    return new RegExp(escapeRegex(word), "i")
+  }
+  return new RegExp(`\\b${escapeRegex(word)}\\b`, "i")
 }
 
 function escapeRegex(s: string): string {
