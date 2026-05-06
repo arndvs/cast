@@ -65,13 +65,15 @@ flowchart TB
         Grid --> NewRun
     end
 
-    S3 -->|click flagged tile| S4
+    S3 -->|click flagged or failed tile| S4
     S4 -->|close| S3
 
-    subgraph S4["S4 · Creative Detail"]
-        Which["Which check failed<br/>(logo · palette · banned word)"]
-        Why["Why it failed<br/>+ creative preview"]
-        Which --> Why
+    subgraph S4["S4 · Creative Detail (dual mode)"]
+        Mode{"tile.path === null?"}
+        Mode -->|no — compliance mode| Which["Which check failed<br/>(logo · palette · banned word)"]
+        Mode -->|yes — error mode| Stage["Failed stage<br/>(genai · compose · compliance · io)"]
+        Which --> Why["Why it failed<br/>+ creative preview"]
+        Stage --> ErrMsg["errors[].message<br/>+ red placeholder"]
     end
 
     OpenFolder --> S5(["OS file explorer<br/>opens outputs/[campaign]/"])
