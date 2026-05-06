@@ -155,6 +155,8 @@ graph TB
 
 How a single click on **Generate** moves a brief through the system and back to the screen.
 
+> **Concurrency model (D20).** Markets iterate sequentially in the outer loop for deterministic log order; ratios fan out via `Promise.all` per `(product, market)` pair (`par`/`and` block below).
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -184,8 +186,20 @@ sequenceDiagram
         end
         Res-->>Orc: hero image
         Orc-->>Log: step "asset ready"
-        loop for each ratio (1:1, 9:16, 16:9)
-            Orc->>Img: resize + composite message (locale)
+        par 1:1
+            Orc->>Img: resize + composite (1:1, locale)
+            Img->>Out: save creative
+            Orc->>Chk: check creative
+            Chk-->>Orc: OK / WARN / FAIL
+            Orc-->>Log: step "creative ready + badge"
+        and 9:16
+            Orc->>Img: resize + composite (9:16, locale)
+            Img->>Out: save creative
+            Orc->>Chk: check creative
+            Chk-->>Orc: OK / WARN / FAIL
+            Orc-->>Log: step "creative ready + badge"
+        and 16:9
+            Orc->>Img: resize + composite (16:9, locale)
             Img->>Out: save creative
             Orc->>Chk: check creative
             Chk-->>Orc: OK / WARN / FAIL
