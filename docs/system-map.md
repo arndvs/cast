@@ -91,7 +91,8 @@ graph TB
             BriefFile[("brief.json")]
             ReportFile[("report.json")]
         end
-        GenAI["GenAI Image API<br/>OpenAI dall-e-3 · hero fallback"]
+        GenAI["GenAI Image API<br/>OpenAI · default: dall-e-3 (3 native sizes, no crop)<br/>cheap mode: gpt-image-1 + Sharp center-crop"]
+        OS["OS shell<br/>file explorer"]
     end
 
     subgraph App["Local Next.js app — localhost:3000"]
@@ -102,8 +103,9 @@ graph TB
             DropZone["Drop Zone<br/>per-product file drop"]
             DetectedPanel["Detected Assets panel<br/>shows local vs GenAI"]
             LogView["Live Pipeline Log<br/>streamed steps"]
-            Grid["Output Grid<br/>row per product · 3 ratio cols"]
+            Grid["Output Grid<br/>row per product · 3 ratio cols<br/>hydrated from manifest"]
             BadgeUI["Compliance Badges<br/>OK / WARN / FAIL + drill-in"]
+            RevealBtn["Reveal in folder<br/>per-run action"]
         end
 
         subgraph API["API routes"]
@@ -112,6 +114,7 @@ graph TB
             GenerateAPI["POST /api/generate<br/>(NDJSON stream)"]
             BrandsAPI["GET /api/brands<br/>(brand selector source)"]
             CapAPI["GET /api/cap<br/>(daily limit + mode)"]
+            RevealAPI["POST /api/reveal<br/>revealOutputFolder · execFile"]
         end
 
         subgraph Engine["Pipeline Engine"]
@@ -121,7 +124,7 @@ graph TB
             Resizer["Image Processor<br/>Sharp · 1:1 · 9:16 · 16:9"]
             Compositor["Text Compositor<br/>localized message overlay"]
             Checker["Compliance Checker<br/>logo · palette · banned words"]
-            Reporter["Reporter<br/>writes report.json"]
+            Reporter["Reporter<br/>report.json: counts{requested · succeeded · failed ·<br/>generated · reused · flagged} · creatives[] · errors[]"]
         end
     end
 
@@ -147,11 +150,18 @@ graph TB
     Compositor --> Outputs
     Orchestrator -->|writes| BriefFile
     Checker --> Reporter
+    Resolver -.->|errors| Reporter
+    Compositor -.->|errors| Reporter
+    Checker -.->|errors| Reporter
     Reporter --> ReportFile
     Orchestrator -.->|stream| LogView
-    Outputs --> Grid
+    Reporter -.->|manifest via NDJSON complete| Grid
     Checker --> BadgeUI
     BadgeUI -.->|click| Grid
+    Grid --> RevealBtn
+    RevealBtn --> RevealAPI
+    RevealAPI -.->|opens| OS
+    OS -.->|browse| Outputs
 ```
 
 ---
@@ -161,6 +171,8 @@ graph TB
 How a single click on **Generate** moves a brief through the system and back to the screen.
 
 > **Concurrency model (D20).** Markets iterate sequentially in the outer loop for deterministic log order; ratios fan out via `Promise.all` per `(product, market)` pair (`par`/`and` block below).
+>
+> **Failure semantics.** Step-level failures (GenAI error, Sharp error, compliance exception) append to `errors[]` and the run continues — never aborts. The grid hydrates from the manifest delivered in the NDJSON `complete` event, not from a second filesystem read.
 
 ```mermaid
 sequenceDiagram
@@ -183,11 +195,17 @@ sequenceDiagram
     loop for each product
         Orc->>Res: resolve hero for product
         Res->>FS: look up input asset
-        alt asset found
+        alt asset found (source = local, increments reused)
             FS-->>Res: file path
         else asset missing
+            Note over Res,AI: mode = dall-e-3 (default) | gpt-image-1 (cheap)
             Res->>AI: generate hero image
-            AI-->>Res: image bytes
+            alt GenAI ok (source = genai, increments generated)
+                AI-->>Res: image bytes
+            else GenAI failure
+                AI-->>Res: error
+                Res-->>Rep: push to errors[]
+            end
         end
         Res-->>Orc: hero image
         Orc-->>Log: step "asset ready"
@@ -212,8 +230,12 @@ sequenceDiagram
         end
     end
     Orc->>Rep: write report.json
-    Rep-->>Log: step "run complete"
-    Log-->>User: grid populates with badged creatives
+    Rep-->>Log: complete event { manifest }
+    Log-->>User: grid hydrates from manifest (no second FS read)
+    opt user clicks Reveal in folder
+        User->>Orc: POST /api/reveal
+        Orc-->>Log: opens outputs/[campaign] in OS shell
+    end
 ```
 
 ---
@@ -229,6 +251,7 @@ graph LR
     Scan -->|yes| Ship["ship"]
     Scan -->|no| Click["click flagged tile"]
     Click --> Detail["Compliance Detail<br/>which check failed · why"]
+    Detail -.->|open for full detail| ReportFile["report.json<br/>per-creative compliance · errors[]"]
     Detail --> Decide{"fixable in brief?"}
     Decide -->|yes| EditBrief["edit brief<br/>(re-run)"]
     Decide -->|no| Escalate["flag for designer"]
@@ -239,27 +262,32 @@ graph LR
 
 ## 6. Story → subsystem coverage
 
-A sanity check that every user-story verb has a home in the system map.
+A sanity check that every user-story verb has a home in the system map. **Source** column declares whether a row traces to a user-story verb or a README design decision.
 
-| Story verb (from [user-stories.md](user-stories.md))        | Subsystem that owns it               |
-| ----------------------------------------------------------- | ------------------------------------ |
-| edit campaign brief in UI                                   | Brief Editor                         |
-| read brand / products / markets / audience / message        | Brief Editor → Run Orchestrator      |
-| drop product photos in UI                                   | Drop Zone → `POST /api/upload`       |
-| see detected vs missing assets                              | Detected Assets panel → `GET /api/detected-assets` |
-| pick a brand for this campaign                              | Brand selector → `GET /api/brands`    |
-| see remaining daily GenAI allocation                        | Daily allocation indicator → `GET /api/cap` |
-| look up input assets in `inputs/assets/`                    | Asset Resolver                       |
-| read brand profile (colors, voice, logo, font)              | Asset Resolver / Prompt Builder / Compositor → `inputs/brands/[brand]/` |
-| generate hero image when missing                            | Prompt Builder → GenAI API           |
-| resize to 1:1, 9:16, 16:9                                   | Image Processor (Sharp)              |
-| composite localized message overlay                         | Text Compositor                      |
-| stream pipeline log in real time                            | Run Orchestrator → Live Pipeline Log |
-| display output grid in browser                              | Output Grid                          |
-| save outputs to `outputs/[campaign]/[market]/[product]/[ratio].png` | Image Processor → filesystem |
-| check logo / colors / prohibited words                      | Compliance Checker                   |
-| badge each output OK / WARN / FAIL                          | Compliance Checker → Badge UI        |
-| write `brief.json` + `report.json`                          | Run Orchestrator + Reporter          |
+| Verb / capability                                                  | Subsystem that owns it                                                 | Source                                       |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------- | -------------------------------------------- |
+| edit campaign brief in UI                                          | Brief Editor                                                           | Story 1 (Maya)                               |
+| read brand / products / markets / audience / message               | Brief Editor → Run Orchestrator                                        | Story 1                                      |
+| drop product photos in UI                                          | Drop Zone → `POST /api/upload`                                         | Story 1                                      |
+| see detected vs missing assets                                     | Detected Assets panel → `GET /api/detected-assets`                     | Design addition (supports Story 1 drop verb) |
+| pick a brand for this campaign                                     | Brand selector → `GET /api/brands`                                     | Story 1 ("selects Brisa")                    |
+| see remaining daily GenAI allocation                               | Daily allocation indicator → `GET /api/cap`                            | Design addition (README: Daily spend cap)    |
+| look up input assets in `inputs/assets/`                           | Asset Resolver                                                         | Story 1                                      |
+| read brand profile (colors, voice, logo, font)                     | Asset Resolver / Prompt Builder / Compositor → `inputs/brands/[brand]/` | Story 1                                      |
+| generate hero image when missing                                   | Prompt Builder → GenAI API                                             | Story 1                                      |
+| GenAI mode: `dall-e-3` (default) vs `gpt-image-1` (cheap)          | Asset Resolver / Prompt Builder → GenAI API                            | Design addition (README: GenAI provider)     |
+| resize to 1:1, 9:16, 16:9                                          | Image Processor (Sharp)                                                | Story 1                                      |
+| composite localized message overlay                                | Text Compositor                                                        | Story 1                                      |
+| stream pipeline log in real time                                   | Run Orchestrator → Live Pipeline Log                                   | Story 1 / Story 3                            |
+| display output grid in browser (manifest-hydrated)                 | Output Grid ← Reporter manifest (NDJSON `complete`)                    | Story 1 + README (API style)                 |
+| save outputs to `outputs/[campaign]/[market]/[product]/[ratio].png` | Image Processor → filesystem                                           | Story 1                                      |
+| open output folder / grab files                                    | Reveal in folder → `POST /api/reveal` → OS shell                       | Story 1 ("opens the output folder")          |
+| check logo / colors / prohibited words                             | Compliance Checker                                                     | Story 2 (Priya)                              |
+| badge each output OK / WARN / FAIL                                 | Compliance Checker → Badge UI                                          | Story 2                                      |
+| drill into flagged creative for full detail                        | Compliance Detail → `report.json`                                      | Story 2 ("opens the report")                 |
+| write `brief.json`                                                 | Run Orchestrator                                                       | Story 1                                      |
+| write `report.json` (counts, creatives[], errors[])                | Reporter                                                               | Story 1 + Story 2                            |
+| aggregate step failures into `errors[]` (run never aborts)         | Run Orchestrator → Reporter                                            | Story 1 ("not blocked") + README             |
 
 ---
 
