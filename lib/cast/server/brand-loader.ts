@@ -41,6 +41,54 @@ export function _clearBrandCache(): void {
   cache.clear()
 }
 
+/**
+ * Discriminated result type for `tryLoadBrand`. Surfaces the same three
+ * brand-load errors the throwing `loadBrandProfile` raises, but as a
+ * value so server components can render fallback UI without try/catch.
+ */
+export type BrandLoadError =
+  | BrandNotFoundError
+  | BrandIncompleteError
+  | BrandInvalidError
+
+export type TryLoadBrandResult =
+  | { ok: true; profile: BrandProfile }
+  | { ok: false; error: BrandLoadError }
+
+/**
+ * Non-throwing wrapper around `loadBrandProfile`. Returns the profile or
+ * the typed error so server components and route handlers can render a
+ * banner / actionable response instead of crashing the request. Unexpected
+ * (non-brand) errors still throw — those are bugs, not user-facing states.
+ */
+export async function tryLoadBrand(slug: string): Promise<TryLoadBrandResult> {
+  try {
+    const profile = await loadBrandProfile(slug)
+    return { ok: true, profile }
+  } catch (err) {
+    if (
+      err instanceof BrandNotFoundError ||
+      err instanceof BrandIncompleteError ||
+      err instanceof BrandInvalidError
+    ) {
+      return { ok: false, error: err }
+    }
+    throw err
+  }
+}
+
+/**
+ * One-shot warning state. We log once per process when `listBrandSlugs()`
+ * returns an empty array so operators see it in their console without
+ * spamming on every request. Reset via `_resetBrandWarnings()` in tests.
+ */
+let warnedNoBrands = false
+
+/** Test-only: reset the one-shot warning flag. Not exported through index. */
+export function _resetBrandWarnings(): void {
+  warnedNoBrands = false
+}
+
 export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
   if (!SLUG_RE.test(slug)) {
     throw new BrandNotFoundError(slug)
@@ -119,13 +167,27 @@ export async function listBrandSlugs(): Promise<string[]> {
     entries = await fs.readdir(dir, { withFileTypes: true })
   } catch (err) {
     // Missing inputs/brands/ is allowed; permission/IO errors must surface.
-    if (isENOENT(err)) return []
+    if (isENOENT(err)) {
+      maybeWarnNoBrands()
+      return []
+    }
     throw err
   }
-  return entries
+  const slugs = entries
     .filter((e) => e.isDirectory() && SLUG_RE.test(e.name))
     .map((e) => e.name)
     .sort()
+  if (slugs.length === 0) maybeWarnNoBrands()
+  return slugs
+}
+
+function maybeWarnNoBrands(): void {
+  if (warnedNoBrands) return
+  warnedNoBrands = true
+  console.warn(
+    "[cast] No brand fixtures found under inputs/brands/. " +
+      "Drop a brand directory there (see docs/brand-extraction.md) so the editor can render logo variants.",
+  )
 }
 
 // ---------------------------------------------------------------------------

@@ -15,7 +15,9 @@ import fs from "node:fs/promises"
 import {
   loadBrandProfile,
   listBrandSlugs,
+  tryLoadBrand,
   _clearBrandCache,
+  _resetBrandWarnings,
 } from "@/lib/cast/server/brand-loader"
 import {
   BrandNotFoundError,
@@ -67,6 +69,7 @@ function mountValidBrandFixture(slug = "acme"): void {
 
 beforeEach(() => {
   _clearBrandCache()
+  _resetBrandWarnings()
   mockedFs.readFile.mockReset()
   mockedFs.access.mockReset()
   mockedFs.readdir.mockReset()
@@ -197,8 +200,10 @@ describe("listBrandSlugs", () => {
   })
 
   it("returns [] when inputs/brands/ is missing (ENOENT)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
     mockedFs.readdir.mockRejectedValue(enoent())
     expect(await listBrandSlugs()).toEqual([])
+    warn.mockRestore()
   })
 
   it("re-throws non-ENOENT errors (e.g. EACCES)", async () => {
@@ -206,5 +211,83 @@ describe("listBrandSlugs", () => {
     eacces.code = "EACCES"
     mockedFs.readdir.mockRejectedValue(eacces)
     await expect(listBrandSlugs()).rejects.toThrow("EACCES")
+  })
+})
+
+describe("listBrandSlugs warn-once", () => {
+  it("warns exactly once when inputs/brands/ is missing", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    mockedFs.readdir.mockRejectedValue(enoent())
+    await listBrandSlugs()
+    await listBrandSlugs()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0]?.[0]).toContain("No brand fixtures found")
+    warn.mockRestore()
+  })
+
+  it("warns exactly once when no slugs match SLUG_RE", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    mockedFs.readdir.mockResolvedValue([
+      { name: "INVALID", isDirectory: () => true },
+    ] as unknown as never)
+    await listBrandSlugs()
+    await listBrandSlugs()
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+  })
+
+  it("does NOT warn when at least one valid slug is present", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    mockedFs.readdir.mockResolvedValue([
+      { name: "acme", isDirectory: () => true },
+    ] as unknown as never)
+    await listBrandSlugs()
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+})
+
+describe("tryLoadBrand", () => {
+  it("returns { ok: true, profile } on success", async () => {
+    mountValidBrandFixture()
+    const result = await tryLoadBrand("acme")
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.profile.slug).toBe("acme")
+  })
+
+  it("returns { ok: false, error: BrandNotFoundError } when brand dir is missing", async () => {
+    mockedFs.access.mockRejectedValue(enoent())
+    const result = await tryLoadBrand("acme")
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error).toBeInstanceOf(BrandNotFoundError)
+  })
+
+  it("returns { ok: false, error: BrandIncompleteError } on missing required file", async () => {
+    mockedFs.access.mockResolvedValue(undefined)
+    mockedFs.readFile.mockImplementation(async (p: string) => {
+      const path = String(p).replace(/\\/g, "/")
+      if (path.endsWith("voice.json")) throw enoent()
+      if (path.endsWith("brand.json")) return JSON.stringify(VALID_BRAND)
+      if (path.endsWith("logos/logos.json")) return JSON.stringify(VALID_LOGOS)
+      throw enoent()
+    })
+    const result = await tryLoadBrand("acme")
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error).toBeInstanceOf(BrandIncompleteError)
+  })
+
+  it("returns { ok: false, error: BrandInvalidError } on parse failure", async () => {
+    mockedFs.access.mockResolvedValue(undefined)
+    mockedFs.readFile.mockImplementation(async () => "{ not json")
+    const result = await tryLoadBrand("acme")
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error).toBeInstanceOf(BrandInvalidError)
+  })
+
+  it("re-throws non-brand errors (e.g. EACCES)", async () => {
+    const eacces = new Error("EACCES") as NodeJS.ErrnoException
+    eacces.code = "EACCES"
+    mockedFs.access.mockRejectedValue(eacces)
+    await expect(tryLoadBrand("acme")).rejects.toThrow("EACCES")
   })
 })
