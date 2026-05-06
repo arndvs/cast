@@ -51,7 +51,7 @@ graph TB
 
     subgraph Verbs["Primary actions"]
         Edit["edits brief"]
-        Drop["drops photos in /inputs"]
+        Drop["drops photos in inputs/"]
         Generate["clicks Generate"]
         Watch["watches pipeline log"]
         Review["reviews output grid"]
