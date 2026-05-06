@@ -71,10 +71,15 @@ function buildCreatives(brand, brief, scenario, genaiMode, uploadedAssets) {
   const sc = scenario === "stream-idle" ? "mixed" : scenario;
   const uploads = uploadedAssets || {};
   const out = {};
+  // Resolve in-brief SKUs against the brand catalog so removed/added products
+  // are reflected in the output grid (and stay in brief order).
+  const products = brief.products
+    .map((bp) => brand.products.find((p) => p.sku === bp.sku))
+    .filter(Boolean);
   brief.markets.forEach((mkt) => {
     out[mkt] = {};
     const language = (ALL_MARKETS.find((m) => m.code === mkt) || {}).language || "en";
-    brand.products.forEach((p, pi) => {
+    products.forEach((p, pi) => {
       out[mkt][p.slug] = brief.ratios.map((r, ri) => {
         const key = `${mkt}/${p.slug}/${r}`;
         let badge = "OK";
@@ -168,6 +173,10 @@ function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
     const t = new Date(Date.UTC(2026, 4, 5, 15, 30, 0) + secs * 1000);
     return t.toISOString().substring(11, 19);
   };
+  // Resolve in-brief SKUs against the brand catalog (matches buildCreatives).
+  const products = brief.products
+    .map((bp) => brand.products.find((p) => p.sku === bp.sku))
+    .filter(Boolean);
 
   const push = (kind, stage, msg, details) =>
     lines.push({ kind, stage, time: stamp(), msg, details });
@@ -182,7 +191,7 @@ function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
   if (scenario === "stream-idle") {
     brief.markets.slice(0, 1).forEach((mkt) => {
       push("step", "init", `market: ${mkt} \u2014 locale=${mkt.split("-").pop()}`);
-      push("step", "resolve", `resolving assets for ${brand.products.length} products`);
+      push("step", "resolve", `resolving assets for ${products.length} products`);
       push("step", "genai", cheap
         ? "generating 1 master via gpt-image-1 (Sharp downsizes 3 ratios)"
         : "generating fallback asset via dall-e-3");
@@ -193,8 +202,8 @@ function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
   }
   brief.markets.forEach((mkt) => {
     push("step", "init", `market: ${mkt} — locale=${mkt.split("-").pop()}`);
-    push("step", "resolve", `resolving assets for ${brand.products.length} products`);
-    brand.products.forEach((p, pi) => {
+    push("step", "resolve", `resolving assets for ${products.length} products`);
+    products.forEach((p, pi) => {
       const isLocal = pi !== 0;
       if (isLocal) {
         push("ok", "resolve", `${p.slug} — using local asset (${p.slug}.png)`, { sku: p.sku, source: "local" });
@@ -207,9 +216,9 @@ function buildLogLines(brand, brief, creatives, scenario, genaiMode) {
       }
     });
     push("step", "resize", "resizing assets to 3 aspect ratios");
-    push("step", "compose", `compositing creatives for ${brand.products.length} products`);
+    push("step", "compose", `compositing creatives for ${products.length} products`);
 
-    brand.products.forEach((p) => {
+    products.forEach((p) => {
       brief.ratios.forEach((r) => {
         const c = creatives[mkt][p.slug].find((x) => x.ratio === r);
         if (c.path === null) {
