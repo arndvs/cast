@@ -23,10 +23,6 @@ This folder is the design record for the POC. Read top-to-bottom — each doc bu
 | [design/](design/)                         | Brand guideline HTML books for Onda, Brisa, Volt, and Cast. See [design/README.md](design/README.md).                                  |
 | [brand-extraction.md](brand-extraction.md) | How the brand HTMLs in `design/` are reduced to the runtime `brandProfileSchema`. The bridge between visual identity and the pipeline. |
 
-<!-- TODO: Remove when done -->
-
-| [prototype-todo.md](prototype-todo.md) | Live working TODO list for the prototype. Not documentation — items get deleted as they land. |
-
 ## Conventions
 
 - **Decision IDs (D1–D32).** Every architectural choice is numbered. References like _(D11)_ or _(D32)_ point back to the canonical decision in [system-map.md](system-map.md) or [flow-diagrams.md](flow-diagrams.md).
