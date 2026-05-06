@@ -39,7 +39,7 @@ graph LR
 
 ## 2. Actor Map — who does what
 
-Three actors, each with a distinct primary verb. same system, three lenses.
+Three actors, each with a distinct primary verb. Same system, three lenses.
 
 ```mermaid
 graph TB
@@ -85,9 +85,13 @@ The verbs from the stories cluster into seven subsystems. Anything inside the da
 graph TB
     subgraph External["External / filesystem"]
         Inputs[("inputs/assets/<br/>product photos")]
-        Outputs[("outputs/[campaign]/[market]/<br/>[product]/[ratio].png")]
-        GenAI["GenAI Image API<br/>hero fallback"]
-        ReportFile[("report.json")]
+        BrandProfile[("inputs/brands/[brand]/<br/>brand.json · voice.json · logo · font")]
+        subgraph CampaignOut["outputs/[campaign]/"]
+            Outputs[("[market]/[product]/[ratio].png")]
+            BriefFile[("brief.json")]
+            ReportFile[("report.json")]
+        end
+        GenAI["GenAI Image API<br/>OpenAI dall-e-3 · hero fallback"]
     end
 
     subgraph App["Local Next.js app — localhost:3000"]
@@ -95,14 +99,23 @@ graph TB
 
         subgraph UI["UI layer"]
             Editor["Brief Editor<br/>JSON form, pre-loaded example"]
+            DropZone["Drop Zone<br/>per-product file drop"]
+            DetectedPanel["Detected Assets panel<br/>shows local vs GenAI"]
             LogView["Live Pipeline Log<br/>streamed steps"]
             Grid["Output Grid<br/>row per product · 3 ratio cols"]
             BadgeUI["Compliance Badges<br/>OK / WARN / FAIL + drill-in"]
         end
 
+        subgraph API["API routes"]
+            UploadAPI["POST /api/upload<br/>(slug + canonical ext)"]
+            DetectedAPI["GET /api/detected-assets"]
+            GenerateAPI["POST /api/generate<br/>(NDJSON stream)"]
+        end
+
         subgraph Engine["Pipeline Engine"]
             Orchestrator["Run Orchestrator<br/>steps + streaming"]
             Resolver["Asset Resolver<br/>find or generate"]
+            PromptBuilder["Prompt Builder<br/>brand voice + product overrides"]
             Resizer["Image Processor<br/>Sharp · 1:1 · 9:16 · 16:9"]
             Compositor["Text Compositor<br/>localized message overlay"]
             Checker["Compliance Checker<br/>logo · palette · banned words"]
@@ -110,14 +123,24 @@ graph TB
         end
     end
 
-    Editor -->|brief| Orchestrator
+    Editor -->|brief| GenerateAPI
+    DropZone -->|file| UploadAPI
+    UploadAPI -->|writes| Inputs
+    DetectedPanel -->|polls| DetectedAPI
+    DetectedAPI -->|reads| Inputs
+    GenerateAPI --> Orchestrator
     Orchestrator --> Resolver
     Resolver -->|lookup| Inputs
-    Resolver -.->|on miss| GenAI
+    Resolver -.->|on miss| PromptBuilder
+    PromptBuilder -->|reads| BrandProfile
+    PromptBuilder -.->|prompt| GenAI
+    GenAI -.->|hero| Resolver
     Resolver --> Resizer
     Resizer --> Compositor
+    Compositor -->|reads font/logo| BrandProfile
     Compositor --> Checker
     Compositor --> Outputs
+    Orchestrator -->|writes| BriefFile
     Checker --> Reporter
     Reporter --> ReportFile
     Orchestrator -.->|stream| LogView
@@ -203,8 +226,11 @@ A sanity check that every user-story verb has a home in the system map.
 | ----------------------------------------------------------- | ------------------------------------ |
 | edit campaign brief in UI                                   | Brief Editor                         |
 | read brand / products / markets / audience / message        | Brief Editor → Run Orchestrator      |
+| drop product photos in UI                                   | Drop Zone → `POST /api/upload`       |
+| see detected vs missing assets                              | Detected Assets panel → `GET /api/detected-assets` |
 | look up input assets in `inputs/assets/`                    | Asset Resolver                       |
-| generate hero image when missing                            | Asset Resolver → GenAI API           |
+| read brand profile (colors, voice, logo, font)              | Asset Resolver / Prompt Builder / Compositor → `inputs/brands/[brand]/` |
+| generate hero image when missing                            | Prompt Builder → GenAI API           |
 | resize to 1:1, 9:16, 16:9                                   | Image Processor (Sharp)              |
 | composite localized message overlay                         | Text Compositor                      |
 | stream pipeline log in real time                            | Run Orchestrator → Live Pipeline Log |
@@ -212,7 +238,7 @@ A sanity check that every user-story verb has a home in the system map.
 | save outputs to `outputs/[campaign]/[market]/[product]/[ratio].png` | Image Processor → filesystem |
 | check logo / colors / prohibited words                      | Compliance Checker                   |
 | badge each output OK / WARN / FAIL                          | Compliance Checker → Badge UI        |
-| write `report.json`                                         | Reporter                             |
+| write `brief.json` + `report.json`                          | Run Orchestrator + Reporter          |
 
 ---
 
