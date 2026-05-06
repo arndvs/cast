@@ -404,6 +404,23 @@ function S3OutputGrid({ state, dispatch }) {
     return true;
   });
 
+  const downloadJSON = (filename, data) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const onDownloadReport = () => downloadJSON("report.json", {
+    campaign: brief.campaign, brand: brand.slug, counts,
+    creatives: all.map((c) => ({
+      key: c.key, product: c.product, market: c.market, ratio: c.ratio,
+      source: c.source, badge: c.badge, path: c.path,
+      stage: c.stage, stageMsg: c.stageMsg,
+    })),
+  });
+  const onDownloadBrief = () => downloadJSON("brief.json", brief);
+
   return (
     <div className="s3">
       <div className="s3-header">
@@ -412,7 +429,8 @@ function S3OutputGrid({ state, dispatch }) {
           <div className="meta">{brief.campaign} · {brand.slug} · {counts.requested} creatives requested</div>
         </div>
         <div className="grow" />
-        <button className="btn">⤓ download manifest</button>
+        <button className="btn" onClick={onDownloadBrief}>⤓ brief.json</button>
+        <button className="btn" onClick={onDownloadReport}>⤓ report.json</button>
         <button className="btn btn-primary">⤓ reveal in folder</button>
       </div>
 
