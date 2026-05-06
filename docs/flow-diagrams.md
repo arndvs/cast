@@ -296,9 +296,9 @@ export const briefSchema = z
             .optional(),
         }),
       )
-      .min(2),
+      .min(1),
     markets: z.array(z.string().regex(MARKET_RE)).min(1),
-    audience: z.string().min(1),
+    audience: z.string().min(1).max(500),
     message: z.record(z.string().regex(/^[a-z]{2}$/), z.string().min(1)),
     ratios: z.array(RATIO).min(1),
   })
@@ -314,10 +314,29 @@ export const briefSchema = z
         })
       }
     }
+    // Derived product slugs must be unique — same slug means same
+    // upload target, same resolver hit, same output folder. Catches
+    // "Brisa Citrus" vs "Brisa  Citrus" (extra space) collisions before
+    // they corrupt the run.
+    const seen = new Map<string, number>()
+    brief.products.forEach((p, i) => {
+      const slug = slugify(p.name)
+      if (seen.has(slug)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['products', i, 'name'],
+          message: `product name slugs to "${slug}" which collides with products[${seen.get(slug)}].name`,
+        })
+      } else {
+        seen.set(slug, i)
+      }
+    })
   })
 
 export type Brief = z.infer<typeof briefSchema>
 ```
+
+**`slugify` is the same function used by `/api/upload` and the Asset Resolver** — lowercase, non-alphanumeric runs collapsed to `-`, leading/trailing `-` stripped. One implementation, one import path; not three independent regexes that drift.
 
 **Market → locale mapping rule:** `locale = market.split('-').pop()`. The `superRefine` rejects any brief whose markets reference a locale missing from `message{}`. There is no separate `locales` field on the brief.
 
@@ -416,6 +435,15 @@ The repo ships two demo profiles (`inputs/brands/brisa/` and `inputs/brands/volt
 **One brand per brief.** A brief targets exactly one brand; portfolio runs are sequential briefs (Brisa run → Volt run → ...). Mixing brands in one brief breaks the brand-voice promise: each sub-brand has its own palette, banned-words list, and tone. Multi-brand briefs are listed in [§8 Future scope](#8-future-scope-v2--explicitly-out-of-poc).
 
 **Brand discovery in S1.** S1's brand selector lists every directory found under `inputs/brands/`. Either expose this via a tiny endpoint (`GET /api/brands` → `[{ slug, displayName }]` from `brand.json`) or fold it into the existing detected-assets read. Adding a profile makes it available in the UI on next page load — no rebuild.
+
+**Brand existence + integrity check (server-side at `/api/generate` entry).** `briefSchema` validates the slug shape, not its presence on disk. Before the run starts, the orchestrator calls `loadBrandProfile(brief.brand)` which:
+
+- Verifies `inputs/brands/[brand]/` exists → else throws `BrandNotFoundError` → mapped to `400 { errors: [{ path: ['brand'], message: 'unknown brand: ...' }] }`.
+- Verifies required files exist (`brand.json`, `voice.json`, `logo.png`, `font.ttf`) → else throws `BrandIncompleteError` → mapped to `400 { errors: [{ path: ['brand', '<missing-file>'], message: '...' }] }`.
+- Validates `brand.json` and `voice.json` against `brandProfileSchema` (see [Brand profile schema](#brand-profile-schema)) → else throws `BrandInvalidError` → mapped to `400` with the Zod issue path.
+- On success, returns the parsed `BrandProfile` and caches it in-process for 90 s (cheap reads on repeat runs in the same `next dev` session).
+
+This is the security boundary for the brand axis: every field that becomes a path segment is regex-validated by the schema **and** existence-validated by the loader before anything touches the filesystem.
 
 ### GenAI provider (D9)
 

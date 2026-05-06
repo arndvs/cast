@@ -14,10 +14,10 @@ Organized by entity, then mapped to screens in Step 5.
 Fields are defined by the canonical Zod `briefSchema` in [flow-diagrams.md §4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview). Field names and shapes are not restated here — the schema is the single source of truth. Summary:
 
 - `campaign` (slug)
-- `brand` (slug — references `inputs/brands/[brand]/`)
-- `products[]` — each `{ name, sku, promptOverrides? }`
+- `brand` (slug — references `inputs/brands/[brand]/`; existence + integrity validated server-side at `/api/generate` entry)
+- `products[]` (`min(1)`) — each `{ name, sku, promptOverrides? }`; derived slugs (`slugify(name)`) must be unique within a brief
 - `markets[]` — BCP-47-style `<region>-<lang>` (e.g. `us-en`, `mx-es`)
-- `audience` (freeform string)
+- `audience` (string, 1–500 chars)
 - `message` — `Record<lang, string>` (locale → copy)
 - `ratios[]` — enum subset of `[1x1, 9x16, 16x9]`
 
