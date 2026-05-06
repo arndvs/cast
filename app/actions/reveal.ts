@@ -30,6 +30,7 @@ export async function revealOutputFolder({
 
   let target: string
   try {
+    // TODO(symlink-hardening): re-validate with realpath before stat/execFile.
     target = safeJoin("outputs", campaign)
   } catch (err) {
     if (err instanceof PathTraversalError) {

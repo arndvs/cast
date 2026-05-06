@@ -16,10 +16,10 @@ export const runtime = "nodejs"
  *   - .png whitelist — anything else 404s, never reveals MIME of other files
  *   - X-Content-Type-Options: nosniff so a malicious upstream can't trick
  *     the browser into rendering the bytes as HTML/JS
- *   - Cache-Control: public, max-age=3600, immutable — outputs are
- *     write-once-per-run; campaign slug + ratio is the cache key
- *
- * TODO(symlink-hardening): re-validate the resolved path with realpath.
+ *   - Cache-Control: no-store — `clearCampaignOutput` (lib/cast/server/
+ *     storage.ts) wipes and rewrites outputs/[campaign]/ on each run, so the
+ *     same URL can map to different bytes after a re-run. Without ETag/mtime
+ *     revalidation, `immutable` would serve stale tiles for up to an hour.
  */
 export async function GET(
   _req: Request,
@@ -40,6 +40,7 @@ export async function GET(
 
   let resolved: string
   try {
+    // TODO(symlink-hardening): re-validate with realpath before readFile.
     resolved = safeJoin("outputs", ...segments)
   } catch (err) {
     if (err instanceof PathTraversalError) {
@@ -69,7 +70,7 @@ export async function GET(
     headers: {
       "Content-Type": "image/png",
       "Content-Length": String(bytes.byteLength),
-      "Cache-Control": "public, max-age=3600, immutable",
+      "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
     },
   })

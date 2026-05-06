@@ -48,9 +48,7 @@ describe("GET /api/outputs/[...path]", () => {
 
     expect(res.status).toBe(200)
     expect(res.headers.get("content-type")).toBe("image/png")
-    expect(res.headers.get("cache-control")).toBe(
-      "public, max-age=3600, immutable",
-    )
+    expect(res.headers.get("cache-control")).toBe("no-store")
     expect(res.headers.get("x-content-type-options")).toBe("nosniff")
 
     const buf = Buffer.from(await res.arrayBuffer())
@@ -84,6 +82,16 @@ describe("GET /api/outputs/[...path]", () => {
     const res = await call(["summer", "us-en", "brisa", "report.json"])
     expect(res.status).toBe(404)
     expect(readFileMock).not.toHaveBeenCalled()
+  })
+
+  it("accepts uppercase .PNG (case-insensitive whitelist)", async () => {
+    readFileMock.mockResolvedValueOnce(PNG_BYTES)
+
+    const res = await call(["summer", "us-en", "brisa", "1x1.PNG"])
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get("content-type")).toBe("image/png")
+    expect(readFileMock).toHaveBeenCalledTimes(1)
   })
 
   it("rejects extensionless paths with 404", async () => {
