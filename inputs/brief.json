@@ -1,0 +1,15 @@
+{
+  "campaign": "summer-refresh-2026",
+  "brand": "brisa",
+  "products": [
+    { "name": "Brisa Citrus", "sku": "BRS-CIT-12" },
+    { "name": "Brisa Berry", "sku": "BRS-BRY-12" }
+  ],
+  "markets": ["us-en", "mx-es"],
+  "audience": "18-34, urban, health-conscious; values clean ingredients and bold flavor; shops weekly at convenience stores and online grocery",
+  "message": {
+    "en": "Crack open something brighter.",
+    "es": "Abre algo más brillante."
+  },
+  "ratios": ["1x1", "9x16", "16x9"]
+}

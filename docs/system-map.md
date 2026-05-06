@@ -2,7 +2,7 @@
 
 ### Local Next.js App · POC · v1
 
-> Bridges the [user stories](user-stories.md) to a buildable solution. Entities, actors, and subsystems are pulled directly from the verbs/nouns in Maya's, Priya's, and Sam's stories.
+> Bridges the [user stories](user-stories.md) to a buildable solution. Entities, actors, and subsystems are pulled directly from the verbs/nouns in Maya's, Priya's, and Aaron's stories.
 
 ---
 
@@ -12,15 +12,15 @@ The "things" the system stores, moves, and renders. Pulled from the user-story v
 
 ```mermaid
 graph LR
-    Brief["📄 Brief<br/>products · region · audience<br/>message · locales"]
-    Product["📦 Product<br/>name · sku"]
-    InputAsset["🖼️ Input Asset<br/>/inputs/assets/[product].png"]
-    HeroImage["✨ Hero Image<br/>GenAI fallback"]
-    Creative["🎨 Output Creative<br/>1:1 · 9:16 · 16:9"]
-    Message["💬 Localized Message<br/>per locale"]
-    Compliance["✅ Compliance Result<br/>OK · WARN · FAIL"]
-    RunLog["📜 Run Log<br/>streamed steps"]
-    Report["📊 Report<br/>report.json"]
+    Brief["Brief<br/>brand · products · markets<br/>audience · message · ratios"]
+    Product["Product<br/>name · sku"]
+    InputAsset["Input Asset<br/>inputs/assets/[product-slug].{png,jpg,jpeg,webp}"]
+    HeroImage["Hero Image<br/>GenAI fallback"]
+    Creative["Output Creative<br/>1:1 · 9:16 · 16:9"]
+    Message["Localized Message<br/>per locale"]
+    Compliance["Compliance Result<br/>OK · WARN · FAIL"]
+    RunLog["Run Log<br/>streamed steps"]
+    Report["Report<br/>report.json"]
 
     Brief -->|lists| Product
     Brief -->|carries| Message
@@ -44,20 +44,20 @@ Three actors, each with a distinct primary verb. Same system, three lenses.
 ```mermaid
 graph TB
     subgraph Actors
-        Maya["👩‍🎨 Maya<br/>Creative Producer"]
-        Priya["👩‍💼 Priya<br/>Brand Manager"]
-        Sam["👨‍💻 Sam<br/>Engineer / Demo"]
+        Maya["Maya<br/>Creative Producer"]
+        Priya["Priya<br/>Brand Manager"]
+        Aaron["Aaron<br/>Engineer / Demo"]
     end
 
     subgraph Verbs["Primary actions"]
-        Edit["✏️ edits brief"]
-        Drop["📥 drops photos in /inputs"]
-        Generate["▶️ clicks Generate"]
-        Watch["👀 watches pipeline log"]
-        Review["🔍 reviews output grid"]
-        Read["🏷️ reads compliance badges"]
-        Drill["🔎 drills into flagged item"]
-        Demo["🎤 narrates the demo"]
+        Edit["edits brief"]
+        Drop["drops photos in inputs/"]
+        Generate["clicks Generate"]
+        Watch["watches pipeline log"]
+        Review["reviews output grid"]
+        Read["reads compliance badges"]
+        Drill["drills into flagged item"]
+        Demo["narrates the demo"]
     end
 
     Maya --> Edit
@@ -70,9 +70,9 @@ graph TB
     Priya --> Read
     Priya --> Drill
 
-    Sam --> Generate
-    Sam --> Watch
-    Sam --> Demo
+    Aaron --> Generate
+    Aaron --> Watch
+    Aaron --> Demo
 ```
 
 ---
@@ -84,25 +84,38 @@ The verbs from the stories cluster into seven subsystems. Anything inside the da
 ```mermaid
 graph TB
     subgraph External["External / filesystem"]
-        Inputs[("📁 /inputs/assets/<br/>product photos")]
-        Outputs[("📁 /outputs/[campaign]/<br/>[product]/[ratio].png")]
-        GenAI["🤖 GenAI Image API<br/>hero fallback"]
-        ReportFile[("📄 report.json")]
+        Inputs[("inputs/assets/<br/>product photos")]
+        BrandProfile[("inputs/brands/[brand]/<br/>brand.json · voice.json · logo · font")]
+        subgraph CampaignOut["outputs/[campaign]/"]
+            Outputs[("[market]/[product]/[ratio].png")]
+            BriefFile[("brief.json")]
+            ReportFile[("report.json")]
+        end
+        GenAI["GenAI Image API<br/>OpenAI dall-e-3 · hero fallback"]
     end
 
     subgraph App["Local Next.js app — localhost:3000"]
         direction TB
 
-        subgraph UI["🖥️ UI layer"]
+        subgraph UI["UI layer"]
             Editor["Brief Editor<br/>JSON form, pre-loaded example"]
+            DropZone["Drop Zone<br/>per-product file drop"]
+            DetectedPanel["Detected Assets panel<br/>shows local vs GenAI"]
             LogView["Live Pipeline Log<br/>streamed steps"]
             Grid["Output Grid<br/>row per product · 3 ratio cols"]
             BadgeUI["Compliance Badges<br/>OK / WARN / FAIL + drill-in"]
         end
 
-        subgraph Engine["⚙️ Pipeline Engine"]
+        subgraph API["API routes"]
+            UploadAPI["POST /api/upload<br/>(slug + canonical ext)"]
+            DetectedAPI["GET /api/detected-assets"]
+            GenerateAPI["POST /api/generate<br/>(NDJSON stream)"]
+        end
+
+        subgraph Engine["Pipeline Engine"]
             Orchestrator["Run Orchestrator<br/>steps + streaming"]
             Resolver["Asset Resolver<br/>find or generate"]
+            PromptBuilder["Prompt Builder<br/>brand voice + product overrides"]
             Resizer["Image Processor<br/>Sharp · 1:1 · 9:16 · 16:9"]
             Compositor["Text Compositor<br/>localized message overlay"]
             Checker["Compliance Checker<br/>logo · palette · banned words"]
@@ -110,14 +123,24 @@ graph TB
         end
     end
 
-    Editor -->|brief| Orchestrator
+    Editor -->|brief| GenerateAPI
+    DropZone -->|file| UploadAPI
+    UploadAPI -->|writes| Inputs
+    DetectedPanel -->|polls| DetectedAPI
+    DetectedAPI -->|reads| Inputs
+    GenerateAPI --> Orchestrator
     Orchestrator --> Resolver
     Resolver -->|lookup| Inputs
-    Resolver -.->|on miss| GenAI
+    Resolver -.->|on miss| PromptBuilder
+    PromptBuilder -->|reads| BrandProfile
+    PromptBuilder -.->|prompt| GenAI
+    GenAI -.->|hero| Resolver
     Resolver --> Resizer
     Resizer --> Compositor
+    Compositor -->|reads font/logo| BrandProfile
     Compositor --> Checker
     Compositor --> Outputs
+    Orchestrator -->|writes| BriefFile
     Checker --> Reporter
     Reporter --> ReportFile
     Orchestrator -.->|stream| LogView
@@ -132,14 +155,16 @@ graph TB
 
 How a single click on **Generate** moves a brief through the system and back to the screen.
 
+> **Concurrency model (D20).** Markets iterate sequentially in the outer loop for deterministic log order; ratios fan out via `Promise.all` per `(product, market)` pair (`par`/`and` block below).
+
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as Maya / Sam
+    actor User as Maya / Aaron
     participant UI as Brief Editor
     participant Orc as Run Orchestrator
     participant Res as Asset Resolver
-    participant FS as /inputs/assets
+    participant FS as inputs/assets
     participant AI as GenAI API
     participant Img as Resizer + Compositor
     participant Out as /outputs
@@ -161,8 +186,20 @@ sequenceDiagram
         end
         Res-->>Orc: hero image
         Orc-->>Log: step "asset ready"
-        loop for each ratio (1:1, 9:16, 16:9)
-            Orc->>Img: resize + composite message (locale)
+        par 1:1
+            Orc->>Img: resize + composite (1:1, locale)
+            Img->>Out: save creative
+            Orc->>Chk: check creative
+            Chk-->>Orc: OK / WARN / FAIL
+            Orc-->>Log: step "creative ready + badge"
+        and 9:16
+            Orc->>Img: resize + composite (9:16, locale)
+            Img->>Out: save creative
+            Orc->>Chk: check creative
+            Chk-->>Orc: OK / WARN / FAIL
+            Orc-->>Log: step "creative ready + badge"
+        and 16:9
+            Orc->>Img: resize + composite (16:9, locale)
             Img->>Out: save creative
             Orc->>Chk: check creative
             Chk-->>Orc: OK / WARN / FAIL
@@ -184,7 +221,7 @@ Priya never touches the pipeline; she lives on the output grid. Her flow is a re
 graph LR
     Done["Run completes"] --> Grid["Output Grid<br/>all creatives + badges"]
     Grid --> Scan{"All green?"}
-    Scan -->|yes| Ship["✅ ship"]
+    Scan -->|yes| Ship["ship"]
     Scan -->|no| Click["click flagged tile"]
     Click --> Detail["Compliance Detail<br/>which check failed · why"]
     Detail --> Decide{"fixable in brief?"}
@@ -202,17 +239,20 @@ A sanity check that every user-story verb has a home in the system map.
 | Story verb (from [user-stories.md](user-stories.md))        | Subsystem that owns it               |
 | ----------------------------------------------------------- | ------------------------------------ |
 | edit campaign brief in UI                                   | Brief Editor                         |
-| read products / region / audience / message                 | Brief Editor → Run Orchestrator      |
-| look up input assets in `/inputs/assets/`                   | Asset Resolver                       |
-| generate hero image when missing                            | Asset Resolver → GenAI API           |
+| read brand / products / markets / audience / message        | Brief Editor → Run Orchestrator      |
+| drop product photos in UI                                   | Drop Zone → `POST /api/upload`       |
+| see detected vs missing assets                              | Detected Assets panel → `GET /api/detected-assets` |
+| look up input assets in `inputs/assets/`                    | Asset Resolver                       |
+| read brand profile (colors, voice, logo, font)              | Asset Resolver / Prompt Builder / Compositor → `inputs/brands/[brand]/` |
+| generate hero image when missing                            | Prompt Builder → GenAI API           |
 | resize to 1:1, 9:16, 16:9                                   | Image Processor (Sharp)              |
 | composite localized message overlay                         | Text Compositor                      |
 | stream pipeline log in real time                            | Run Orchestrator → Live Pipeline Log |
 | display output grid in browser                              | Output Grid                          |
-| save outputs to `/outputs/[campaign]/[product]/[ratio].png` | Image Processor → filesystem         |
+| save outputs to `outputs/[campaign]/[market]/[product]/[ratio].png` | Image Processor → filesystem |
 | check logo / colors / prohibited words                      | Compliance Checker                   |
 | badge each output OK / WARN / FAIL                          | Compliance Checker → Badge UI        |
-| write `report.json`                                         | Reporter                             |
+| write `brief.json` + `report.json`                          | Run Orchestrator + Reporter          |
 
 ---
 

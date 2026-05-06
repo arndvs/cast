@@ -1,1 +1,54 @@
+# Working notes / scratch
 /working
+
+# Node / Next.js
+node_modules/
+.next/
+.turbo/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Generated runtime artifacts
+/outputs/
+/inputs/assets/*
+!/inputs/assets/.gitkeep
+
+# Reference brief ships with the repo (Story 3 — Aaron's demo)
+!/inputs/brief.json
+
+# Per-brand profiles — ignore by default, allowlist demo brands (Onda portfolio)
+/inputs/brands/*/
+!/inputs/brands/brisa/
+!/inputs/brands/brisa/**
+!/inputs/brands/volt/
+!/inputs/brands/volt/**
+
+# Test + build caches
+coverage/
+.swc/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
