@@ -483,4 +483,23 @@ Everything else is wireframe craft.
 
 ---
 
+## 8. Future scope (v2+) — explicitly out of POC
+
+Captured here so the POC's omissions are deliberate, not accidental:
+
+- **YAML brief import** — parser swap behind the same Zod schema; ~30-line change.
+- **Cloud storage backends** — S3 / Azure / Dropbox, swapped behind the `Storage` interface (D17).
+- **Outpainting / aspect extension** — `gpt-image-1` `images.edit` for true ratio extension instead of native-ratio rendering.
+- **Edge transforms** — ImageKit-style URL-driven crops/transforms for downstream platform variants.
+- **Brief Interpreter** — natural-language brief → structured Zod brief (LLM-assisted, validated).
+- **Brand-voice editor** — Studio-like UI for `inputs/brands/[brand]/voice.json`.
+- **Multi-run history** — persist past runs, side-by-side comparison, approvals.
+- **Comments + approval workflow** — Priya marks creatives approved/rejected with comments persisted to manifest.
+- **Translation API** — auto-fill `message{}` for missing locales.
+- **Multi-logo per brand** — primary/secondary/dark/light variants selected per ratio.
+- **Per-market brand variations** — region-specific palette/voice overrides under `inputs/brands/[brand]/markets/[market]/`.
+- **Motion creatives** — animated outputs (5-second loops, `.gif` and `.mp4` parallel to `.png` per ratio). Pipeline fan-out becomes `(product × market × ratio × format)`. Resolver, compositor, and storage each gain a format axis. Compliance gains motion-specific checks (frame-1 logo presence, looping integrity).
+
+---
+
 _Cast · Flow Diagrams v1 · Adobe FDE Take-Home · Aaron Davis · 2026_
