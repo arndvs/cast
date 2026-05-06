@@ -22,6 +22,15 @@ next-env.d.ts
 /inputs/assets/*
 !/inputs/assets/.gitkeep
 
+# Per-brand profiles — ignore by default, allowlist demo brand
+/inputs/brands/*/
+!/inputs/brands/sparkling-co/
+!/inputs/brands/sparkling-co/**
+
+# Test + build caches
+coverage/
+.swc/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
