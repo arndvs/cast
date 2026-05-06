@@ -6,6 +6,8 @@ import {
   BrandInvalidError,
 } from "@/lib/cast/errors"
 
+export const runtime = "nodejs"
+
 /**
  * GET /api/brands/[slug] — return the validated profile for one brand.
  *
@@ -48,7 +50,7 @@ export async function GET(
     if (err instanceof BrandNotFoundError) {
       return NextResponse.json(
         { errors: [{ path: ["brand"], message: err.message }] },
-        { status: 400 },
+        { status: 404 },
       )
     }
     if (err instanceof BrandIncompleteError) {

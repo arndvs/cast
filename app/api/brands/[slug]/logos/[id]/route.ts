@@ -7,6 +7,8 @@ import {
   BrandInvalidError,
 } from "@/lib/cast/errors"
 
+export const runtime = "nodejs"
+
 /**
  * GET /api/brands/[slug]/logos/[id] — safeJoin proxy for a logo PNG.
  *

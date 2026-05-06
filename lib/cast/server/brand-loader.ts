@@ -6,7 +6,8 @@
  *
  * - 90 s in-process Map cache, no mtime invalidation (per system-map / D11).
  * - Throws `BrandNotFoundError` / `BrandIncompleteError` / `BrandInvalidError`;
- *   route handlers map these to 400 with structured `{ errors: [...] }` bodies.
+ *   route handlers map `BrandNotFoundError` to 404 and the other two to 400,
+ *   each with a structured `{ errors: [...] }` body.
  * - Banned-words list is the **union** of `getDefaultBannedWords()` + brand file
  *   (deduped, lowercased). Defaults always apply; missing brand file is allowed.
  * - Every disk read goes through `safeJoin("inputs", ...)`.
@@ -53,14 +54,14 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
   const brandDir = safeJoin("inputs", "brands", slug)
   await assertExists(brandDir, slug, slug)
 
-  const brandJson = await readJson(slug, brandDir, "brand.json")
-  const voiceJson = await readJson(slug, brandDir, "voice.json")
-  const logosJson = await readJson(slug, brandDir, "logos/logos.json")
+  const brandJson = await readJson(slug, "brand.json")
+  const voiceJson = await readJson(slug, "voice.json")
+  const logosJson = await readJson(slug, "logos/logos.json")
 
   // banned-words.json is optional
   let bannedWordsRaw: unknown[] = []
   try {
-    bannedWordsRaw = (await readJson(slug, brandDir, "banned-words.json")) as unknown[]
+    bannedWordsRaw = (await readJson(slug, "banned-words.json")) as unknown[]
   } catch (err) {
     if (!(err instanceof BrandIncompleteError)) throw err
   }
@@ -116,8 +117,10 @@ export async function listBrandSlugs(): Promise<string[]> {
   let entries: import("node:fs").Dirent[]
   try {
     entries = await fs.readdir(dir, { withFileTypes: true })
-  } catch {
-    return []
+  } catch (err) {
+    // Missing inputs/brands/ is allowed; permission/IO errors must surface.
+    if (isENOENT(err)) return []
+    throw err
   }
   return entries
     .filter((e) => e.isDirectory() && SLUG_RE.test(e.name))
@@ -127,7 +130,7 @@ export async function listBrandSlugs(): Promise<string[]> {
 
 // ---------------------------------------------------------------------------
 
-async function readJson(slug: string, brandDir: string, rel: string): Promise<unknown> {
+async function readJson(slug: string, rel: string): Promise<unknown> {
   // rel is a controlled internal constant ("brand.json", "voice.json", ...).
   // We still safeJoin to be defensive.
   const segments = rel.split("/").filter(Boolean)
@@ -142,8 +145,6 @@ async function readJson(slug: string, brandDir: string, rel: string): Promise<un
     }
     throw err
   }
-  // brand existence is implicit if any read succeeded; void the unused brandDir lint
-  void brandDir
   try {
     return JSON.parse(raw)
   } catch (err) {
