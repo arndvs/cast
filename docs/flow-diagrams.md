@@ -398,9 +398,19 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
 }
 ```
 
-- `creatives[].path` is repo-relative `string` on success, `null` on failure (D19). The grid renders a red placeholder tile for `null` paths.
+- `creatives[].path` is repo-relative `string` on success, `null` on failure (D19). The grid renders a red placeholder tile for `null` paths. Join with `manifest.outputDir` (absolute) for filesystem operations; render `path` directly for repo-relative links.
 - `errors[]` is the dedicated failure log: every `null`-path creative has a corresponding entry. Top-level `counts.failed === errors.length`.
-- `source` ∈ `'local' | 'genai'`. `compliance.badge` ∈ `'OK' | 'WARN' | 'FAIL'`.
+- `source` \u2208 `'local' | 'genai'`. `compliance.badge` \u2208 `'OK' | 'WARN' | 'FAIL'`.
+- `errors[].stage` \u2208 `'resolve' | 'genai' | 'resize' | 'compose' | 'compliance' | 'write'` \u2014 names the pipeline stage that threw. Closed enum; do not invent new values without updating this table:
+
+  | stage         | When it fires                                                                 |
+  | ------------- | ----------------------------------------------------------------------------- |
+  | `resolve`     | Asset Resolver couldn't read a pre-placed file (corrupt, EACCES, unreadable). |
+  | `genai`       | OpenAI Images API call failed, timed out, or hit the daily cap.               |
+  | `resize`      | Sharp threw decoding or resizing the source image.                            |
+  | `compose`     | Text overlay / logo composite failed (font load, alpha-channel issue).        |
+  | `compliance`  | Compliance checker threw (palette sample, banned-words read, logo template).  |
+  | `write`       | Output PNG write failed (ENOSPC, EACCES, path collision).                     |
 
 **Parallel generation (D20)** — for each product, all requested ratios fan out via `Promise.all`. Markets iterate sequentially in the outer loop (deterministic log order); ratios run in parallel within each `(product, market)` pair. The sequence diagram caption in §4 reflects this.
 
@@ -455,7 +465,7 @@ The handler enumerates `inputs/brands/*/`, validates each subdirectory's slug ag
 
 This is the security boundary for the brand axis: every field that becomes a path segment is regex-validated by the schema **and** existence-validated by the loader before anything touches the filesystem.
 
-### GenAI provider (D9)
+### Brand profile schema (D11 \u2014 contract)\n\nThe brand directory is a typed contract, not a free-form folder. `loadBrandProfile(brand)` Zod-validates each file on first read and caches the parsed result for 90 s.\n\n```ts\nimport { z } from 'zod'\n\nconst HEX = /^#[0-9a-fA-F]{6}$/\n\nexport const brandColorsSchema = z.object({\n  primary: z.string().regex(HEX),\n  accent: z.string().regex(HEX),\n  background: z.string().regex(HEX).optional(),\n  text: z.string().regex(HEX).optional(),\n})\n\nexport const brandJsonSchema = z.object({\n  displayName: z.string().min(1),\n  colors: brandColorsSchema,\n  tokens: z.record(z.string(), z.string()).optional(),\n})\n\nexport const voiceJsonSchema = z.object({\n  tone: z.string().min(1),\n  do: z.array(z.string()).default([]),\n  dont: z.array(z.string()).default([]),\n  promptFragments: z.array(z.string()).default([]),\n})\n\nexport const bannedWordsSchema = z.array(z.string().min(1))\n\nexport type BrandProfile = {\n  slug: string\n  brand: z.infer<typeof brandJsonSchema>\n  voice: z.infer<typeof voiceJsonSchema>\n  bannedWords: string[]   // [] when banned-words.json is absent\n  logoPath: string         // absolute, safeJoin-validated\n  fontPath: string         // absolute, safeJoin-validated\n}\n```\n\n**Missing `banned-words.json`** is allowed. The loader returns `bannedWords: []`, the orchestrator emits a `step` event \u2014 `{ \"type\": \"step\", \"message\": \"no banned-words list for brand X \u2014 skipping pre-flight + per-creative checks\" }` \u2014 and both client-side pre-flight and server-side per-creative checks become no-ops for that run. Optional means optional; visibility comes from the log line, not a blocked Generate.\n\n### GenAI provider (D9)
 
 OpenAI Images API. Model: `dall-e-3` for the default path; `gpt-image-1` when `CAST_GENAI_MODE=cheap`.
 
@@ -542,6 +552,41 @@ Captured here so the POC's omissions are deliberate, not accidental:
 - **Per-market brand variations** — region-specific palette/voice overrides under `inputs/brands/[brand]/markets/[market]/`.
 - **Multi-brand campaign briefs** — single brief targeting multiple sub-brands in one run (e.g. an Onda portfolio launch covering both Brisa and Volt). Requires a `brands[]` field, per-product brand tagging, an extra `[brand]` segment in the output tree, and per-product compliance switching. Out of POC because it changes the campaign contract and dilutes the brand-voice promise; portfolio runs today are sequential single-brand briefs.
 - **Motion creatives** — animated outputs (5-second loops, `.gif` and `.mp4` parallel to `.png` per ratio). Pipeline fan-out becomes `(product × market × ratio × format)`. Resolver, compositor, and storage each gain a format axis. Compliance gains motion-specific checks (frame-1 logo presence, looping integrity).
+
+---
+
+## Appendix A — Design decision register
+
+Every `Dn` referenced in this repo, in one place. Numbers are sparse — the original interrogation skipped some IDs as the design firmed up; rather than renumber and break grep, gaps are listed as **reserved**. Adding a new decision means appending the next free number and updating this table in the same commit.
+
+| ID  | Decision                                            | Choice                                                                                                                                                          |
+| --- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | _Reserved_                                          | _Unused — kept to preserve grep-stability of higher numbers._                                                                                                   |
+| D2  | _Reserved_                                          | _Unused._                                                                                                                                                       |
+| D3  | _Reserved_                                          | _Unused._                                                                                                                                                       |
+| D4  | _Reserved_                                          | _Unused._                                                                                                                                                       |
+| D5  | _Reserved_                                          | _Unused._                                                                                                                                                       |
+| D6  | _Reserved_                                          | _Unused._                                                                                                                                                       |
+| D7  | _Reserved_                                          | _Unused._                                                                                                                                                       |
+| D8  | _Reserved_                                          | _Unused._                                                                                                                                                       |
+| D9  | GenAI provider                                      | OpenAI Images API. `dall-e-3` default (3 native sizes, 1 call per ratio); `gpt-image-1` when `CAST_GENAI_MODE=cheap` (1 call total + Sharp center-crop).         |
+| D10 | Display font                                        | OFL-licensed `font.ttf` shipped per brand at `inputs/brands/[brand]/font.ttf`. Compositor loads it; no system-font fallback (deterministic across machines).    |
+| D11 | Per-brand profile                                   | `inputs/brands/[brand]/` directory contract: `brand.json`, `voice.json`, `logo.png`, `font.ttf`, optional `banned-words.json`. Validated by `brandProfileSchema`. |
+| D12 | Path safety: `safeJoin`                             | Every filesystem write resolves through `safeJoin(rootKey, ...segments)` against `ROOTS = { inputs, outputs }`; mismatch throws.                                |
+| D13 | Path safety: regex-validated tokens + `execFile`    | `[campaign]`, `[brand]`, `[product-slug]`, `[market]` validated against `SLUG_RE` / `MARKET_RE` before `safeJoin`. Shell calls use `execFile` + explicit argv.   |
+| D14 | Streaming render mode                               | S2 log + progress update incrementally on each NDJSON event; output grid hydrates only on the terminal `complete` event (no flicker, clean S2→S3 transition).   |
+| D15 | Run idempotency                                     | Both Generate (S1) and Retry (S2′) clear `outputs/[campaign]/` recursively before re-running. No partial-resume; no orphan folders across runs.                 |
+| D16 | _Reserved_                                          | _Unused._                                                                                                                                                       |
+| D17 | Storage abstraction                                 | `Storage` interface (`read`/`write`/`list`/`exists`); POC ships `LocalFsStorage`; cloud backends (S3 / Azure / Dropbox) are a single-class swap, deferred to v2. |
+| D18 | Prompt construction                                 | Three-layer deterministic assembly: brand voice → product overrides → pure `buildPrompt({...})`. No LLM-on-LLM. S1 renders the assembled prompt read-only.       |
+| D19 | `creatives[].path` is nullable                      | Repo-relative `string` on success, `null` on failure. Grid renders a red placeholder tile for `null`. `counts.failed === errors.length`.                         |
+| D20 | Concurrency model                                   | Markets sequential (deterministic log order); ratios fan out via `Promise.all` per `(product, market)` pair. System-map sequence diagram uses `par`/`and`/`end`. |
+| D21 | Compliance + banned-words                           | Two-pass string check (NOT OCR): client-side pre-flight against `brief.message`; server-side post locale-resolution against the resolved overlay string.         |
+| D22 | Daily generation cap                                | `DAILY_GENERATION_LIMIT` env (default 50). SoT: `outputs/.cap.json` `{ date, count }` (UTC). `GET /api/cap` is the read endpoint. LocalStorage = optimistic only. |
+| D23 | _Reserved_                                          | _Unused._                                                                                                                                                       |
+| D24 | _Reserved_                                          | _Unused._                                                                                                                                                       |
+| D25 | _Reserved_                                          | _Unused._                                                                                                                                                       |
+| D26 | Animated formats                                    | `.gif`, `.mp4`, `.webm` rejected at upload (415) and ignored at resolve. Output creatives are always `.png`. Motion creatives are v2 (Future scope §8).         |
 
 ---
 
