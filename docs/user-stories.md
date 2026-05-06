@@ -59,7 +59,7 @@ Success looks like: Aaron **opens** `localhost:3000`, **clicks Generate** with t
 - **save** outputs to `outputs/[campaign]/[market]/[product]/[ratio].png` (one file per product × market × ratio)
 - **check** brand compliance — logo present, brand colors, prohibited words
 - **badge** each output — OK / WARN / FAIL
-- **write** `report.json` — steps run, assets generated vs. reused, compliance results
+- **write** `report.json` — `counts` (requested / succeeded / failed / generated / reused / flagged), per-creative `compliance`, and an `errors[]` array
 
 ---
 

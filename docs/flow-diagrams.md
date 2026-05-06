@@ -328,6 +328,63 @@ export type Brief = z.infer<typeof briefSchema>
 
 Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived from `safeJoin("outputs", campaignSlug)` with `SLUG_RE` validation.
 
+**Canonical manifest / `report.json` shape** — the object delivered in the `complete` event is identical to `report.json`'s on-disk content (camelCase throughout):
+
+```json
+{
+  "campaign": "summer-refresh-2026",
+  "brand": "sparkling-co",
+  "outputDir": "/Users/aaron/dev/clients/adobe/cast/outputs/summer-refresh-2026",
+  "counts": {
+    "requested": 12,
+    "succeeded": 11,
+    "failed": 1,
+    "generated": 6,
+    "reused": 5,
+    "flagged": 2
+  },
+  "creatives": [
+    {
+      "product": "sparkling-citrus",
+      "market": "us-en",
+      "ratio": "1x1",
+      "source": "local",
+      "path": "outputs/summer-refresh-2026/us-en/sparkling-citrus/1x1.png",
+      "compliance": {
+        "badge": "OK",
+        "checks": { "logoPresent": true, "colorsOk": true, "bannedWords": [] }
+      }
+    },
+    {
+      "product": "sparkling-berry",
+      "market": "mx-es",
+      "ratio": "9x16",
+      "source": "genai",
+      "path": null,
+      "compliance": {
+        "badge": "FAIL",
+        "checks": { "logoPresent": false, "colorsOk": false, "bannedWords": [] }
+      }
+    }
+  ],
+  "errors": [
+    {
+      "product": "sparkling-berry",
+      "market": "mx-es",
+      "ratio": "9x16",
+      "stage": "genai",
+      "message": "OpenAI request timed out after 60s"
+    }
+  ]
+}
+```
+
+- `creatives[].path` is repo-relative `string` on success, `null` on failure (D19). The grid renders a red placeholder tile for `null` paths.
+- `errors[]` is the dedicated failure log: every `null`-path creative has a corresponding entry. Top-level `counts.failed === errors.length`.
+- `source` ∈ `'local' | 'genai'`. `compliance.badge` ∈ `'OK' | 'WARN' | 'FAIL'`.
+
+**Parallel generation (D20)** — for each product, all requested ratios fan out via `Promise.all`. Markets iterate sequentially in the outer loop (deterministic log order); ratios run in parallel within each `(product, market)` pair. The sequence diagram caption in §4 reflects this.
+
 - **S1 drop zone** → `POST /api/upload` then re-fetch `/api/detected-assets` (immediate).
 - **S1 brief edit** → debounce 300 ms → re-fetch `/api/detected-assets`.
 - **S2** consumes the generate stream and renders log lines as they arrive.
