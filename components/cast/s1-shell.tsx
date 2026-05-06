@@ -8,9 +8,8 @@ import { S1SummaryStrip } from "@/components/cast/s1-summary-strip"
 import { S2RunView } from "@/components/cast/s2-run-view"
 import { s1Reducer, type S1Action, type S1State } from "@/components/cast/s1-state"
 import { useRunController } from "@/components/cast/use-run-controller"
-import type { Brief, BrandProfile } from "@/lib/cast/schemas"
-
-type EditorLogoVariant = BrandProfile["logoVariants"][number]
+import type { Brief } from "@/lib/cast/schemas"
+import type { ClientLogoVariant } from "@/components/cast/s1-state"
 
 interface S1ShellProps {
   /** Server-loaded, schema-validated brief — feeds the reducer's initial state. */
@@ -21,7 +20,7 @@ interface S1ShellProps {
    * `null` when the brand fixture is missing or invalid — the editor renders
    * without the logo grid in that case (banner work lands in a follow-up PR).
    */
-  brand: { defaultLogoId: string; logoVariants: readonly EditorLogoVariant[] } | null
+  brand: { defaultLogoId: string; logoVariants: readonly ClientLogoVariant[] } | null
 }
 
 /**

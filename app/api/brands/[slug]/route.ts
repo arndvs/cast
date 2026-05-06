@@ -13,12 +13,17 @@ export const runtime = "nodejs"
  *
  * Response shape (per flow-diagrams §4.3):
  *   {
- *     slug, displayName, colors, voice, bannedWords,
- *     logos: { default, variants: [{ id, displayName, url }] }
+ *     slug, displayName, colors, tokens, voice, bannedWords,
+ *     logos: {
+ *       default,
+ *       variants: [{ id, displayName, theme?: "light" | "dark", url }]
+ *     }
  *   }
  *
- * Logo `url` points at the proxy (`/api/brands/[slug]/logos/[id]`); the
- * absolute filesystem path stays server-side.
+ * `theme` is optional (declared per-variant in `logos.json`) and drives the
+ * editor's swatch background. Logo `url` points at the proxy
+ * (`/api/brands/[slug]/logos/[id]`); the absolute filesystem path stays
+ * server-side.
  */
 export async function GET(
   _req: Request,

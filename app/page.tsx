@@ -37,7 +37,15 @@ export default async function Page() {
           brand
             ? {
                 defaultLogoId: brand.defaultLogoId,
-                logoVariants: brand.logoVariants,
+                // Strip server-only fields (`path` is an absolute fs path
+                // resolved via `safeJoin`) before crossing the
+                // server→client boundary. The editor only needs the
+                // identifying triple to render variant tiles.
+                logoVariants: brand.logoVariants.map((v) => ({
+                  id: v.id,
+                  displayName: v.displayName,
+                  theme: v.theme,
+                })),
               }
             : null
         }

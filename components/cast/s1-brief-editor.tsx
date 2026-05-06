@@ -18,16 +18,18 @@ import { ALL_MARKETS, activeLanguages } from "@/lib/cast/markets"
 import { containsBannedWord, getDefaultBannedWords } from "@/lib/cast/banned-words"
 import { DEMO_BRANDS, getDemoBrand, type DemoBrand } from "@/lib/cast/demo-brands"
 import { buildPromptPreview } from "@/lib/cast/prompt"
-import { type BrandProfile, SLUG_RE, slugify } from "@/lib/cast/schemas"
+import { SLUG_RE, slugify } from "@/lib/cast/schemas"
+import type { ClientLogoVariant } from "@/components/cast/s1-state"
 import { cn } from "@/lib/utils"
 
 /**
  * Manifest-driven logo variants. The editor renders one tile per entry in
- * `brand.logoVariants` from `loadBrandProfile`; brands may declare any
- * number of variants. When no brand profile is available (e.g. fixture
- * missing on disk), the grid is hidden entirely.
+ * `brand.logoVariants` from `loadBrandProfile` (projected to a client-safe
+ * shape at the server→client boundary). Brands may declare any number of
+ * variants. When no brand profile is available (e.g. fixture missing on
+ * disk), the grid is hidden entirely.
  */
-type EditorLogoVariant = BrandProfile["logoVariants"][number]
+type EditorLogoVariant = ClientLogoVariant
 
 interface S1BriefEditorProps {
   state: S1State
