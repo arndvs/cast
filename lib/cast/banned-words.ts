@@ -59,9 +59,11 @@ export function getDefaultBannedWords(): readonly string[] {
 /**
  * Return every banned-list term that appears in `text`.
  *
- * - Single words match on word boundaries (so "skill" doesn't match "kill").
- * - Multi-word phrases match as substrings (word boundaries don't compose
- *   cleanly across spaces).
+ * - Pure-word terms (`/^\w+$/`) match on word boundaries so "skill"
+ *   doesn't match "kill".
+ * - Anything else (phrases with spaces, hyphenated terms like "self-harm",
+ *   anything containing punctuation) matches as an escaped substring —
+ *   `\b` doesn't compose cleanly across non-word characters.
  * - Case-insensitive throughout. Empty/whitespace list entries are skipped.
  *
  * Returns `[]` when nothing matches; never throws.
@@ -83,10 +85,13 @@ export function containsBannedWord(
 }
 
 function buildMatcher(word: string): RegExp {
-  if (word.includes(" ")) {
-    return new RegExp(escapeRegex(word), "i")
+  // Word boundaries only behave intuitively when the term is purely word
+  // characters. Hyphens, spaces, and other punctuation create a non-word →
+  // word transition that confuses `\b`, so fall back to escaped substring.
+  if (/^\w+$/.test(word)) {
+    return new RegExp(`\\b${escapeRegex(word)}\\b`, "i")
   }
-  return new RegExp(`\\b${escapeRegex(word)}\\b`, "i")
+  return new RegExp(escapeRegex(word), "i")
 }
 
 function escapeRegex(s: string): string {
