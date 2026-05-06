@@ -44,7 +44,10 @@ export function useRunController(
 
     const controller = new AbortController()
     controllerRef.current = controller
-    if (cancelRef) cancelRef.current = () => controller.abort()
+    if (cancelRef) {
+      cancelRef.current = () =>
+        controller.abort(new DOMException("cancelled", "AbortError"))
+    }
     let idleTimer: ReturnType<typeof setTimeout> | null = null
     let cancelled = false
 
@@ -127,14 +130,17 @@ export function useRunController(
         if (cancelled) return
         const isAbort =
           err instanceof DOMException && err.name === "AbortError"
+        const isUserCancel = isAbort && err.message === "cancelled"
         dispatch({
           type: "run-error",
           stage: "stream",
-          message: isAbort
-            ? `stream idle for ${Math.round(IDLE_TIMEOUT_MS / 1000)}s`
-            : err instanceof Error
-              ? err.message
-              : String(err),
+          message: isUserCancel
+            ? "run cancelled"
+            : isAbort
+              ? `stream idle for ${Math.round(IDLE_TIMEOUT_MS / 1000)}s`
+              : err instanceof Error
+                ? err.message
+                : String(err),
         })
       } finally {
         if (idleTimer) clearTimeout(idleTimer)

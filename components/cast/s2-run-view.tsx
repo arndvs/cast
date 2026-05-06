@@ -34,15 +34,31 @@ interface S2RunViewProps {
 export function S2RunView({ state, dispatch, cancelRef }: S2RunViewProps) {
   const { brief, brandSlug, runState, events, runError } = state
 
-  // Snapshot the wall-clock the first time S2 mounts for this run.
-  const [startedAt] = React.useState(() => new Date())
+  // Snapshot the wall-clock at the start of each run. The view stays mounted
+  // across Retry (which re-dispatches `generate`), so we reset on the
+  // editing→running / failed→running / complete→running transition using
+  // React's "store info from previous render" pattern.
+  const [startedAt, setStartedAt] = React.useState(() => new Date())
+  const [prevRunState, setPrevRunState] = React.useState(runState)
+  if (runState !== prevRunState) {
+    setPrevRunState(runState)
+    if (runState === "running") setStartedAt(new Date())
+  }
 
   const total = brief.products.length * brief.markets.length * brief.ratios.length
   const expected = Math.max(1, total * 6)
   const rawPct = (events.length / expected) * 100
   const pct = runState === "complete" ? 100 : Math.min(99, rawPct)
 
-  const lastStep = [...events].reverse().find((e) => e.type === "step")
+  // Back-scan without copying the events array — cheap on every render even
+  // when the log grows into the hundreds.
+  const lastStep = React.useMemo(() => {
+    for (let i = events.length - 1; i >= 0; i -= 1) {
+      const ev = events[i]
+      if (ev.type === "step") return ev
+    }
+    return undefined
+  }, [events])
   const currentStage =
     runState === "complete" ? "complete" : lastStep?.stage ?? "…"
 
