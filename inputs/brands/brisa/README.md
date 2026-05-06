@@ -15,14 +15,14 @@ These two are **existence-checked by `loadBrandProfile`** but cannot be auto-gen
 
 ### `logos/*.png`
 
-Four variants per [D27](../../../docs/flow-diagrams.md). Capture by screenshotting the wordmark stages in §02 of the brand HTML. PNG with alpha; sizing is at the screenshotter's discretion.
+Four variants per [D27](../../../docs/flow-diagrams.md). Capture by screenshotting the wordmark stages in §02 of the brand HTML. PNG with alpha; sizing is at the screenshotter's discretion. The manifest binds D27 ids to descriptive PNG filenames; additional unmapped PNGs may live alongside for future use.
 
-| File | Source in brand HTML |
-| --- | --- |
-| `logos/primary-on-light.png` | "Primary wordmark · italic" stage on foam background |
-| `logos/primary-on-dark.png`  | "Primary wordmark · mineral" stage on dark background |
-| `logos/mono-white.png`       | Wordmark forced to `#FFFFFF` over a dark surface |
-| `logos/mono-black.png`       | Wordmark forced to `#14302E` (mineral) over light |
+| Variant id (D27)   | File                       | Source in brand HTML |
+| ------------------ | -------------------------- | -------------------- |
+| `primary-on-light` | `lockup-on-light.png`      | Primary lockup on foam background |
+| `primary-on-dark`  | `lockup-on-dark.png`       | Primary lockup on mineral background |
+| `mono-black`       | `wordmark-on-light.png`    | Wordmark forced to mineral over light |
+| `mono-white`       | `wordmark-on-dark.png`     | Wordmark forced to white over dark |
 
 ## Validation
 

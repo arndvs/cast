@@ -177,6 +177,7 @@ async function assertExists(
  */
 async function resolveFontPath(slug: string): Promise<string> {
   for (const file of ["font.ttf", "font.otf"] as const) {
+    // TODO(symlink-hardening): re-validate with realpath
     const candidate = safeJoin("inputs", "brands", slug, file)
     try {
       await fs.access(candidate)

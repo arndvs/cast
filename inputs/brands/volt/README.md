@@ -15,14 +15,14 @@ These two are **existence-checked by `loadBrandProfile`** but cannot be auto-gen
 
 ### `logos/*.png`
 
-Four variants per [D27](../../../docs/flow-diagrams.md). Capture by screenshotting the wordmark stages in §02 of the brand HTML. PNG with alpha; sizing is at the screenshotter's discretion.
+Four variants per [D27](../../../docs/flow-diagrams.md). Capture by screenshotting the wordmark stages in §02 of the brand HTML. PNG with alpha; sizing is at the screenshotter's discretion. The manifest binds D27 ids to descriptive PNG filenames; additional unmapped PNGs may live alongside for future use.
 
-| File | Source in brand HTML |
-| --- | --- |
-| `logos/primary-on-light.png` | Primary wordmark in `#E8FF1A` over carbon background, then re-staged on bone/paper |
-| `logos/primary-on-dark.png`  | Primary wordmark in `#E8FF1A` over carbon `#0B0B0F` |
-| `logos/mono-white.png`       | Wordmark forced to `#FFFFFF` over carbon |
-| `logos/mono-black.png`       | Wordmark forced to `#0B0B0F` over bone/paper |
+| Variant id (D27)   | File                       | Source in brand HTML |
+| ------------------ | -------------------------- | -------------------- |
+| `primary-on-light` | `wordmark-on-light.png`    | Volt-yellow wordmark over bone/paper |
+| `primary-on-dark`  | `wordmark-on-dark.png`     | Volt-yellow wordmark over carbon |
+| `mono-black`       | `wordmark-on-light.png`    | Reuse — no dedicated mono-black asset yet |
+| `mono-white`       | `wordmark-on-dark.png`     | Reuse — no dedicated mono-white asset yet |
 
 ## Validation
 
