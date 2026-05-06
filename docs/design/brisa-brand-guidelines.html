@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<!--
+  ════════════════════════════════════════════════════════════════════
+  BRISA — BRAND GUIDELINES · Volume I
+  A brand of Onda Beverages.
+  ════════════════════════════════════════════════════════════════════
+  Brisa is the sparkling-water sub-brand. Premium. Wellness-oriented.
+  Clean. Brisa is the breeze that moves through the day — light enough
+  to belong on the desk, the yoga mat, and the dinner table.
+
+    § 01  Front matter   What Brisa is. How it inherits from Onda.
+    § 02  Mark            The droplet · the wordmark · the lockups.
+    § 03  Flavors         Citrus · Berry — the SKUs in market.
+    § 04  Typography      Instrument Serif · Geist · Geist Mono.
+    § 05  Color           Foam · Mineral · Aqua · flavor accents.
+    § 06  Foundation      Spacing, radii, motion, light.
+    § 07  Components      Campaign templates · 1:1 · 9:16 · 16:9.
+    § 08  Voice           How Brisa speaks. The banned-words list.
+    § 09  Parent          How Brisa answers to Onda.
+
+  Inherits governance from: ./onda-brand-guidelines.html
+  Sister brand: ./volt-brand-guidelines.html  (energy — opposite tone, same parent)
+  ════════════════════════════════════════════════════════════════════
+-->
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brisa — Brand Guidelines · Volume I</title>
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      if (window.parent !== window) root.setAttribute('data-embedded', 'true');
+      function apply(dark) {
+        root.classList.toggle('dark', !!dark);
+        var btn = document.querySelector('.theme-toggle');
+        if (btn) btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      }
+      try {
+        var p = new URLSearchParams(location.search).get('theme');
+        if (p === 'dark') apply(true);
+        else if (p === 'light') apply(false);
+      } catch (_) { }
+      window.addEventListener('message', function (e) {
+        var d = e.data;
+        if (d && d.type === 'brisa-theme' || d && d.type === 'onda-theme') apply(!!d.dark);
+      });
+    })();
+  </script>
+  <style>html[data-embedded="true"] .theme-toggle { display: none !important; }</style>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* =========================================================
+       BRISA — Brand Guidelines · Volume I
+       Light. Airy. Mineral. Default LIGHT (foam).
+       Add `.dark` to <html> for the dusk variant.
+       ========================================================= */
+    :root {
+      /* ─── Brand primitives ─────────────────────────────── */
+      --mineral:      #14302E;       /* deep teal — text floor */
+      --mineral-80:   #224542;
+      --mineral-60:   #4A6764;
+      --mineral-40:   #7C918F;
+      --mineral-20:   #BFCCCB;
+      --mineral-08:   #E5ECEB;
+
+      --foam:         #F0F7F5;       /* canvas — pale aqua */
+      --foam-soft:    #E6F0EE;
+      --paper:        #FBFCFC;       /* cleanest surface */
+
+      --aqua:         #2E9C9C;       /* primary brand — the breeze */
+      --aqua-deep:    #1B6E6E;
+      --aqua-lt:      #7BC4C4;       /* the registry swatch */
+      --aqua-mist:    #C4E3DD;
+      --aqua-wash:    rgba(46, 156, 156, 0.08);
+
+      --sun:          #F5DBA8;       /* warm dawn — never the lead */
+      --sun-deep:     #C99B5C;
+
+      /* Flavor accents — used ONLY in product context, never UI chrome */
+      --citrus:       #C5D965;       /* Brisa Citrus */
+      --citrus-deep:  #8AA63E;
+      --berry:        #C77B9F;       /* Brisa Berry */
+      --berry-deep:   #8E4D6F;
+
+      /* States */
+      --flag:         #C76558;       /* warm coral, not alarm red */
+      --flag-08:      rgba(199, 101, 88, 0.10);
+      --ship:         #5B9678;       /* sage-leaning ship state */
+
+      /* ─── Semantic surfaces (light) ────────────────────── */
+      --bg:         var(--foam);
+      --surface:    var(--paper);
+      --surface-2:  var(--foam-soft);
+      --surface-mineral: var(--mineral);
+
+      --fg:         var(--mineral);
+      --fg-soft:    var(--mineral-80);
+      --muted:      var(--mineral-60);
+      --hairline:   rgba(20, 48, 46, 0.08);
+      --border:     rgba(20, 48, 46, 0.14);
+
+      --accent:      var(--aqua);
+      --accent-deep: var(--aqua-deep);
+
+      /* ─── Section surfaces ────────────────────────────── */
+      --surface-foam:    var(--foam);
+      --surface-paper:   var(--paper);
+      --surface-recess:  var(--foam-soft);
+      --surface-aqua:    var(--aqua-wash);
+
+      /* Atmosphere — Brisa runs LIGHT washes. The breeze. */
+      --glow-aqua: radial-gradient(ellipse at 80% 20%, rgba(123, 196, 196, 0.35), transparent 60%);
+      --glow-sun:  radial-gradient(ellipse at 20% 80%, rgba(245, 219, 168, 0.28), transparent 60%);
+      --glow-foam: radial-gradient(ellipse at 50% 0%, rgba(196, 227, 221, 0.50), transparent 55%);
+
+      --grid-line: rgba(20, 48, 46, 0.020);
+
+      /* ─── Type ────────────────────────────────────────── */
+      --font-display: "Instrument Serif", "Cormorant Garamond", Georgia, serif;
+      --font-body:    "Geist", -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      --font-mono:    "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+      /* ─── Spacing — same scale as Onda ──────────────── */
+      --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+      --space-5: 24px; --space-6: 40px; --space-7: 64px; --space-8: 96px; --space-9: 144px;
+
+      /* ─── Radii — softer than parent. Brisa is rounder. ─ */
+      --radius-sm: 4px;
+      --radius-md: 10px;
+      --radius-lg: 18px;
+      --radius-xl: 28px;
+      --radius-pill: 999px;
+
+      /* ─── Elevation — barely there ─────────────────── */
+      --shadow-xs:   0 1px 2px rgba(20, 48, 46, 0.04);
+      --shadow-sm:   0 1px 3px rgba(20, 48, 46, 0.05), 0 6px 20px -8px rgba(20, 48, 46, 0.08);
+      --shadow-md:   0 2px 6px rgba(20, 48, 46, 0.06), 0 16px 40px -12px rgba(20, 48, 46, 0.12);
+      --shadow-glow: 0 24px 48px -20px rgba(46, 156, 156, 0.30);
+
+      --ease:     cubic-bezier(0.32, 0.72, 0, 1);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .dark {
+      /* Dusk variant — Brisa at the end of the day.
+         Sits on a cooled mineral floor, never pure black. */
+      --bg:        var(--mineral);
+      --surface:   #1C3A37;
+      --surface-2: #244542;
+
+      --fg:        var(--foam);
+      --fg-soft:   #D5E3E0;
+      --muted:     #97AAA8;
+      --hairline:  rgba(240, 247, 245, 0.10);
+      --border:    rgba(240, 247, 245, 0.18);
+
+      --accent:      var(--aqua-lt);
+      --accent-deep: var(--aqua-lt);
+
+      --surface-foam:   var(--mineral);
+      --surface-paper:  #1C3A37;
+      --surface-recess: #244542;
+      --surface-aqua:   rgba(123, 196, 196, 0.10);
+
+      --glow-aqua: radial-gradient(ellipse at 80% 20%, rgba(123, 196, 196, 0.20), transparent 60%);
+      --glow-sun:  radial-gradient(ellipse at 20% 80%, rgba(245, 219, 168, 0.12), transparent 60%);
+      --glow-foam: radial-gradient(ellipse at 50% 0%, rgba(123, 196, 196, 0.14), transparent 55%);
+
+      --grid-line: rgba(240, 247, 245, 0.030);
+
+      --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.30);
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.40), 0 8px 24px -8px rgba(0, 0, 0, 0.55);
+      --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.45), 0 16px 40px -12px rgba(0, 0, 0, 0.65);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      line-height: 1.55;
+      transition: background 0.5s var(--ease), color 0.5s var(--ease);
+    }
+    ::selection { background: var(--aqua-lt); color: var(--mineral); }
+
+    :focus { outline: 0; }
+    :focus-visible {
+      outline: 2px solid var(--aqua);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    .dark :focus-visible { outline-color: var(--aqua-lt); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition: none !important;
+        animation: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    a { color: inherit; text-decoration: none; }
+    svg { display: block; }
+
+    /* Atmosphere wash — fixed, behind everything. Brisa's signature breeze. */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: var(--glow-foam), var(--glow-aqua), var(--glow-sun);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.7;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+      background-size: 64px 64px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* =========================================================
+       Page chrome
+       ========================================================= */
+    .page-shell {
+      position: relative;
+      z-index: 1;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: var(--space-7) var(--space-5) var(--space-9);
+    }
+
+    .page-header {
+      border-bottom: 1px solid var(--mineral);
+      padding-bottom: var(--space-7);
+      margin-bottom: var(--space-8);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: var(--space-6);
+    }
+    .dark .page-header { border-bottom-color: var(--foam); }
+    @media (max-width: 720px) {
+      .page-header { grid-template-columns: 1fr; }
+    }
+
+    .eyebrow {
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.20em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 24px;
+      height: 1px;
+      background: currentColor;
+    }
+
+    .page-header h1 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(64px, 10vw, 144px);
+      line-height: 0.92;
+      letter-spacing: -0.02em;
+      margin: var(--space-5) 0 0;
+    }
+    .page-header h1 em {
+      font-style: italic;
+      color: var(--accent-deep);
+    }
+    .page-header .meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+      display: grid;
+      gap: 6px;
+      text-align: right;
+    }
+    @media (max-width: 720px) {
+      .page-header .meta { text-align: left; }
+    }
+    .page-header .meta strong { color: var(--fg); font-weight: 500; }
+
+    .page-header .lede {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-style: italic;
+      font-size: clamp(22px, 2.6vw, 30px);
+      line-height: 1.4;
+      color: var(--fg-soft);
+      max-width: 60ch;
+      margin: var(--space-5) 0 0;
+      grid-column: 1 / -1;
+    }
+
+    /* Parent breadcrumb — Brisa always declares its parent. */
+    .parent-crumb {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 6px 12px;
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-pill);
+      background: var(--surface);
+      margin-bottom: var(--space-4);
+    }
+    .parent-crumb .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--aqua);
+    }
+
+    /* Theme toggle */
+    .theme-toggle {
+      position: fixed;
+      top: 24px; right: 24px;
+      z-index: 20;
+      width: 44px; height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--fg);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-xs);
+      transition: transform 0.2s var(--ease), background 0.3s var(--ease);
+    }
+    .theme-toggle:hover { transform: scale(1.05); }
+    .theme-toggle .sun { display: none; }
+    .theme-toggle .moon { display: inline; }
+    .dark .theme-toggle .sun { display: inline; }
+    .dark .theme-toggle .moon { display: none; }
+
+    /* =========================================================
+       Section rhythm
+       ========================================================= */
+    .section { margin-bottom: var(--space-9); position: relative; }
+    .section-num {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      color: var(--accent-deep);
+      text-transform: uppercase;
+      margin-bottom: var(--space-3);
+      display: block;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(44px, 6vw, 84px);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      margin: 0 0 var(--space-6);
+    }
+    .section-title em {
+      font-style: italic;
+      color: var(--accent-deep);
+    }
+    .section-intro {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: clamp(20px, 2.2vw, 26px);
+      line-height: 1.5;
+      color: var(--fg-soft);
+      max-width: 62ch;
+      margin: 0 0 var(--space-7);
+    }
+
+    .section-grid { display: grid; gap: var(--space-5); }
+    .grid-2 { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+    /* =========================================================
+       Card primitives
+       ========================================================= */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      box-shadow: var(--shadow-xs);
+    }
+    .card .label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 var(--space-3);
+    }
+    .card h3 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: 30px;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      margin: 0 0 var(--space-3);
+    }
+    .card h3 em { color: var(--accent-deep); font-style: italic; }
+    .card p { margin: 0 0 var(--space-3); color: var(--fg-soft); }
+    .card p:last-child { margin-bottom: 0; }
+
+    .card-recess {
+      background: var(--surface-recess);
+      border-color: transparent;
+      box-shadow: none;
+    }
+
+    /* Mineral card — for the parent / governance moments. */
+    .surface-mineral {
+      background: var(--mineral);
+      color: var(--foam);
+      border-radius: var(--radius-xl);
+      padding: var(--space-7);
+      position: relative;
+      overflow: hidden;
+    }
+    .surface-mineral::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: var(--glow-aqua);
+      pointer-events: none;
+    }
+    .surface-mineral > * { position: relative; z-index: 1; }
+    .surface-mineral .label { color: var(--aqua-lt); }
+    .surface-mineral h3 { color: var(--foam); }
+    .surface-mineral h3 em { color: var(--aqua-lt); }
+    .surface-mineral p { color: rgba(240, 247, 245, 0.80); }
+
+    /* =========================================================
+       § 01  Front matter
+       ========================================================= */
+    .principle {
+      padding: var(--space-6) 0;
+      border-top: 1px solid var(--hairline);
+    }
+    .principle .num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: var(--accent-deep);
+    }
+    .principle h4 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: 26px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      margin: var(--space-3) 0 var(--space-3);
+    }
+    .principle h4 em { font-style: italic; color: var(--accent-deep); }
+    .principle p { margin: 0; color: var(--fg-soft); max-width: 62ch; }
+
+    /* =========================================================
+       § 02  Mark
+       ========================================================= */
+    .mark-stage {
+      background: var(--surface-recess);
+      border-radius: var(--radius-lg);
+      padding: var(--space-7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 280px;
+      position: relative;
+      overflow: hidden;
+    }
+    .mark-stage.mineral {
+      background: var(--mineral);
+      color: var(--foam);
+    }
+    .mark-stage.mineral::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: var(--glow-aqua);
+      pointer-events: none;
+    }
+    .mark-stage > * { position: relative; z-index: 1; }
+    .mark-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: var(--space-5);
+    }
+
+    .wordmark-brisa {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(80px, 11vw, 160px);
+      line-height: 0.9;
+      letter-spacing: -0.02em;
+      color: var(--mineral);
+    }
+    .mineral .wordmark-brisa { color: var(--foam); }
+
+    /* The droplet glyph — single rising bubble. */
+    .droplet {
+      width: 96px;
+      height: 120px;
+    }
+
+    /* =========================================================
+       § 03  Flavors — Citrus & Berry
+       ========================================================= */
+    .flavor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: var(--space-5);
+    }
+
+    .flavor {
+      position: relative;
+      border-radius: var(--radius-xl);
+      padding: var(--space-7) var(--space-6) var(--space-6);
+      overflow: hidden;
+      border: 1px solid var(--hairline);
+      min-height: 380px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
+    }
+    .flavor:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+    .flavor.citrus {
+      background:
+        radial-gradient(ellipse at 70% 20%, rgba(197, 217, 101, 0.35), transparent 55%),
+        linear-gradient(180deg, #FBFCEC 0%, var(--paper) 100%);
+    }
+    .flavor.berry {
+      background:
+        radial-gradient(ellipse at 70% 20%, rgba(199, 123, 159, 0.30), transparent 55%),
+        linear-gradient(180deg, #FAF0F4 0%, var(--paper) 100%);
+    }
+    .dark .flavor.citrus {
+      background:
+        radial-gradient(ellipse at 70% 20%, rgba(197, 217, 101, 0.18), transparent 55%),
+        linear-gradient(180deg, #2A3327 0%, #1C3A37 100%);
+    }
+    .dark .flavor.berry {
+      background:
+        radial-gradient(ellipse at 70% 20%, rgba(199, 123, 159, 0.18), transparent 55%),
+        linear-gradient(180deg, #33262C 0%, #1C3A37 100%);
+    }
+
+    .flavor .can {
+      position: absolute;
+      top: var(--space-5);
+      right: var(--space-5);
+      width: 88px;
+      height: 200px;
+      border-radius: 14px;
+      box-shadow: 0 12px 32px -8px rgba(20, 48, 46, 0.25);
+    }
+    .flavor.citrus .can {
+      background: linear-gradient(180deg, #C5D965 0%, #8AA63E 100%);
+    }
+    .flavor.berry .can {
+      background: linear-gradient(180deg, #C77B9F 0%, #8E4D6F 100%);
+    }
+    .flavor .can::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 14px;
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 14px 14px 0 0;
+    }
+    .flavor .can::after {
+      content: "brisa";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-90deg);
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 22px;
+      color: rgba(255, 255, 255, 0.95);
+      letter-spacing: -0.02em;
+    }
+
+    .flavor .registry {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 var(--space-3);
+    }
+    .flavor h3 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: 56px;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      margin: 0 0 var(--space-2);
+      color: var(--fg);
+    }
+    .flavor h3 em { font-style: italic; }
+    .flavor.citrus h3 em { color: var(--citrus-deep); }
+    .flavor.berry h3 em  { color: var(--berry-deep); }
+    .dark .flavor.citrus h3 em { color: #D5E08A; }
+    .dark .flavor.berry h3 em  { color: #DFA0BE; }
+
+    .flavor .desc {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 19px;
+      line-height: 1.4;
+      color: var(--fg-soft);
+      margin: 0 0 var(--space-5);
+      max-width: 28ch;
+    }
+    .flavor dl {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    .flavor dt {
+      text-transform: uppercase;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      font-size: 10px;
+      margin-bottom: 2px;
+    }
+    .flavor dd { margin: 0; color: var(--fg); }
+
+    /* =========================================================
+       § 04  Typography
+       ========================================================= */
+    .type-spec {
+      padding: var(--space-6) 0;
+      border-top: 1px solid var(--hairline);
+    }
+    .type-spec:last-child { border-bottom: 1px solid var(--hairline); }
+    .type-spec .meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      gap: var(--space-5);
+      margin-bottom: var(--space-4);
+      flex-wrap: wrap;
+    }
+    .type-spec .meta strong { color: var(--fg); font-weight: 500; }
+
+    .type-display {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(48px, 7vw, 96px);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    .type-display em { font-style: italic; color: var(--accent-deep); }
+
+    .type-h2 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(28px, 3.4vw, 42px);
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+    .type-h2 em { font-style: italic; color: var(--accent-deep); }
+
+    .type-body {
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.6;
+      max-width: 60ch;
+      margin: 0;
+    }
+    .type-mono {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.5;
+      letter-spacing: 0.02em;
+      color: var(--accent-deep);
+      margin: 0;
+    }
+
+    /* =========================================================
+       § 05  Color
+       ========================================================= */
+    .swatch {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--hairline);
+      background: var(--surface);
+    }
+    .swatch .chip { height: 120px; width: 100%; }
+    .swatch .meta {
+      padding: var(--space-4);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      display: grid;
+      gap: 4px;
+    }
+    .swatch .meta .name {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 14px;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--fg);
+    }
+    .swatch .meta .role {
+      color: var(--muted);
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+    .swatch .meta .hex { color: var(--fg-soft); letter-spacing: 0.05em; }
+
+    .swatch.mineral .chip      { background: var(--mineral); }
+    .swatch.foam .chip         { background: var(--foam); }
+    .swatch.paper .chip        { background: var(--paper); }
+    .swatch.aqua .chip         { background: var(--aqua); }
+    .swatch.aqua-deep .chip    { background: var(--aqua-deep); }
+    .swatch.aqua-lt .chip      { background: var(--aqua-lt); }
+    .swatch.aqua-mist .chip    { background: var(--aqua-mist); }
+    .swatch.sun .chip          { background: var(--sun); }
+    .swatch.citrus .chip       { background: var(--citrus); }
+    .swatch.berry .chip        { background: var(--berry); }
+
+    /* =========================================================
+       § 06  Foundation
+       ========================================================= */
+    .scale-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid var(--hairline);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .scale-row:last-child { border-bottom: 0; }
+    .scale-row .key { width: 80px; color: var(--accent-deep); }
+    .scale-row .val { width: 80px; color: var(--muted); }
+    .scale-row .bar {
+      height: 12px;
+      background: var(--aqua);
+      border-radius: 999px;
+    }
+    .radius-demo {
+      width: 80px; height: 80px;
+      background: var(--aqua);
+      margin-bottom: var(--space-3);
+    }
+
+    /* =========================================================
+       § 07  Components — buttons, badges, campaign templates
+       ========================================================= */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0;
+      padding: 12px 22px;
+      border-radius: var(--radius-pill);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease);
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--mineral); color: var(--foam); }
+    .btn-primary:hover { background: var(--mineral-80); }
+    .dark .btn-primary { background: var(--foam); color: var(--mineral); }
+    .dark .btn-primary:hover { background: #DCE8E5; }
+
+    .btn-aqua { background: var(--aqua); color: var(--paper); }
+    .btn-aqua:hover { background: var(--aqua-deep); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--fg);
+      border-color: var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface-recess); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .badge::before {
+      content: "";
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .badge-citrus { color: var(--citrus-deep); border-color: rgba(138, 166, 62, 0.30); background: rgba(197, 217, 101, 0.15); }
+    .badge-berry  { color: var(--berry-deep);  border-color: rgba(142, 77, 111, 0.30); background: rgba(199, 123, 159, 0.15); }
+    .badge-ship   { color: var(--ship);  border-color: rgba(91, 150, 120, 0.30); background: rgba(91, 150, 120, 0.10); }
+    .badge-flag   { color: var(--flag);  border-color: rgba(199, 101, 88, 0.30); background: var(--flag-08); }
+
+    .input {
+      width: 100%;
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--fg);
+      transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    }
+    .input::placeholder { color: var(--muted); }
+    .input:focus {
+      outline: 0;
+      border-color: var(--aqua);
+      box-shadow: 0 0 0 3px rgba(46, 156, 156, 0.18);
+    }
+
+    /* ─── Campaign asset templates ─────────────────────
+       The deliverable Maya's pipeline emits: 1:1, 9:16, 16:9
+       across two flavors. These are the on-brand templates. */
+    .asset-board {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr;
+      gap: var(--space-4);
+      align-items: start;
+    }
+    @media (max-width: 920px) {
+      .asset-board { grid-template-columns: 1fr; }
+    }
+    .asset {
+      position: relative;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: var(--space-5);
+      color: var(--mineral);
+    }
+    .asset .ratio {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(20, 48, 46, 0.55);
+    }
+    .asset h4 {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(22px, 3vw, 36px);
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      margin: 0;
+      color: var(--mineral);
+    }
+    .asset .pin {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--mineral-60);
+      display: flex;
+      justify-content: space-between;
+    }
+    .asset.citrus {
+      background:
+        radial-gradient(ellipse at 75% 25%, rgba(197, 217, 101, 0.55), transparent 60%),
+        linear-gradient(180deg, #F7F9DD 0%, #FBFCEC 100%);
+    }
+    .asset.berry {
+      background:
+        radial-gradient(ellipse at 75% 25%, rgba(199, 123, 159, 0.45), transparent 60%),
+        linear-gradient(180deg, #F7E5EC 0%, #FAF0F4 100%);
+    }
+    .asset-1x1   { aspect-ratio: 1 / 1; }
+    .asset-9x16  { aspect-ratio: 9 / 16; }
+    .asset-16x9  { aspect-ratio: 16 / 9; }
+
+    /* =========================================================
+       § 08  Voice — banned-words list
+       ========================================================= */
+    .voice-row {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: var(--space-5);
+      padding: var(--space-5) 0;
+      border-bottom: 1px solid var(--hairline);
+      align-items: baseline;
+    }
+    @media (max-width: 720px) {
+      .voice-row { grid-template-columns: 1fr; gap: var(--space-2); }
+    }
+    .voice-row:last-child { border-bottom: 0; }
+    .voice-row .label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+    .voice-row .quote {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: clamp(20px, 2.2vw, 28px);
+      line-height: 1.4;
+      color: var(--fg);
+      margin: 0;
+    }
+
+    .banned {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+    .banned .word {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--flag-08);
+      color: var(--flag);
+      border: 1px solid rgba(199, 101, 88, 0.25);
+      text-decoration: line-through;
+      text-decoration-color: rgba(199, 101, 88, 0.55);
+      text-decoration-thickness: 1.5px;
+    }
+    .banned .word::before {
+      content: "✕";
+      font-size: 10px;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    /* =========================================================
+       Footer
+       ========================================================= */
+    .page-footer {
+      margin-top: var(--space-9);
+      padding-top: var(--space-7);
+      border-top: 1px solid var(--mineral);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: var(--space-5);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.10em;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+    .dark .page-footer { border-top-color: var(--foam); }
+    .page-footer .colophon { max-width: 50ch; line-height: 1.6; }
+    .page-footer strong { color: var(--fg); font-weight: 500; }
+    .page-footer em { font-style: italic; color: var(--accent-deep); }
+
+    /* Helpers */
+    .stack { display: grid; gap: var(--space-3); }
+    .row   { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; }
+    .mt-3  { margin-top: var(--space-3); }
+    .mt-5  { margin-top: var(--space-5); }
+    .mt-6  { margin-top: var(--space-6); }
+  </style>
+</head>
+
+<body>
+  <button class="theme-toggle" aria-label="Toggle theme" aria-pressed="false"
+    onclick="document.documentElement.classList.toggle('dark'); this.setAttribute('aria-pressed', document.documentElement.classList.contains('dark'));">
+    <span class="moon" aria-hidden="true">◐</span>
+    <span class="sun" aria-hidden="true">☀</span>
+  </button>
+
+  <div class="page-shell">
+
+    <!-- ─────────────────────────────────────────────────────
+         Page header
+         ───────────────────────────────────────────────────── -->
+    <header class="page-header">
+      <div>
+        <span class="parent-crumb"><span class="dot"></span>A brand of Onda · 001</span>
+        <br>
+        <span class="eyebrow">Brisa Sparkling Water · Volume I</span>
+        <h1>Crack open<br>something <em>brighter</em>.</h1>
+      </div>
+      <div class="meta">
+        <span><strong>Issued</strong> 2026.05</span>
+        <span><strong>Status</strong> Living document</span>
+        <span><strong>Owner</strong> Brisa brand team</span>
+        <span><strong>Inherits</strong> Onda · Volume I</span>
+      </div>
+      <p class="lede">
+        Brisa is a breeze, in a can. A premium sparkling water for people who
+        want lift without weight — minerality, a whisper of flavor, and nothing
+        that asks for attention. This volume covers everything from the
+        droplet glyph to the words we won't put on a label.
+      </p>
+    </header>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 01 — Front matter
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="front-matter">
+      <span class="section-num">§ 01 — Front matter</span>
+      <h2 class="section-title">What Brisa <em>is</em>.</h2>
+      <p class="section-intro">
+        A premium sparkling water for the urban wellness market. Glass-clear
+        liquid, mineral-forward palate, minimal sugar, no caffeine. Brisa
+        belongs on the desk, the mat, and the dinner table — quietly.
+      </p>
+
+      <div class="section-grid grid-2">
+        <div class="card surface-mineral">
+          <p class="label">Promise</p>
+          <h3>Lift, without <em>weight</em>.</h3>
+          <p>
+            The way air moves through an open window. The way a citrus peel
+            sharpens a glass of water. Brisa is the smallest possible
+            interruption between you and your day — and the most welcome one.
+          </p>
+        </div>
+        <div class="card">
+          <p class="label">Audience</p>
+          <h3>25–40, urban, deliberate.</h3>
+          <p>
+            They read labels. They train. They host. They've outgrown
+            sweetness but haven't given up on flavor. They will pay for a can
+            that earns its place on the counter.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <div class="principle">
+          <span class="num">P · 01</span>
+          <h4>Light is the <em>discipline</em>.</h4>
+          <p>Every choice — palette, type, copy, packaging — defaults to less. If a thing can come out, it comes out. The breeze is what's left.</p>
+        </div>
+        <div class="principle">
+          <span class="num">P · 02</span>
+          <h4>Minerality, never <em>sweetness</em>.</h4>
+          <p>Brisa speaks the language of stone, citrus peel, and morning air. We never lean on sugar metaphors, dessert words, or candy-shop colour.</p>
+        </div>
+        <div class="principle">
+          <span class="num">P · 03</span>
+          <h4>One claim per surface.</h4>
+          <p>Wellness is crowded. We make one promise at a time and leave room for the consumer to bring their own. A can is not an essay.</p>
+        </div>
+        <div class="principle">
+          <span class="num">P · 04</span>
+          <h4>Brisa <em>before</em> Onda.</h4>
+          <p>On every consumer surface, Brisa leads. The Onda parent appears only in fine print: <em>"Brisa is a brand of Onda."</em> See § 09.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 02 — Mark
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="marks">
+      <span class="section-num">§ 02 — Mark</span>
+      <h2 class="section-title">The <em>marks</em>.</h2>
+      <p class="section-intro">
+        A handwritten-italic wordmark and a single rising droplet. That's it.
+        The droplet is the first bubble in the can. The italic is the breeze
+        the bubble travels on.
+      </p>
+
+      <div class="mark-grid">
+
+        <div>
+          <div class="mark-stage">
+            <span class="wordmark-brisa">brisa</span>
+          </div>
+          <p class="label mt-5">Primary wordmark · italic</p>
+        </div>
+
+        <div>
+          <div class="mark-stage mineral">
+            <span class="wordmark-brisa">brisa</span>
+          </div>
+          <p class="label mt-5">Primary wordmark · mineral</p>
+        </div>
+
+        <div>
+          <div class="mark-stage">
+            <svg class="droplet" viewBox="0 0 96 120" aria-label="Brisa droplet glyph">
+              <defs>
+                <linearGradient id="drop" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#7BC4C4"/>
+                  <stop offset="100%" stop-color="#2E9C9C"/>
+                </linearGradient>
+              </defs>
+              <path d="M 48 12 C 30 42, 18 60, 18 78 C 18 96, 32 110, 48 110 C 64 110, 78 96, 78 78 C 78 60, 66 42, 48 12 Z"
+                    fill="url(#drop)"/>
+              <ellipse cx="38" cy="62" rx="6" ry="10" fill="rgba(255,255,255,0.45)"/>
+            </svg>
+          </div>
+          <p class="label mt-5">Droplet glyph — the first bubble</p>
+        </div>
+
+        <div>
+          <div class="mark-stage">
+            <div style="display: flex; align-items: center; gap: 24px;">
+              <svg width="42" height="52" viewBox="0 0 96 120" aria-hidden="true">
+                <path d="M 48 12 C 30 42, 18 60, 18 78 C 18 96, 32 110, 48 110 C 64 110, 78 96, 78 78 C 78 60, 66 42, 48 12 Z"
+                      fill="#2E9C9C"/>
+              </svg>
+              <span class="wordmark-brisa" style="font-size: 84px;">brisa</span>
+            </div>
+          </div>
+          <p class="label mt-5">Horizontal lockup — droplet + wordmark</p>
+        </div>
+
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">Clear space &amp; minimum size</p>
+        <h3>Air around the <em>breeze</em>.</h3>
+        <p>
+          Clear space equals the height of the lowercase <strong>b</strong> on all sides.
+          Minimum size for the wordmark is <strong>40px</strong> digital,
+          <strong>10mm</strong> print. The droplet glyph holds down to <strong>16px</strong>
+          on its own.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 03 — Flavors
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="flavors">
+      <span class="section-num">§ 03 — Flavors</span>
+      <h2 class="section-title">Two <em>flavors</em> in market.</h2>
+      <p class="section-intro">
+        The summer line is two SKUs: Brisa Citrus and Brisa Berry. Each
+        carries a flavor accent — used on the can, the campaign asset, and
+        nowhere else. Flavor colour never enters UI chrome.
+      </p>
+
+      <div class="flavor-grid">
+
+        <article class="flavor citrus">
+          <div class="can"></div>
+          <p class="registry">Brisa · 001 · CIT · 12 fl oz</p>
+          <h3>Brisa <em>Citrus</em></h3>
+          <p class="desc">Lemon peel, blood orange, a flick of yuzu.</p>
+          <dl>
+            <div><dt>Palate</dt><dd>Sharp · zest · stone</dd></div>
+            <div><dt>Sugar</dt><dd>0g</dd></div>
+            <div><dt>Flavor accent</dt><dd>Citrus #C5D965</dd></div>
+            <div><dt>Pairs with</dt><dd>Morning · meal · move</dd></div>
+          </dl>
+        </article>
+
+        <article class="flavor berry">
+          <div class="can"></div>
+          <p class="registry">Brisa · 002 · BRY · 12 fl oz</p>
+          <h3>Brisa <em>Berry</em></h3>
+          <p class="desc">Wild strawberry, hibiscus, a thread of rose.</p>
+          <dl>
+            <div><dt>Palate</dt><dd>Soft · floral · dry</dd></div>
+            <div><dt>Sugar</dt><dd>0g</dd></div>
+            <div><dt>Flavor accent</dt><dd>Berry #C77B9F</dd></div>
+            <div><dt>Pairs with</dt><dd>Afternoon · host · slow</dd></div>
+          </dl>
+        </article>
+
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">The flavor-accent rule</p>
+        <h3>Accent on the <em>can</em>. Aqua on the <em>chrome</em>.</h3>
+        <p>
+          Each flavor owns a single accent colour, used on the can artwork and
+          inside campaign creative. UI chrome — buttons, links, focus rings,
+          loading states — always uses Brisa's primary <strong>aqua</strong>,
+          regardless of which flavor the asset is selling. This is what keeps
+          the brand legible across a 60-asset campaign.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 04 — Typography
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="typography">
+      <span class="section-num">§ 04 — Typography</span>
+      <h2 class="section-title">Three <em>typefaces</em>.</h2>
+      <p class="section-intro">
+        Instrument Serif carries the heart — italic-leaning, editorial, airy.
+        Geist runs every functional surface. Geist Mono carries metadata,
+        pack copy, and SKU. Three faces, no exceptions.
+      </p>
+
+      <div class="type-spec">
+        <p class="meta">
+          <span><strong>Display</strong> Instrument Serif</span>
+          <span>400 / italic</span>
+          <span>Tracking −0.02em</span>
+          <span>Headlines · pull-quotes · hero</span>
+        </p>
+        <p class="type-display">A breeze, in a <em>can</em>.</p>
+      </div>
+
+      <div class="type-spec">
+        <p class="meta">
+          <span><strong>Sub-display</strong> Instrument Serif 400</span>
+          <span>Card heads · section titles</span>
+        </p>
+        <p class="type-h2">Lift, without weight. <em>Minerality, never sweetness.</em></p>
+      </div>
+
+      <div class="type-spec">
+        <p class="meta">
+          <span><strong>Body</strong> Geist</span>
+          <span>17 / 1.6</span>
+          <span>Web · app · packaging back panel</span>
+        </p>
+        <p class="type-body">
+          Geist is the workhorse. Clean geometry, generous x-height,
+          high legibility on small screens. It carries every piece of
+          functional copy on a Brisa surface — ingredients, product
+          descriptions, store locator, e-commerce. It is intentionally
+          quiet so the italic display always wins the room.
+        </p>
+      </div>
+
+      <div class="type-spec">
+        <p class="meta">
+          <span><strong>Mono</strong> Geist Mono</span>
+          <span>11–13 / 0.06em</span>
+          <span>Pack copy · SKU · governance</span>
+        </p>
+        <p class="type-mono">BRISA · 001 · CIT · EU · 16:9 · v1.4 · 2026.05.04</p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 05 — Color
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="color">
+      <span class="section-num">§ 05 — Color</span>
+      <h2 class="section-title">Foam, mineral, <em>aqua</em>.</h2>
+      <p class="section-intro">
+        The Brisa palette runs three layers deep. Foam and mineral are the
+        canvas and the type. Aqua is the brand. Sun, citrus, and berry sit
+        on top — used sparingly, and only where the product itself appears.
+      </p>
+
+      <div class="section-grid grid-4">
+        <div class="swatch foam">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Canvas</span><span class="name">Foam</span><span class="hex">#F0F7F5</span></div>
+        </div>
+        <div class="swatch paper">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Surface</span><span class="name">Paper</span><span class="hex">#FBFCFC</span></div>
+        </div>
+        <div class="swatch mineral">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Type · floor</span><span class="name">Mineral</span><span class="hex">#14302E</span></div>
+        </div>
+        <div class="swatch aqua">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Primary brand</span><span class="name">Aqua</span><span class="hex">#2E9C9C</span></div>
+        </div>
+        <div class="swatch aqua-deep">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Pressed · link hover</span><span class="name">Aqua Deep</span><span class="hex">#1B6E6E</span></div>
+        </div>
+        <div class="swatch aqua-lt">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">On mineral / dusk</span><span class="name">Aqua Light</span><span class="hex">#7BC4C4</span></div>
+        </div>
+        <div class="swatch aqua-mist">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Wash · tinted bg</span><span class="name">Aqua Mist</span><span class="hex">#C4E3DD</span></div>
+        </div>
+        <div class="swatch sun">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Warmth · seasonal</span><span class="name">Sun</span><span class="hex">#F5DBA8</span></div>
+        </div>
+        <div class="swatch citrus">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Flavor · Citrus only</span><span class="name">Citrus</span><span class="hex">#C5D965</span></div>
+        </div>
+        <div class="swatch berry">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Flavor · Berry only</span><span class="name">Berry</span><span class="hex">#C77B9F</span></div>
+        </div>
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">Inheritance from Onda</p>
+        <h3>Brisa <em>does not</em> inherit Onda's palette.</h3>
+        <p>
+          Onda is oceanic deep blue; Brisa is mineral teal. The two parent
+          and child intentionally do not share accent. Sub-brand colour belongs
+          to the sub-brand alone — see Onda § 08, the co-branding rule.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 06 — Foundation
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="foundation">
+      <span class="section-num">§ 06 — Foundation</span>
+      <h2 class="section-title"><em>Foundation</em>.</h2>
+      <p class="section-intro">
+        Brisa keeps Onda's 4-px spacing scale and motion tokens. It departs on
+        radii — softer, rounder — and on shadows, which run lighter to keep
+        the air in the layout.
+      </p>
+
+      <div class="section-grid grid-2">
+        <div class="card">
+          <p class="label">Spacing scale</p>
+          <h3>4-px <em>increments</em>.</h3>
+          <div class="mt-5">
+            <div class="scale-row"><span class="key">--space-1</span><span class="val">4</span><div class="bar" style="width: 4px;"></div></div>
+            <div class="scale-row"><span class="key">--space-2</span><span class="val">8</span><div class="bar" style="width: 8px;"></div></div>
+            <div class="scale-row"><span class="key">--space-3</span><span class="val">12</span><div class="bar" style="width: 12px;"></div></div>
+            <div class="scale-row"><span class="key">--space-4</span><span class="val">16</span><div class="bar" style="width: 16px;"></div></div>
+            <div class="scale-row"><span class="key">--space-5</span><span class="val">24</span><div class="bar" style="width: 24px;"></div></div>
+            <div class="scale-row"><span class="key">--space-6</span><span class="val">40</span><div class="bar" style="width: 40px;"></div></div>
+            <div class="scale-row"><span class="key">--space-7</span><span class="val">64</span><div class="bar" style="width: 64px;"></div></div>
+            <div class="scale-row"><span class="key">--space-8</span><span class="val">96</span><div class="bar" style="width: 96px;"></div></div>
+            <div class="scale-row"><span class="key">--space-9</span><span class="val">144</span><div class="bar" style="width: 144px;"></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="label">Radii — softer than parent</p>
+          <h3>Round, like a <em>can-edge</em>.</h3>
+          <div class="row mt-5" style="gap: var(--space-5); align-items: flex-start;">
+            <div>
+              <div class="radius-demo" style="border-radius: 4px;"></div>
+              <p class="type-mono">--radius-sm · 4px</p>
+            </div>
+            <div>
+              <div class="radius-demo" style="border-radius: 10px;"></div>
+              <p class="type-mono">--radius-md · 10px</p>
+            </div>
+            <div>
+              <div class="radius-demo" style="border-radius: 18px;"></div>
+              <p class="type-mono">--radius-lg · 18px</p>
+            </div>
+            <div>
+              <div class="radius-demo" style="border-radius: 999px;"></div>
+              <p class="type-mono">--radius-pill</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="label">Motion</p>
+          <h3>The way air <em>moves</em>.</h3>
+          <p>
+            Default ease: <code style="font-family: var(--font-mono); font-size: 12px;">cubic-bezier(0.32, 0.72, 0, 1)</code>.
+            Default duration: <strong>200ms</strong> for state, <strong>400ms</strong> for surfaces.
+            All transitions collapse under <code style="font-family: var(--font-mono); font-size: 12px;">prefers-reduced-motion: reduce</code>.
+            Brisa never bounces.
+          </p>
+        </div>
+
+        <div class="card">
+          <p class="label">Light &amp; atmosphere</p>
+          <h3>The breeze is <em>fixed</em>.</h3>
+          <p>
+            Every Brisa page carries a fixed atmosphere wash — three soft
+            radial gradients (foam, aqua, sun) layered behind the content.
+            It is the brand's signature ambient layer. Never disable it on a
+            Brisa surface; never enable it on an Onda or Volt one.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 07 — Components
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="components">
+      <span class="section-num">§ 07 — Components</span>
+      <h2 class="section-title">Components</h2>
+      <p class="section-intro">
+        The shared components for every Brisa surface — and the campaign
+        asset templates Maya's pipeline emits across three aspect ratios per
+        market.
+      </p>
+
+      <div class="section-grid grid-2">
+        <div class="card">
+          <p class="label">Buttons — pill</p>
+          <h3>Three roles, one <em>pill</em>.</h3>
+          <div class="row mt-5">
+            <button class="btn btn-primary" type="button">Find a stockist</button>
+            <button class="btn btn-aqua" type="button">Shop the case</button>
+            <button class="btn btn-ghost" type="button">Learn more</button>
+          </div>
+          <p class="mt-5">
+            Pill buttons keep the air in the layout. Mineral is the terminal
+            action, aqua is the brand action, ghost is dismissal. Brisa never
+            uses square buttons on a consumer surface.
+          </p>
+        </div>
+
+        <div class="card">
+          <p class="label">Flavor &amp; status badges</p>
+          <h3>The <em>signal</em> layer.</h3>
+          <div class="row mt-5">
+            <span class="badge badge-citrus">Citrus</span>
+            <span class="badge badge-berry">Berry</span>
+            <span class="badge badge-ship">Shipping</span>
+            <span class="badge badge-flag">Brand · review</span>
+          </div>
+          <p class="mt-5">
+            Flavor badges are the only place flavor accent colours appear in
+            UI. Status badges follow the parent registry convention
+            (<a href="./onda-brand-guidelines.html" style="color: var(--accent-deep);">Onda § 07</a>).
+          </p>
+        </div>
+
+        <div class="card">
+          <p class="label">Inputs</p>
+          <h3>Form <em>primitives</em>.</h3>
+          <div class="stack mt-5">
+            <input class="input" type="email" placeholder="Where can we send the case?">
+            <input class="input" type="text" placeholder="Postcode">
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="label">Quote / pull-callout</p>
+          <h3>An <em>italic moment</em>.</h3>
+          <p style="font-family: var(--font-display); font-style: italic; font-size: 26px; line-height: 1.3; color: var(--fg); margin-top: var(--space-5);">
+            "It's the first thing I open and the last thing I finish.
+            I forgot a sparkling water could be this <em>quiet</em>."
+          </p>
+          <p class="type-mono mt-3" style="color: var(--muted);">— LIN ABE · BROOKLYN · MAY 2026</p>
+        </div>
+      </div>
+
+      <h3 class="type-h2 mt-6">Campaign asset templates</h3>
+      <p class="section-intro mt-3" style="margin-bottom: var(--space-6);">
+        The on-brand asset shapes the creative-automation pipeline emits.
+        One headline. One can. One ratio. The pipeline fills the headline,
+        rotates flavor accent, and exports across markets.
+      </p>
+
+      <div class="asset-board">
+        <div class="asset asset-1x1 citrus">
+          <p class="ratio">1 : 1 · feed</p>
+          <h4>Crack open<br><em>something brighter</em>.</h4>
+          <div class="pin">
+            <span>Brisa Citrus</span>
+            <span>EU · v1</span>
+          </div>
+        </div>
+
+        <div class="asset asset-9x16 berry">
+          <p class="ratio">9 : 16 · story</p>
+          <h4>The breeze, in <em>berry</em>.</h4>
+          <div class="pin">
+            <span>Brisa Berry</span>
+            <span>UK · v1</span>
+          </div>
+        </div>
+
+        <div class="asset asset-16x9 citrus">
+          <p class="ratio">16 : 9 · display</p>
+          <h4>Lift, without weight. <em>Now in Citrus.</em></h4>
+          <div class="pin">
+            <span>Brisa Citrus</span>
+            <span>US · v1</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">What the pipeline checks before publish</p>
+        <h3>Three gates. <em>One green light.</em></h3>
+        <p>
+          <strong>① Mark present.</strong> Every asset carries the Brisa
+          wordmark or droplet at minimum size.
+          <strong>② Palette in-bounds.</strong> Flavor accent matches the
+          declared SKU; UI chrome stays aqua.
+          <strong>③ Banned words clear.</strong> Headline runs the § 08
+          banned list before rendering. Any flag blocks publish and routes
+          to a human reviewer.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 08 — Voice & banned words
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="voice">
+      <span class="section-num">§ 08 — Voice</span>
+      <h2 class="section-title">How Brisa <em>speaks</em>.</h2>
+      <p class="section-intro">
+        Brisa's voice is the breeze: short, warm, declarative. It uses
+        sensory language — peel, stone, morning, lift — and avoids wellness
+        jargon, sugar metaphors, and category clichés.
+      </p>
+
+      <div class="stack">
+        <div class="voice-row">
+          <span class="label">We are</span>
+          <p class="quote">Bright, mineral, declarative. A short sentence with a long after-taste.</p>
+        </div>
+        <div class="voice-row">
+          <span class="label">We are not</span>
+          <p class="quote">Loud, slangy, ironic, or aspirational about hustle. Volt does loud. Brisa doesn't.</p>
+        </div>
+        <div class="voice-row">
+          <span class="label">We say</span>
+          <p class="quote">"Lemon peel, blood orange, a flick of yuzu. Open one cold."</p>
+        </div>
+        <div class="voice-row">
+          <span class="label">We don't say</span>
+          <p class="quote">"Hydration goals 💦 — guilt-free, sugar-free, calorie-free, judgement-free."</p>
+        </div>
+      </div>
+
+      <h3 class="type-h2 mt-6">Banned words</h3>
+      <p class="section-intro mt-3" style="margin-bottom: var(--space-5);">
+        Words and phrases the pipeline flags before any Brisa asset ships.
+        Some are legal (health claims). Some are voice (off-tone). All are
+        non-negotiable.
+      </p>
+
+      <div class="card">
+        <p class="label">Health-claim flags · legal</p>
+        <div class="banned mt-3">
+          <span class="word">detox</span>
+          <span class="word">cleanse</span>
+          <span class="word">cures</span>
+          <span class="word">heals</span>
+          <span class="word">prevents</span>
+          <span class="word">treats</span>
+          <span class="word">immune-boosting</span>
+          <span class="word">fat-burning</span>
+          <span class="word">metabolism-boosting</span>
+        </div>
+      </div>
+
+      <div class="card mt-5">
+        <p class="label">Off-voice flags · brand</p>
+        <div class="banned mt-3">
+          <span class="word">guilt-free</span>
+          <span class="word">indulge</span>
+          <span class="word">treat yourself</span>
+          <span class="word">crush it</span>
+          <span class="word">level up</span>
+          <span class="word">unlock</span>
+          <span class="word">vibes</span>
+          <span class="word">hydration goals</span>
+          <span class="word">sip sip hooray</span>
+          <span class="word">because you deserve it</span>
+          <span class="word">essence of</span>
+          <span class="word">nature's gift</span>
+        </div>
+      </div>
+
+      <div class="card mt-5">
+        <p class="label">Category-cliché flags</p>
+        <div class="banned mt-3">
+          <span class="word">refreshingly refreshing</span>
+          <span class="word">a burst of flavor</span>
+          <span class="word">crisp &amp; clean</span>
+          <span class="word">all-natural goodness</span>
+          <span class="word">straight from nature</span>
+          <span class="word">made with real fruit</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 09 — Parent
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="parent">
+      <span class="section-num">§ 09 — Parent</span>
+      <h2 class="section-title">How Brisa <em>answers</em> to Onda.</h2>
+      <p class="section-intro">
+        Brisa is sub-brand <strong>001</strong> in the Onda registry. The
+        relationship is governed by Onda § 08 — co-branding &amp; governance.
+        These are the four rules Brisa carries from that document.
+      </p>
+
+      <div class="section-grid grid-2">
+        <div class="card surface-mineral">
+          <p class="label">Rule 01 · The fine print</p>
+          <h3><em>"A brand of Onda."</em></h3>
+          <p>
+            Every Brisa packaging back panel, legal footer, and corporate page
+            carries the line <em>"Brisa is a brand of Onda Beverages"</em> —
+            set in Geist Mono, 11px, mineral or foam depending on context.
+            That is the only place Onda appears on a Brisa surface.
+          </p>
+        </div>
+        <div class="card">
+          <p class="label">Rule 02 · No co-lockup</p>
+          <h3>Never <em>side by side</em>.</h3>
+          <p>
+            The Brisa wordmark and the Onda wordmark do not appear together
+            on a hero asset, a can, or a paid post. Lockups are reserved for
+            corporate, regulatory, and HR contexts only.
+          </p>
+        </div>
+        <div class="card">
+          <p class="label">Rule 03 · Palette stays home</p>
+          <h3>Aqua is <em>Brisa's</em>.</h3>
+          <p>
+            Brisa never borrows Onda's tide blue. Onda never borrows Brisa's
+            aqua. Each brand's palette stops at its own boundary.
+          </p>
+        </div>
+        <div class="card">
+          <p class="label">Rule 04 · Voice stays home</p>
+          <h3>Brisa never sounds like Volt.</h3>
+          <p>
+            A Brisa asset that uses Volt's punchy energy-drink tone is a
+            governance failure, even if the words are technically on-brand
+            for Volt. The pipeline catches this before publish.
+          </p>
+        </div>
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">Where to read more</p>
+        <h3>The full <em>governance layer</em>.</h3>
+        <p>
+          For the full co-branding policy, the registry definition, and the
+          rules every Onda sub-brand inherits, see
+          <a href="./onda-brand-guidelines.html" style="color: var(--accent-deep); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;">Onda — Parent Brand Guidelines · Volume I</a>,
+          sections § 02 (Portfolio) and § 08 (Co-branding &amp; governance).
+          For the sister brand, see
+          <a href="./volt-brand-guidelines.html" style="color: var(--accent-deep); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;">Volt — Volume I</a>.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         Footer
+         ───────────────────────────────────────────────────── -->
+    <footer class="page-footer">
+      <div class="colophon">
+        <p>
+          <strong>Brisa Sparkling Water — Brand Guidelines · Volume I.</strong>
+          Set in Instrument Serif, Geist, and Geist Mono. Issued 2026.05.
+          <em>A brand of Onda Beverages.</em>
+        </p>
+      </div>
+      <div>
+        <p>brisa · 001 · v1.0</p>
+      </div>
+    </footer>
+
+  </div>
+</body>
+
+</html>

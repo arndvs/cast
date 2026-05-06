@@ -1,6 +1,18 @@
 # User Stories — Cast: Creative Automation Pipeline
 
-### Local Next.js App · POC · v4
+### Local Next.js App · POC · v5
+
+---
+
+## Goals served
+
+The three personas below are how Cast addresses the brief's business goals and pain points:
+
+- **Maya (Story 1)** — campaign velocity + marketing ROI. Drops the per-campaign hours from manual Photoshop variants to a single Generate click.
+- **Priya (Story 2)** — brand consistency at scale. Per-creative compliance badges replace the 40-frame Figma review pass.
+- **Aaron (Story 3)** — demoability + the surface for future actionable-insights work (run logs, `report.json` already structured for analytics).
+
+The Onda Beverages multi-brand framing (Brisa, Volt as sub-brands) is deliberate — it directly addresses the decentralized-process pain point by making **brand identity a per-campaign input**, not a baked-in constant. Adding a sub-brand is a directory drop under `inputs/brands/`, not a code change.
 
 ---
 
@@ -40,11 +52,11 @@ Success looks like: Priya **looks at** the output grid, **sees** 5 of 6 creative
 
 Aaron is running the demo in a few days. He needs the app to start from a clean checkout with one command, the brief editor to be pre-populated with a working example, and the output to be immediately readable so a non-engineer in the room can follow along.
 
-What he wants: a README with a Quick Start at the top, a `brief.json` that ships with the repo and works out of the box, and a UI that makes the pipeline visible — not a black box. When he clicks Generate the audience should see each pipeline step appear in the log, then the output grid populate with images and compliance badges. No terminal archaeology, no explaining folder structures mid-demo.
+What he wants: a README with a Quick Start at the top, an example input + output, key design decisions called out explicitly, assumptions and limitations listed honestly, a `brief.json` that ships with the repo and works out of the box, and a UI that makes the pipeline visible — not a black box. When he clicks Generate the audience should see each pipeline step appear in the log, then the output grid populate with images and compliance badges. No terminal archaeology, no explaining folder structures mid-demo.
 
-Success looks like: Aaron **opens** `localhost:3000`, **clicks Generate** with the pre-loaded example brief, **walks** the audience through the live pipeline log and output grid, and **answers** "how does it work" by pointing at the screen.
+Success looks like: Aaron **opens** `localhost:3000`, **clicks Generate** with the pre-loaded example brief, **walks** the audience through the live pipeline log and output grid, and **answers** "how does it work" by pointing at the screen — then **points at the README** for design decisions, assumptions, and limitations when asked the deeper questions.
 
-**Key verbs:** opens localhost, clicks generate, narrates pipeline log, shows output grid, explains compliance badges
+**Key verbs:** opens localhost, clicks generate, narrates pipeline log, shows output grid, explains compliance badges, explains design decisions, calls out assumptions and limitations
 
 ---
 
@@ -62,7 +74,8 @@ Success looks like: Aaron **opens** `localhost:3000`, **clicks Generate** with t
 - **check** brand compliance — logo present, brand colors, prohibited words
 - **badge** each output — OK / WARN / FAIL
 - **write** `report.json` — `counts` (requested / succeeded / failed / generated / reused / flagged), per-creative `compliance`, and an `errors[]` array
+- **document** in README — how to run, example input + output, key design decisions, assumptions and limitations
 
 ---
 
-_Cast · User Stories v4 · Adobe FDE Take-Home · Aaron Davis · 2026_
+_Cast · User Stories v5 · Adobe FDE Take-Home · Aaron Davis · 2026_

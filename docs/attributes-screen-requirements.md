@@ -16,7 +16,7 @@ Fields are defined by the canonical Zod `briefSchema` in [flow-diagrams.md §4.2
 - `campaign` (slug)
 - `brand` (slug — references `inputs/brands/[brand]/`; existence + integrity validated server-side at `/api/generate` entry)
 - `products[]` (`min(1)`) — each `{ name, sku, promptOverrides? }`; derived slugs (`slugify(name)`) must be unique within a brief
-- `markets[]` — BCP-47-style `<region>-<lang>` (e.g. `us-en`, `mx-es`)
+- `markets[]` — `<region>-<lang>` (validated by `MARKET_RE`; not BCP-47 — BCP-47 is `<lang>-<region>`). Examples: `us-en`, `mx-es`.
 - `audience` (string, 1–500 chars)
 - `message` — `Record<lang, string>` (locale → copy)
 - `ratios[]` — enum subset of `[1x1, 9x16, 16x9]`
@@ -37,17 +37,19 @@ Fields are defined by the canonical Zod `briefSchema` in [flow-diagrams.md §4.2
 
 ### Hero Image
 
-- source: `local` | `genai`
 - product slug
 - file path after generation
+
+(`source` is a creative-level field, not a hero-image field — see Output Creative below and [flow-diagrams.md §4.2 / D3](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview).)
 
 ### Output Creative
 
 - product slug
 - market
 - ratio (`1x1`, `9x16`, `16x9`)
-- file path (`outputs/[campaign]/[market]/[product]/[ratio].png`)
-- badge: `OK` | `WARN` | `FAIL`
+- source: `local` | `genai` (per [flow-diagrams.md §4.2 / D3](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview); drives `counts.reused` / `counts.generated`)
+- file path: `string | null` — repo-relative on success, `null` on pipeline failure ([D19](flow-diagrams.md#appendix-a--design-decision-register)). Successful path shape: `outputs/[campaign]/[market]/[product]/[ratio].png`
+- badge: `OK` | `WARN` | `FAIL` (compliance axis only — orthogonal to success/failure)
 - compliance checks (logoPresent, colorsOk, bannedWords)
 
 ### Compliance Result
@@ -57,6 +59,30 @@ Fields are defined by the canonical Zod `briefSchema` in [flow-diagrams.md §4.2
   - logoPresent: boolean
   - colorsOk: boolean
   - bannedWords: string[] (flagged terms)
+
+### Brand Profile
+
+Loaded by `loadBrandProfile(brand)` at `/api/generate` entry; validated against `brandProfileSchema` ([flow-diagrams.md §4.3 / D11](flow-diagrams.md#brand-profile-schema-d11--contract)). Fields are not restated here — the schema is the single source of truth. Summary:
+
+- slug (matches `brief.brand`)
+- brand (`brand.json` — `displayName`, `colors`, optional `tokens`)
+- voice (`voice.json` — `tone`, `do`, `dont`, `promptFragments`)
+- bannedWords (`banned-words.json?` — `[]` when absent; loader emits a `step` event noting checks are skipped)
+- logoPath (absolute, `safeJoin`-validated)
+- fontPath (absolute, `safeJoin`-validated)
+
+Cached in-process for 90 s. Missing directory → `BrandNotFoundError` → `400`. Missing required file → `BrandIncompleteError` → `400`. Schema violation → `BrandInvalidError` → `400`.
+
+### Daily Cap
+
+Persistent state for the GenAI spend gate ([D22](flow-diagrams.md#appendix-a--design-decision-register)).
+
+- date (`YYYY-MM-DD`, UTC)
+- count (integer — GenAI calls used today)
+- limit (env `DAILY_GENERATION_LIMIT`, default 50)
+- mode (`'default' | 'cheap'` — derived from `CAST_GENAI_MODE`)
+
+Source of truth: `outputs/.cap.json` (one level above any campaign root, so [D15](flow-diagrams.md#appendix-a--design-decision-register)'s recursive campaign clear cannot wipe it). Atomic tmp-file rename on increment; UTC date rollover resets `count` to 0. Read endpoint: `GET /api/cap`. Browser LocalStorage is an optimistic UI cache only, never authoritative.
 
 ### Run Log
 
@@ -84,7 +110,7 @@ Using the Inform → Engage → Invite framework.
 - Pre-loaded example brief in a JSON editor (editable)
 - GenAI mode badge — reads `CAST_GENAI_MODE` (default | cheap) via `GET /api/cap`. Read-only; surfaces which model the run will hit before Generate fires.
 - Campaign name, brand, audience, message fields surfaced as readable form
-- Brand selector \u2014 dropdown listing every directory under `inputs/brands/` (slug + display name from each brand's `brand.json`). Required; one brand per brief. Demo ships two profiles (`brisa`, `volt`) modeling sub-brands of the fictional Onda Beverages portfolio. Selection drives palette swatches, voice preview, banned-words list, and prompt preview shown elsewhere on the screen.
+- Brand selector — dropdown listing every directory under `inputs/brands/` (slug + display name from each brand's `brand.json`). Required; one brand per brief. Demo ships two profiles (`brisa`, `volt`) modeling sub-brands of the fictional Onda Beverages portfolio. Selection drives palette swatches, voice preview, banned-words list, and prompt preview shown elsewhere on the screen. The selector also consumes `hasBannedWords` from `GET /api/brands` to decide whether the pre-flight banned-words indicator below renders the active-check or the no-op state.
 - Markets field — typeahead input accepting any conforming `<region>-<lang>` value; suggestion list seeds common values (`us-en`, `mx-es`, `de-de`, `jp-ja`)
 - Ratios picker — three pill toggles (`1:1`, `9:16`, `16:9`); default all checked; at least one must remain selected
 - Products list — each row shows: name, sku, slug preview
@@ -93,7 +119,9 @@ Using the Inform → Engage → Invite framework.
   - found: `brisa-citrus.png` — using local asset
   - missing: no asset found — will generate via GenAI
 - Read-only prompt preview — shows the prompt that will hit OpenAI per missing product (assembled from brand `voice.json` + product overrides)
-- Pre-flight banned-words check — if any locale's `message` contains a banned word for this brand, the Generate button is disabled with an inline warning
+- Pre-flight banned-words check — two states driven by the selected brand's `hasBannedWords` flag from `GET /api/brands`:
+  - **Active (`hasBannedWords: true`):** if any locale's `message` contains a banned word for this brand, the Generate button is disabled with an inline warning naming the term and locale.
+  - **No-op (`hasBannedWords: false`):** indicator shows "no banned-words list for this brand — checks skipped". Mirrors the server-side `step` event the orchestrator emits at run start ([flow-diagrams.md §4.3](flow-diagrams.md#brand-profile-schema-d11--contract)). Generate is **not** gated; per-creative server-side checks also become no-ops for this run.
 - Generate button (enabled when brief is valid + no banned-word violations)
 - Validation badge on brief (valid / invalid)
 - Daily allocation indicator — reads `GET /api/cap` on mount and after each `complete` event. Format: "remaining today: **X** (this run will use **~Y**)". `Y` is computed client-side from the brief + Detected Assets state: for each product without a local asset, count `ratios.length` calls in default mode or `1` in cheap mode; sum across products. Projection recomputes on brief edit (debounced) and on detected-assets refresh, so Maya sees whether her run fits before clicking Generate. LocalStorage caches the last server value for instant first paint only — never authoritative.
@@ -141,6 +169,7 @@ Using the Inform → Engage → Invite framework.
 
 - `complete` event received → transitions to Complete (S3)
 - `error` event received → transitions to Failed (S2′)
+- Stream closes without a terminal `complete` or `error` event (network drop, server crash) → treated as a stream-level failure → transitions to Failed (S2′). Mirrors [flow-diagrams.md §4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview).
 
 ---
 
@@ -152,13 +181,14 @@ Using the Inform → Engage → Invite framework.
 - Which step failed (from the log)
 - Log up to the failure point still visible
 - Two recovery actions clearly presented
+- Retry availability — when `GET /api/cap` reports `remaining: 0` **and** the failed stage was `genai`, the Retry button is disabled with an inline note: "daily cap reached — edit brief or wait for UTC rollover". Edit brief remains enabled in this state.
 
 **Engage — what the user can do:**
 
 - Click "Edit brief" — go back to S1 to fix the brief
-- Click "Retry" — rerun the same brief
+- Click "Retry" — rerun the same brief (disabled when cap is exhausted on a `genai`-stage failure, per Inform above)
 
-**Run idempotency (D15):** Both **Generate** (from S1) and **Retry** (from S2′) clear `outputs/[campaign]/` recursively before re-running. Every run produces the same output tree shape regardless of prior attempts — there is no partial-resume, and no orphan folders from products removed across runs. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call. The campaign slug is regex-validated (`SLUG_RE`) before it enters `safeJoin`.
+**Run idempotency (D15):** Both **Generate** (from S1) and **Retry** (from S2′) clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products of the run, not preserved artifacts — the recursive clear ensures a failed run never leaves a stale `report.json` on disk claiming success. End state of any successful run is invariant under retry; on mid-run failure the partial creatives plus the new `brief.json` describe the current attempt and the prior `report.json` is gone. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call, and the campaign slug is regex-validated (`SLUG_RE`) before it enters `safeJoin`. The cap file at `outputs/.cap.json` (D22) sits one level above the campaign root and is not touched by the clear.
 
 **Invite — how they move to the next screen:**
 
@@ -173,38 +203,51 @@ Using the Inform → Engage → Invite framework.
 
 - Grid: one row per product, three columns (1:1 · 9:16 · 16:9)
 - Each cell: generated image + compliance badge (OK / WARN / FAIL)
+- **Failed tile rendering** — cells where `creatives[].path === null` ([D19](flow-diagrams.md#appendix-a--design-decision-register)) render as a red placeholder with the failing pipeline `stage` label (e.g. "genai timeout", "resize failed"). Distinct from a compliance FAIL badge: pipeline error and compliance violation are orthogonal axes. The `compliance` field is stage-dependent: failures before the `compliance` stage (`resolve | genai | resize | compose`) omit it; failures at or after `compliance` may carry the result through. The grid never renders a compliance badge for a failed tile — the red placeholder + stage label takes its place.
 - Ratio label on each cell (1:1 · Instagram, 9:16 · Stories, 16:9 · Facebook)
-- Summary bar: "6 creatives — 5 passed · 1 flagged"
+- Summary bar — display string "6 requested · 4 passed · 1 flagged · 1 failed". Driven by canonical `counts` keys from [§4.2 / D3](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview): `requested`, `succeeded`, `flagged`, `failed`. `passed` is a derived UI metric: `passed = succeeded - flagged`. `flagged` and `failed` are independent.
 - Absolute output path as a copyable code block
 - "Reveal in file explorer" button
 - "Edit brief & re-run" button
 
 **Engage — what the user can do:**
 
-- Click any flagged tile → opens Compliance Detail (S4)
+- Click any flagged tile (WARN / FAIL badge) → opens Creative Detail (S4) in compliance mode
+- Click any failed tile (red placeholder, `path === null`) → opens Creative Detail (S4) in error mode
 - Click "Reveal in file explorer" → server action opens OS explorer
 - Copy the absolute output path
 - Click "Edit brief & re-run" → back to Editing (S1)
 
 **Invite — how they move to the next screen:**
 
-- Click flagged tile → DetailOpen (S4 modal)
+- Click flagged tile (WARN / FAIL) → DetailOpen (S4 modal · compliance mode)
+- Click failed tile (red placeholder, `path === null`) → DetailOpen (S4 modal · error mode)
 - Click reveal → S5 OS handoff
 - Click edit & re-run → Editing (S1)
 
 ---
 
-### S4 · Compliance Detail (state: DetailOpen — modal over S3)
+### S4 · Creative Detail (state: DetailOpen — modal over S3)
 
-**Inform — what the user sees:**
+Dual-mode modal: **compliance violation** (badge ∈ WARN / FAIL, path is a real file) or **pipeline error** (`creatives[].path === null`, has a corresponding `errors[]` entry). Mode is routed by `path === null`.
+
+**Inform — what the user sees (compliance mode):**
 
 - Creative preview (full image)
-- Product name + ratio label
+- Product name + market + ratio label
 - Compliance badge (WARN or FAIL)
 - Per-check results:
   - Logo present: pass / fail
   - Brand colors: pass / fail (with found vs expected swatches if failed)
   - Banned words: pass / fail (with flagged terms listed if failed)
+
+**Inform — what the user sees (error mode):**
+
+- Red placeholder preview (no image on disk)
+- Product name + market + ratio label (the failure coordinates)
+- Pipeline `stage` from the matching `errors[]` entry — closed enum from [§4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview): `resolve | genai | resize | compose | compliance | write`
+- Human-readable `message` from the same `errors[]` entry (e.g. "OpenAI request timed out after 60s")
+- Per-check results: shown only when `errors[].stage` is `write` and a `compliance` object is present on the failed creative; otherwise omitted (compliance was not reached or did not complete)
 
 **Engage — what the user can do:**
 
@@ -214,7 +257,7 @@ Using the Inform → Engage → Invite framework.
 **Invite — how they move to the next screen:**
 
 - Close → back to Complete (S3)
-- (No direct action from S4 — Priya reads, then decides in S3)
+- (No direct action from S4 — Priya / Maya read, then decide in S3)
 
 ---
 
@@ -244,14 +287,18 @@ Using the Inform → Engage → Invite framework.
 | ----------------------- | ------- | ------------------------------------ |
 | open app                | S1      | Pre-loaded example brief             |
 | edit brief              | S1      | JSON editor + structured fields      |
+| selects brand           | S1      | Brand selector (drives palette / voice / banned-words) |
 | drop product photos     | S1      | Per-product drop zone                |
 | confirm assets detected | S1      | Detected Assets panel                |
+| sees GenAI mode         | S1      | GenAI mode badge (reads `CAST_GENAI_MODE` via `GET /api/cap`) |
+| sees remaining daily allocation | S1 | Daily allocation indicator (`GET /api/cap` + client-side projection) |
 | click Generate          | S1      | Generate button (invite)             |
 | watch pipeline log      | S2      | Live NDJSON log stream               |
-| recover from failure    | S2′     | Error message + Edit / Retry buttons |
+| recover from failure    | S2′     | Error message + Edit / Retry buttons (Retry disabled when cap exhausted on `genai`-stage failure) |
 | review output grid      | S3      | Product × ratio grid                 |
 | read compliance badges  | S3      | Per-tile badge (OK / WARN / FAIL)    |
-| click flagged tile      | S3      | Tile onClick → S4 modal              |
+| click flagged tile      | S3      | Tile onClick → S4 modal (compliance mode) |
+| view pipeline error detail | S3 → S4 | Failed tile (red placeholder, `path === null`) → S4 error mode (`stage` + `message` from `errors[]`) |
 | read compliance detail  | S4      | Per-check results + creative preview |
 | reveal output folder    | S3 → S5 | Server action + copyable path        |
 | copy output path        | S3      | Copyable code block                  |
