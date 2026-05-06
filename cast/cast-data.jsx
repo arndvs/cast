@@ -124,6 +124,8 @@ function buildCreatives(brand, brief, scenario) {
           key, product: p.slug, productName: p.name, market: mkt, language,
           ratio: r, source, path, badge, checks, stage, stageMsg, generatedAt,
           message: brief.messageByLocale[language] || brief.headline,
+          subheadline: brief.subheadline || "",
+          cta: brief.cta || "",
         };
       });
     });

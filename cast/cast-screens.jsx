@@ -363,6 +363,10 @@ function CreativeTile({ creative, brand, onClick }) {
           <>
             <div className="product-name">{creative.productName}</div>
             <div className="message">{creative.message}</div>
+            {creative.subheadline && creative.ratio !== "9:16" && (
+              <div className="sub-message">{creative.subheadline}</div>
+            )}
+            {creative.cta && <div className="cta-pill" style={{ color: product.hex }}>{creative.cta}</div>}
             <div className="corner-logo" style={{ color: product.hex }}>{brand.displayName.slice(0, 1).toUpperCase()}</div>
           </>
         )}
@@ -470,6 +474,10 @@ function S4CreativeDetail({ creative, brand, onClose }) {
               <>
                 <div className="product-name">{creative.productName}</div>
                 <div className="message">{creative.message}</div>
+                {creative.subheadline && creative.ratio !== "9:16" && (
+                  <div className="sub-message">{creative.subheadline}</div>
+                )}
+                {creative.cta && <div className="cta-pill" style={{ color: product.hex }}>{creative.cta}</div>}
                 <div className="corner-logo" style={{ color: product.hex }}>{brand.displayName.slice(0, 1).toUpperCase()}</div>
               </>
             )}
