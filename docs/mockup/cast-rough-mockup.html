@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cast — Rough Mockups</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --color-bg: #ffffff;
+            --color-bg-secondary: #f5f5f2;
+            --color-bg-tertiary: #eeede8;
+            --color-text-primary: #1a1a18;
+            --color-text-secondary: #5f5e5a;
+            --color-text-tertiary: #888780;
+            --color-border: rgba(0, 0, 0, 0.12);
+            --color-border-md: rgba(0, 0, 0, 0.22);
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --font-mono: "SF Mono", "Fira Code", monospace;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: #f0efe9;
+            color: var(--color-text-primary);
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        h1 {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+        }
+
+        .screen-wrap {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        .screen-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            margin-top: 2.5rem;
+        }
+
+        .screen {
+            background: var(--color-bg);
+            border: 0.5px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .topbar {
+            background: var(--color-bg-secondary);
+            border-bottom: 0.5px solid var(--color-border);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .topbar-logo {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .topbar-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--color-border-md);
+        }
+
+        .topbar-brand {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .pill-blue {
+            background: #E6F1FB;
+            color: #0C447C;
+        }
+
+        .pill-green {
+            background: #EAF3DE;
+            color: #27500A;
+        }
+
+        .pill-amber {
+            background: #FAEEDA;
+            color: #633806;
+        }
+
+        .pill-gray {
+            background: #F1EFE8;
+            color: #444441;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: var(--radius-md);
+            border: 0.5px solid var(--color-border-md);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            cursor: pointer;
+            font-family: var(--font-sans);
+        }
+
+        .btn-primary {
+            background: #185FA5;
+            color: #E6F1FB;
+            border-color: #185FA5;
+            font-size: 13px;
+            padding: 8px 18px;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 230px 1fr;
+            gap: 16px;
+            padding: 16px;
+        }
+
+        .body-pad {
+            padding: 16px;
+        }
+
+        .panel {
+            background: var(--color-bg-secondary);
+            border: 0.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 12px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .label {
+            font-size: 11px;
+            color: var(--color-text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .field {
+            margin-bottom: 10px;
+        }
+
+        .divider {
+            border: none;
+            border-top: 0.5px solid var(--color-border);
+            margin: 10px 0;
+        }
+
+        .brand-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border: 0.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+
+        .brand-active {
+            border-color: #185FA5;
+            background: #E6F1FB;
+        }
+
+        .brand-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .brand-name {
+            font-size: 13px;
+        }
+
+        .brand-sub {
+            font-size: 11px;
+            color: var(--color-text-secondary);
+        }
+
+        .textarea-mock {
+            background: var(--color-bg);
+            border: 0.5px solid var(--color-border-md);
+            border-radius: var(--radius-md);
+            padding: 8px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: var(--color-text-secondary);
+            width: 100%;
+            min-height: 160px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .drop-zone {
+            border: 1px dashed var(--color-border-md);
+            border-radius: var(--radius-md);
+            padding: 10px;
+            text-align: center;
+            font-size: 11px;
+            color: var(--color-text-secondary);
+        }
+
+        .asset-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            background: var(--color-bg-secondary);
+            border: 0.5px solid var(--color-border);
+            border-radius: 20px;
+            padding: 2px 8px;
+            color: var(--color-text-secondary);
+        }
+
+        .cap-bar-wrap {
+            background: var(--color-bg-tertiary);
+            border-radius: 4px;
+            height: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .cap-bar {
+            background: #378ADD;
+            height: 5px;
+            border-radius: 4px;
+            width: 46%;
+        }
+
+        .log-line {
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: var(--color-text-secondary);
+            padding: 3px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .log-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .dot-green {
+            background: #639922;
+        }
+
+        .dot-blue {
+            background: #378ADD;
+        }
+
+        .dot-amber {
+            background: #BA7517;
+        }
+
+        .dot-gray {
+            background: #B4B2A9;
+        }
+
+        .progress-wrap {
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .progress-track {
+            flex: 1;
+            height: 4px;
+            background: var(--color-bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 4px;
+            background: #378ADD;
+            border-radius: 4px;
+            width: 42%;
+        }
+
+        .market-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 14px;
+        }
+
+        .tab {
+            font-size: 11px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 0.5px solid var(--color-border);
+            color: var(--color-text-secondary);
+            cursor: pointer;
+        }
+
+        .tab-active {
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            border-color: var(--color-border-md);
+        }
+
+        .product-row {
+            margin-bottom: 18px;
+        }
+
+        .product-row-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .product-name {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .ratio-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+
+        .ratio-card {
+            border: 0.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        .ratio-img {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 4px;
+            padding: 8px;
+        }
+
+        .ratio-img-sq {
+            height: 80px;
+        }
+
+        .ratio-img-wide {
+            height: 50px;
+        }
+
+        .ratio-label {
+            font-size: 10px;
+            color: var(--color-text-secondary);
+            padding: 4px 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 0.5px solid var(--color-border);
+            background: var(--color-bg-secondary);
+        }
+
+        .compliance-detail {
+            background: var(--color-bg-secondary);
+            border: 0.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 10px;
+            margin-top: 8px;
+        }
+
+        .check-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--color-text-secondary);
+            padding: 3px 0;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .metric-card {
+            background: var(--color-bg-secondary);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            text-align: center;
+        }
+
+        .metric-num {
+            font-size: 24px;
+            font-weight: 500;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--color-text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .code-block {
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: var(--color-text-secondary);
+            background: var(--color-bg-secondary);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            border: 0.5px solid var(--color-border);
+            line-height: 1.7;
+        }
+
+        .code-key {
+            color: var(--color-text-primary);
+        }
+
+        .code-warn {
+            color: #BA7517;
+        }
+
+        .code-ok {
+            color: #3B6D11;
+        }
+
+        .bg-citrus {
+            background: linear-gradient(135deg, #9FE1CB 0%, #E1F5EE 100%);
+        }
+
+        .bg-berry {
+            background: linear-gradient(135deg, #F4C0D1 0%, #FBEAF0 100%);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="screen-wrap">
+        <h1>Cast — rough mockups · POC · Aaron Davis · 2026</h1>
+
+        <p class="screen-label">Screen 1 — home / brief editor</p>
+        <div class="screen">
+            <div class="topbar">
+                <span class="topbar-logo">Cast</span><span class="topbar-dot"></span>
+                <span class="topbar-brand">Onda Beverages</span>
+                <div class="spacer"></div>
+                <span class="pill pill-gray">Daily cap: 23 / 50 used</span>
+            </div>
+            <div class="two-col">
+                <div>
+                    <div class="section-title">Brand</div>
+                    <div class="brand-item brand-active">
+                        <div class="brand-swatch" style="background:#9FE1CB;"></div>
+                        <div>
+                            <div class="brand-name">Brisa</div>
+                            <div class="brand-sub">sparkling water</div>
+                        </div>
+                        <div class="spacer"></div><i class="ti ti-check" style="font-size:14px;color:#0F6E56;"></i>
+                    </div>
+                    <div class="brand-item">
+                        <div class="brand-swatch" style="background:#FAC775;"></div>
+                        <div>
+                            <div class="brand-name">Volt</div>
+                            <div class="brand-sub">energy</div>
+                        </div>
+                    </div>
+                    <hr class="divider" />
+                    <div class="section-title">Assets</div>
+                    <div class="field">
+                        <div class="label">Brisa Citrus</div>
+                        <div class="drop-zone"><i class="ti ti-upload" style="font-size:13px;"></i> drop photo or
+                            generate</div>
+                    </div>
+                    <div class="field">
+                        <div class="label">Brisa Berry</div>
+                        <span class="asset-chip"><i class="ti ti-file" style="font-size:11px;"></i> berry.png</span>
+                    </div>
+                    <hr class="divider" />
+                    <div class="label" style="margin-bottom:4px;">Daily cap</div>
+                    <div style="font-size:11px;color:var(--color-text-secondary);">23 of 50 used today</div>
+                    <div class="cap-bar-wrap">
+                        <div class="cap-bar"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-title">Campaign brief <span
+                            style="font-size:10px;font-weight:400;color:var(--color-text-secondary);margin-left:4px;">JSON</span>
+                    </div>
+                    <textarea class="textarea-mock" readonly>{
+  "campaign": "summer-refresh-2026",
+  "brand": "brisa",
+  "products": [
+    { "name": "Brisa Citrus", "sku": "BRS-CIT-12" },
+    { "name": "Brisa Berry",  "sku": "BRS-BRY-12" }
+  ],
+  "markets": ["us-en", "mx-es"],
+  "audience": "18-34, urban, health-conscious",
+  "message": {
+    "en": "Crack open something brighter.",
+    "es": "Abre algo más brillante."
+  },
+  "ratios": ["1x1", "9x16", "16x9"]
+}</textarea>
+                    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;align-items:center;">
+                        <span style="font-size:11px;color:var(--color-text-secondary);">2 products · 2 markets · 3
+                            ratios = 12 creatives</span>
+                        <button class="btn btn-primary"><i class="ti ti-player-play"></i> Generate</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="screen-label">Screen 2 — pipeline log (running)</p>
+        <div class="screen">
+            <div class="topbar">
+                <span class="topbar-logo">Cast</span><span class="topbar-dot"></span>
+                <span class="topbar-brand">summer-refresh-2026 · Brisa</span>
+                <div class="spacer"></div>
+                <span class="pill pill-blue"><i class="ti ti-refresh" style="font-size:11px;"></i> running</span>
+            </div>
+            <div class="body-pad">
+                <div class="panel">
+                    <div class="section-title">Pipeline log</div>
+                    <div class="log-line">
+                        <div class="log-dot dot-green"></div>brief validated — 2 products, 2 markets, 3 ratios
+                    </div>
+                    <div class="log-line">
+                        <div class="log-dot dot-green"></div>brand profile loaded — brisa (colors, voice, logo, font)
+                    </div>
+                    <div class="log-line">
+                        <div class="log-dot dot-green"></div>outputs/summer-refresh-2026/ cleared
+                    </div>
+                    <div class="log-line">
+                        <div class="log-dot dot-green"></div>brief.json written to campaign root
+                    </div>
+                    <div class="log-line">
+                        <div class="log-dot dot-green"></div>asset found — brisa-berry.png (reused)
+                    </div>
+                    <div class="log-line">
+                        <div class="log-dot dot-amber"></div>asset missing — brisa-citrus → generating via dall-e-3…
+                    </div>
+                    <div class="log-line">
+                        <div class="log-dot dot-blue"></div>resizing brisa-citrus 1×1 → compositing "Crack open
+                        something brighter."
+                    </div>
+                    <div class="log-line">
+                        <div class="log-dot dot-blue"></div>resizing brisa-citrus 9×16 → compositing copy…
+                    </div>
+                    <div class="log-line">
+                        <div class="log-dot dot-gray"></div>brisa-citrus 16×9 — queued
+                    </div>
+                    <div class="log-line">
+                        <div class="log-dot dot-gray"></div>brisa-berry us-en — queued
+                    </div>
+                    <div class="log-line">
+                        <div class="log-dot dot-gray"></div>mx-es market — queued
+                    </div>
+                    <div class="log-line">
+                        <div class="log-dot dot-gray"></div>compliance checks — queued
+                    </div>
+                    <div class="progress-wrap">
+                        <div class="progress-track">
+                            <div class="progress-fill"></div>
+                        </div>
+                        <span style="font-size:11px;color:var(--color-text-secondary);">5 / 12</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="screen-label">Screen 3 — output grid (us-en)</p>
+        <div class="screen">
+            <div class="topbar">
+                <span class="topbar-logo">Cast</span><span class="topbar-dot"></span>
+                <span class="topbar-brand">summer-refresh-2026 · Brisa</span>
+                <div class="spacer"></div>
+                <span class="pill pill-green"><i class="ti ti-check" style="font-size:11px;"></i> complete</span>
+                <button class="btn" style="margin-left:8px;"><i class="ti ti-folder" style="font-size:13px;"></i> reveal
+                    folder</button>
+            </div>
+            <div class="body-pad">
+                <div class="market-tabs">
+                    <div class="tab tab-active">us-en</div>
+                    <div class="tab">mx-es</div>
+                </div>
+                <div class="product-row">
+                    <div class="product-row-header">
+                        <div class="product-name">Brisa Citrus</div>
+                        <span class="pill pill-amber"><i class="ti ti-alert-triangle" style="font-size:10px;"></i> 1
+                            warning</span>
+                        <span style="font-size:11px;color:var(--color-text-secondary);margin-left:auto;">generated via
+                            dall-e-3</span>
+                    </div>
+                    <div class="ratio-grid">
+                        <div class="ratio-card">
+                            <div class="ratio-img ratio-img-sq bg-citrus"><span
+                                    style="font-size:11px;color:#0F6E56;font-weight:500;">Brisa Citrus</span><span
+                                    style="font-size:9px;color:#085041;opacity:0.8;">Crack open something
+                                    brighter.</span></div>
+                            <div class="ratio-label"><span>1×1</span><span class="pill pill-green"
+                                    style="padding:1px 5px;font-size:9px;"><i class="ti ti-check"
+                                        style="font-size:9px;"></i> pass</span></div>
+                        </div>
+                        <div class="ratio-card">
+                            <div class="ratio-img ratio-img-sq bg-citrus"><span
+                                    style="font-size:11px;color:#0F6E56;font-weight:500;">Brisa Citrus</span><span
+                                    style="font-size:9px;color:#085041;opacity:0.8;">Crack open something
+                                    brighter.</span></div>
+                            <div class="ratio-label"><span>9×16</span><span class="pill pill-amber"
+                                    style="padding:1px 5px;font-size:9px;"><i class="ti ti-alert-triangle"
+                                        style="font-size:9px;"></i> warn</span></div>
+                        </div>
+                        <div class="ratio-card">
+                            <div class="ratio-img ratio-img-wide bg-citrus"><span
+                                    style="font-size:10px;color:#0F6E56;">Brisa Citrus · Crack open something
+                                    brighter.</span></div>
+                            <div class="ratio-label"><span>16×9</span><span class="pill pill-green"
+                                    style="padding:1px 5px;font-size:9px;"><i class="ti ti-check"
+                                        style="font-size:9px;"></i> pass</span></div>
+                        </div>
+                    </div>
+                    <div class="compliance-detail">
+                        <div class="section-title" style="margin-bottom:6px;">9×16 — compliance detail</div>
+                        <div class="check-row"><i class="ti ti-check" style="color:#639922;font-size:13px;"></i> logo
+                            present (bottom-right corner)</div>
+                        <div class="check-row"><i class="ti ti-alert-triangle"
+                                style="color:#BA7517;font-size:13px;"></i> brand color contrast low — headline #9FE1CB
+                            on white</div>
+                        <div class="check-row"><i class="ti ti-check" style="color:#639922;font-size:13px;"></i> no
+                            banned words detected</div>
+                    </div>
+                </div>
+                <hr class="divider" />
+                <div class="product-row">
+                    <div class="product-row-header">
+                        <div class="product-name">Brisa Berry</div>
+                        <span class="pill pill-green"><i class="ti ti-check" style="font-size:10px;"></i> all
+                            pass</span>
+                        <span style="font-size:11px;color:var(--color-text-secondary);margin-left:auto;">asset reused —
+                            berry.png</span>
+                    </div>
+                    <div class="ratio-grid">
+                        <div class="ratio-card">
+                            <div class="ratio-img ratio-img-sq bg-berry"><span
+                                    style="font-size:11px;color:#993556;font-weight:500;">Brisa Berry</span><span
+                                    style="font-size:9px;color:#72243E;opacity:0.8;">Crack open something
+                                    brighter.</span></div>
+                            <div class="ratio-label"><span>1×1</span><span class="pill pill-green"
+                                    style="padding:1px 5px;font-size:9px;"><i class="ti ti-check"
+                                        style="font-size:9px;"></i> pass</span></div>
+                        </div>
+                        <div class="ratio-card">
+                            <div class="ratio-img ratio-img-sq bg-berry"><span
+                                    style="font-size:11px;color:#993556;font-weight:500;">Brisa Berry</span><span
+                                    style="font-size:9px;color:#72243E;opacity:0.8;">Crack open something
+                                    brighter.</span></div>
+                            <div class="ratio-label"><span>9×16</span><span class="pill pill-green"
+                                    style="padding:1px 5px;font-size:9px;"><i class="ti ti-check"
+                                        style="font-size:9px;"></i> pass</span></div>
+                        </div>
+                        <div class="ratio-card">
+                            <div class="ratio-img ratio-img-wide bg-berry"><span
+                                    style="font-size:10px;color:#993556;">Brisa Berry · Crack open something
+                                    brighter.</span></div>
+                            <div class="ratio-label"><span>16×9</span><span class="pill pill-green"
+                                    style="padding:1px 5px;font-size:9px;"><i class="ti ti-check"
+                                        style="font-size:9px;"></i> pass</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="screen-label">Screen 4 — report summary</p>
+        <div class="screen">
+            <div class="topbar">
+                <span class="topbar-logo">Cast</span><span class="topbar-dot"></span>
+                <span class="topbar-brand">report.json — summer-refresh-2026</span>
+                <div class="spacer"></div>
+                <button class="btn"><i class="ti ti-download" style="font-size:13px;"></i> download report</button>
+            </div>
+            <div class="body-pad">
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">requested</div>
+                        <div class="metric-num">12</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">succeeded</div>
+                        <div class="metric-num" style="color:#3B6D11;">12</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">generated</div>
+                        <div class="metric-num" style="color:#185FA5;">6</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">reused</div>
+                        <div class="metric-num" style="color:#888780;">6</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">flagged</div>
+                        <div class="metric-num" style="color:#BA7517;">1</div>
+                    </div>
+                </div>
+                <div class="section-title" style="margin-bottom:8px;">Per-creative compliance</div>
+                <div class="code-block">
+                    <span class="code-key">creatives:</span> [<br>
+                    &nbsp;&nbsp;{ product: <span class="code-key">"brisa-citrus"</span>, market: <span
+                        class="code-key">"us-en"</span>, ratio: <span class="code-key">"9x16"</span>, compliance: {
+                    logo: <span class="code-ok">true</span>, color: <span class="code-warn">WARN</span>, banned: <span
+                        class="code-ok">true</span> } },<br>
+                    &nbsp;&nbsp;{ product: <span class="code-key">"brisa-citrus"</span>, market: <span
+                        class="code-key">"us-en"</span>, ratio: <span class="code-key">"1x1"</span>, compliance: { logo:
+                    <span class="code-ok">true</span>, color: <span class="code-ok">true</span>, banned: <span
+                        class="code-ok">true</span> } },<br>
+                    &nbsp;&nbsp;{ product: <span class="code-key">"brisa-berry"</span>, market: <span
+                        class="code-key">"us-en"</span>, ratio: <span class="code-key">"1x1"</span>, compliance: { logo:
+                    <span class="code-ok">true</span>, color: <span class="code-ok">true</span>, banned: <span
+                        class="code-ok">true</span> } },<br>
+                    &nbsp;&nbsp;<span style="color:var(--color-text-tertiary);">… 9 more</span><br>
+                    ]<br><br>
+                    <span class="code-key">errors:</span> [],<br>
+                    <span class="code-key">cap:</span> { used: <span class="code-key">29</span>, limit: <span
+                        class="code-key">50</span>, remaining: <span class="code-key">21</span> }
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>
