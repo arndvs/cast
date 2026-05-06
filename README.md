@@ -103,7 +103,7 @@ See [docs/](docs/) for the full design trail: [user stories](docs/user-stories.m
 - **One asset per product slug at a time.** Re-uploading a photo for the same product overwrites the previous file (and its alternate-extension siblings).
 - **GenAI provider: OpenAI Images API.** Default model `dall-e-3` calls one of three native sizes (1024×1024 / 1792×1024 / 1024×1792) per requested ratio, behind `OPENAI_API_KEY`. The `--cheap` flag swaps to `gpt-image-1` + Sharp center-crop. Provider abstraction is deferred to v2.
 - **Static raster only.** Output creatives are PNG. Animated formats (GIF, MP4, WebM) are rejected at upload (`415`) and ignored by the resolver. Motion creatives are a separate capability, out of POC scope.
-- **Compliance checks are heuristic, not a legal review.** Logo presence is detected by template match in a configurable corner; brand-color check samples dominant colors; banned-word check is a flat list scan against the rendered overlay text.
+- **Compliance checks are heuristic, not a legal review.** Logo presence is detected by template match in a configurable corner; brand-color check samples dominant colors; banned-word check is a flat list scan against the resolved overlay string per `(market, ratio)` (the exact string the compositor draws — not an OCR pass on the PNG).
 - **No run history.** Each Generate run is independent. No multi-run comparison view in the POC.
 - **Symlinks under `inputs/` and `outputs/` are not followed safely.** Production hardening would add `realpath` re-validation; out of POC scope.
 - **Localized message support is provided-not-translated.** The brief carries a locale → string map; the pipeline composites the right one. It does not call a translation API.

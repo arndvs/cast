@@ -157,7 +157,7 @@ Using the Inform → Engage → Invite framework.
 - Click "Edit brief" — go back to S1 to fix the brief
 - Click "Retry" — rerun the same brief
 
-**Retry idempotency (D15):** Retry clears `outputs/[campaign]/` recursively before re-running. Every run produces the same output tree shape regardless of prior attempts. There is no partial-resume — a fresh run is the only run. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call.
+**Run idempotency (D15):** Both **Generate** (from S1) and **Retry** (from S2′) clear `outputs/[campaign]/` recursively before re-running. Every run produces the same output tree shape regardless of prior attempts — there is no partial-resume, and no orphan folders from products removed across runs. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call. The campaign slug is regex-validated (`SLUG_RE`) before it enters `safeJoin`.
 
 **Invite — how they move to the next screen:**
 
