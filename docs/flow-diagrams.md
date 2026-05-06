@@ -184,11 +184,11 @@ Two input paths, one folder, one resolver. Maya doesn't have to learn the slug r
 - Slugs must match `SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/` server-side. Non-conforming → 400.
 - **Asset extension matrix** — the only authoritative answer to “which extensions are allowed where?”:
 
-  | Operation                   | Accepted extensions                                | Notes                                                                                |
+  | Operation                   | Accepted MIME types (filename ext ignored)         | Notes                                                                                |
   | --------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------ |
-  | Upload (`POST /api/upload`) | `.png`, `.jpg`, `.jpeg`, `.webp`                   | `.jpeg` is canonicalized to `.jpg` on disk. Anything else → 415.                     |
+  | Upload (`POST /api/upload`) | `image/png`, `image/jpeg`, `image/webp`            | Filename extension is **not** trusted; canonical disk extension is derived from MIME (`png`→`.png`, `jpeg`→`.jpg`, `webp`→`.webp`). Anything else → 415. |
   | Resolver lookup             | `.png`, `.jpg`, `.jpeg`, `.webp`                   | First hit wins. Pre-placed `.jpeg` files are accepted on read.                        |
-  | Disk write extensions       | `.png`, `.jpg`, `.webp`                            | The set of files Resolver may unlink before a re-upload (delete-then-write).          |
+  | Disk write extensions       | `.png`, `.jpg`, `.jpeg`, `.webp`                   | The set of files Resolver may unlink before a re-upload (delete-then-write). `.jpeg` is included so a pre-placed file doesn't orphan after a drop-zone upload. |
   | Output creative             | `.png`                                             | Always PNG. Sharp encodes from the composited buffer.                                  |
   | Animated formats            | _none_                                             | `.gif`, `.mp4`, `.webm` are rejected at upload (415) and ignored at resolve (D26).    |
 
@@ -239,7 +239,7 @@ Constraints (enforced server-side, single source of truth):
   - MIME must be one of: image/png, image/jpeg, image/webp → else 415
   - Extension is canonical-mapped: png→.png, jpeg→.jpg, webp→.webp
     (NOT derived from filename — derived from MIME)
-  - On write: delete inputs/assets/[slug].{png,jpg,webp} first, then write
+  - On write: delete inputs/assets/[slug].{png,jpg,jpeg,webp} first, then write
     the canonical extension. One slug → one file on disk at a time.
   - Path constructed via safeJoin("inputs", `${slug}.${ext}`) — rejects
     traversal even if SLUG_RE is bypassed.

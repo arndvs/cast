@@ -43,7 +43,7 @@ The app starts with `inputs/brief.json` pre-loaded. Click **Generate** to run th
 }
 ```
 
-Drop product photos into the per-product drop zone in the UI (or pre-place files at `inputs/assets/[product-slug].{png,jpg,webp}`). Anything missing is generated via the GenAI image API.
+Drop product photos into the per-product drop zone in the UI (or pre-place files at `inputs/assets/[product-slug].{png,jpg,jpeg,webp}`). Anything missing is generated via the GenAI image API.
 
 ## Example output
 
