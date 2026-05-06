@@ -183,20 +183,38 @@ interface FailedAt {
   message: string
 }
 
+/**
+ * Sentinel thrown from the per-creative pipeline so the catch block can
+ * attribute the right `stage` without having to introspect the underlying
+ * error. Each stage call site sets `currentStage` immediately before its
+ * await, so an in-flight throw is always tagged with the stage that owned it.
+ */
+class StageError extends Error {
+  constructor(
+    public readonly stage: ErrorStage,
+    public readonly cause: unknown,
+  ) {
+    super(cause instanceof Error ? cause.message : String(cause))
+    this.name = "StageError"
+  }
+}
+
 export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
   const { brief, brand, logoPath, mode, emit } = args
 
   const creatives: Creative[] = []
   const errors: ManifestError[] = []
 
-  // Per-product master cache. Key: productSlug. Cheap mode: 1024² master.
-  // Default mode: keyed `${slug}|${ratio}` to avoid regenerating across
-  // markets when D20's serial-by-market loop revisits the same product.
-  const masterCache = new Map<string, Buffer>()
-
   for (const market of brief.markets) {
     const lang = market.split("-").pop()!
     const headline = brief.message[lang] ?? ""
+
+    // Per-MARKET master cache. The genai prompt embeds the market
+    // (`buildPromptPreview` writes "Locale: us-en (en)"), so a master
+    // generated for one market is NOT reusable across markets. Default mode
+    // also keys by ratio because dall-e-3 native sizes differ per ratio.
+    // Cheap mode keys by productSlug only (single 1024² master per product).
+    const masterCache = new Map<string, Buffer>()
 
     for (const product of brief.products) {
       const productSlug = slugify(product.name)
@@ -209,17 +227,17 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
         ),
       )
 
-      // Materialize the master once per product (across ratios + markets).
-      // For local assets, that's a single disk read. For cheap-mode genai,
-      // a single 1024² generation. For default-mode genai, the master is
-      // generated per-ratio inside the per-creative loop.
+      // Materialize the master once per product (per market). For local
+      // assets, one disk read. For cheap-mode genai, one 1024² generation
+      // here — done OUTSIDE the per-ratio Promise.all so the prompt is
+      // deterministic (ratio "1x1" stands in for the canonical square master).
+      // Default-mode genai is per-ratio and stays inside the ratio loop.
       let localMaster: Buffer | undefined
+      let cheapMasterErr: { stage: ErrorStage; message: string } | undefined
       if (resolved.source === "local") {
         try {
           localMaster = await readAsset(resolved.file)
         } catch (err) {
-          // Treat as a resolve-stage failure: every (market × ratio) for this
-          // product fails the same way.
           const message = errMessage(err)
           for (const ratio of brief.ratios) {
             const slot: Slot = { product: productSlug, market, ratio }
@@ -235,6 +253,18 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
           }
           continue
         }
+      } else if (mode === "cheap") {
+        try {
+          const master = await generateImage({
+            prompt: buildPrompt(brief, brand, product, market, "1x1"),
+            mode: "cheap",
+          })
+          masterCache.set(productSlug, master)
+        } catch (err) {
+          // Defer attribution to the per-ratio loop so each (market × ratio)
+          // gets its own error event + manifest entry.
+          cheapMasterErr = { stage: "genai", message: errMessage(err) }
+        }
       }
 
       // Per ratio in parallel.
@@ -244,9 +274,26 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
           let failedAt: FailedAt | null = null
           let compliance: ReturnType<typeof runCompliance> | null = null
           let outputPath: string | null = null
+          let currentStage: ErrorStage = "resolve"
+
+          // Cheap-mode master generation already failed for this product;
+          // every ratio fails the same way without spending more API calls.
+          if (cheapMasterErr) {
+            emit(emitError(cheapMasterErr.stage, cheapMasterErr.message, slot))
+            errors.push({ ...slot, ...cheapMasterErr })
+            creatives.push({
+              product: productSlug,
+              market,
+              ratio,
+              source: "genai",
+              path: null,
+            })
+            return
+          }
 
           try {
             // ---- resolve already done above; emit the stage marker ----
+            currentStage = "resolve"
             emit(emitStep("resolve", slot))
 
             // ---- genai (only if missing) ----
@@ -254,49 +301,49 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
             if (resolved.source === "local") {
               master = localMaster!
             } else if (mode === "cheap") {
-              const cacheKey = productSlug
-              const cached = masterCache.get(cacheKey)
-              if (cached) {
-                master = cached
-              } else {
-                emit(emitStep("genai", slot, "generating 1024² master"))
-                master = await generateImage({
-                  prompt: buildPrompt(brief, brand, product, market, ratio),
-                  mode: "cheap",
-                })
-                masterCache.set(cacheKey, master)
-              }
+              // Already in cache (generated outside the ratio loop above).
+              master = masterCache.get(productSlug)!
             } else {
+              currentStage = "genai"
               const cacheKey = `${productSlug}|${ratio}`
               const cached = masterCache.get(cacheKey)
               if (cached) {
                 master = cached
               } else {
                 emit(emitStep("genai", slot, `generating ${ratio} native`))
-                master = await generateImage({
-                  prompt: buildPrompt(brief, brand, product, market, ratio),
-                  ratio,
-                  mode: "default",
-                })
+                master = await runStage("genai", () =>
+                  generateImage({
+                    prompt: buildPrompt(brief, brand, product, market, ratio),
+                    ratio,
+                    mode: "default",
+                  }),
+                )
                 masterCache.set(cacheKey, master)
               }
             }
 
             // ---- resize ----
+            currentStage = "resize"
             emit(emitStep("resize", slot))
-            const sized = await resizeForRatio(master, ratio)
+            const sized = await runStage("resize", () =>
+              resizeForRatio(master, ratio),
+            )
 
             // ---- compose ----
+            currentStage = "compose"
             emit(emitStep("compose", slot))
-            const composed = await composeCreative({
-              base: sized,
-              ratio,
-              headline,
-              logoPath,
-              primaryHex: brand.brand.colors.primary,
-            })
+            const composed = await runStage("compose", () =>
+              composeCreative({
+                base: sized,
+                ratio,
+                headline,
+                logoPath,
+                primaryHex: brand.brand.colors.primary,
+              }),
+            )
 
             // ---- compliance ----
+            currentStage = "compliance"
             emit(emitStep("compliance", slot))
             compliance = runCompliance({
               headline,
@@ -307,17 +354,23 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
             )
 
             // ---- write ----
+            currentStage = "write"
             emit(emitStep("write", slot))
-            outputPath = await writeCreativeOutput({
-              campaign: brief.campaign,
-              market,
-              productSlug,
-              ratio,
-              png: composed,
-            })
+            outputPath = await runStage("write", () =>
+              writeCreativeOutput({
+                campaign: brief.campaign,
+                market,
+                productSlug,
+                ratio,
+                png: composed,
+              }),
+            )
             emit(emitCreativeReady(slot, outputPath, resolved.source))
           } catch (err) {
-            failedAt = classifyFailure(err)
+            failedAt =
+              err instanceof StageError
+                ? { stage: err.stage, message: err.message }
+                : { stage: currentStage, message: errMessage(err) }
             emit(emitError(failedAt.stage, failedAt.message, slot))
           }
 
@@ -386,22 +439,19 @@ function buildPrompt(
   })
 }
 
-function classifyFailure(err: unknown): FailedAt {
-  // Stage attribution comes from the orchestrator's call site — by the time
-  // we land here we've already emitted the matching `step` event. Inspect
-  // the error to attribute the right stage.
-  const message = errMessage(err)
-  // The retry helper rethrows the original error; OpenAI errors are
-  // tagged with `status` or `code` (see normalizeOpenAIError).
-  if (typeof err === "object" && err !== null) {
-    const e = err as { status?: number; code?: string; name?: string }
-    if (typeof e.status === "number" || /openai/i.test(message) || e.code === "ETIMEDOUT" || e.code === "ECONNRESET") {
-      return { stage: "genai", message }
-    }
+/**
+ * Wrap a stage's awaited work so any thrown error carries its `stage` tag.
+ * The catch block in the per-creative loop prefers `StageError` over the
+ * bare `currentStage` fallback when both are available — they should always
+ * agree, but the tag survives accidental re-wrapping by intermediate code.
+ */
+async function runStage<T>(stage: ErrorStage, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn()
+  } catch (err) {
+    if (err instanceof StageError) throw err
+    throw new StageError(stage, err)
   }
-  // Default stage for anything we can't otherwise classify is `compose`,
-  // which is the most likely sharp failure surface.
-  return { stage: "compose", message }
 }
 
 function errMessage(err: unknown): string {

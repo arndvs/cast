@@ -16,9 +16,17 @@
 
 import { ALL_RATIOS, type AspectRatio } from "@/lib/cast/ratios"
 import { getMarket } from "@/lib/cast/markets"
-import { type Brief, type Manifest } from "@/lib/cast/schemas"
+import { type Brief, type ErrorStage, type Manifest } from "@/lib/cast/schemas"
 import type { PipelineEvent } from "@/lib/cast/events"
 
+/**
+ * Reasons a run can terminally fail. Pipeline-stage failures map to the
+ * canonical `ErrorStage` enum; `"stream"` covers transport-level faults the
+ * client synthesizes (idle abort, NDJSON parse errors, content-type mismatch);
+ * `"validation"` covers server-side 4xx responses where the server returned
+ * JSON instead of opening the NDJSON stream.
+ */
+export type RunErrorStage = ErrorStage | "stream" | "validation"
 // ---------------------------------------------------------------------------
 // State shape
 // ---------------------------------------------------------------------------
@@ -64,7 +72,7 @@ export interface S1State {
   /** Final run manifest — set when the terminal `complete` event arrives. */
   manifest: Manifest | null
   /** Last terminal failure (network, validation, idle abort). */
-  runError: { stage: string; message: string } | null
+  runError: { stage: RunErrorStage; message: string } | null
 }
 
 // ---------------------------------------------------------------------------
@@ -85,7 +93,7 @@ export type S1Action =
   | { type: "replaceBrief"; brief: Brief }
   | { type: "generate" }
   | { type: "pipeline-event"; event: PipelineEvent }
-  | { type: "run-error"; stage: string; message: string }
+  | { type: "run-error"; stage: RunErrorStage; message: string }
   | { type: "run-reset" }
 
 // ---------------------------------------------------------------------------

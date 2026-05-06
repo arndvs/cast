@@ -19,7 +19,8 @@ const IDLE_TIMEOUT_MS = 90_000
  * current brief to `/api/generate`, decodes the NDJSON response line-by-line,
  * and dispatches `pipeline-event` for each parsed event. Synthesizes a
  * `run-error` action on:
- *   - non-2xx responses                  → stage = the body's first error path
+ *   - non-2xx responses                  → stage = "validation" (server
+ *                                          returned JSON `{ errors: [...] }`)
  *   - non-NDJSON content type            → stage = "stream"
  *   - `IDLE_TIMEOUT_MS` between chunks   → stage = "stream" (D30)
  *   - JSON.parse failure on a line       → stage = "stream"

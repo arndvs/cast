@@ -55,14 +55,15 @@ export function isRetryable(err: unknown): boolean {
 }
 
 /**
- * Compute the wait before retry attempt #`nextAttemptIndex` (1-based: the
- * attempt about to be made after the failure). `retryAfter` overrides the
- * base sequence iff present and ≤ 30 s.
+ * Compute the wait before the next retry, given the 1-based index of the
+ * attempt that just failed (`failedAttemptIndex`). E.g. on the first failure
+ * we wait `BASE_BACKOFFS_MS[0]` (jittered) before attempt #2.
  *
+ * `retryAfterSeconds` overrides the base sequence iff present and ≤ 30 s.
  * `random()` returns `[0, 1)`; jitter range is `[0.75, 1.25]`.
  */
 export function nextDelayMs(
-  nextAttemptIndex: number,
+  failedAttemptIndex: number,
   retryAfterSeconds: number | undefined,
   random: () => number,
 ): number {
@@ -74,7 +75,7 @@ export function nextDelayMs(
   ) {
     return Math.round(retryAfterSeconds * 1_000)
   }
-  const idx = Math.min(nextAttemptIndex - 1, BASE_BACKOFFS_MS.length - 1)
+  const idx = Math.min(failedAttemptIndex - 1, BASE_BACKOFFS_MS.length - 1)
   const base = BASE_BACKOFFS_MS[idx]
   const jitter = 0.75 + random() * 0.5 // [0.75, 1.25)
   return Math.round(base * jitter)

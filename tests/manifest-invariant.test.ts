@@ -112,7 +112,7 @@ describe("manifest invariants", () => {
     expect(m.counts.succeeded + m.counts.failed).toBe(m.counts.requested)
   })
 
-  it("rejects creatives with both path and write-stage error semantics broken", () => {
+  it("accepts local creatives with a null path on resolve-stage failure", () => {
     // path null and source 'local' is allowed (e.g. resolve stage failure
     // on a local upload that vanished). Just assert the schema permits it.
     const m = mkManifest({
