@@ -23,7 +23,7 @@ Brisa and Volt are the only two brands that need extraction. Onboarding a real c
 
 ## Schema reduction
 
-`loadBrandProfile` validates each per-brand file against the matching sub-schema of `brandProfileSchema` — `brand.json` → `brandJsonSchema`, `voice.json` → `voiceJsonSchema`, `banned-words.json` (when present) → `bannedWordsSchema`, `logos.json` → `logosManifestSchema`. `font.ttf` is existence-checked only (no parse). The HTML carries far more than the schema accepts; the table below names exactly what the runtime reads.
+`loadBrandProfile` validates each per-brand file against the matching sub-schema of `brandProfileSchema` — `brand.json` → `brandJsonSchema`, `voice.json` → `voiceJsonSchema`, `banned-words.json` (when present) → `bannedWordsSchema`, `logos.json` → `logosManifestSchema`. `font.ttf` (or `font.otf`) is existence-checked only (no parse). The HTML carries far more than the schema accepts; the table below names exactly what the runtime reads.
 
 ### `brand.json`
 
@@ -84,9 +84,9 @@ Files land in `inputs/brands/[brand]/logos/[variant-id].png`. `logos.json` decla
 
 PNG with alpha. Sizing is at the screenshotter's discretion — the compositor resizes per ratio at composite time. Manual variant selection only for the POC; automatic per-creative selection by hero luminance is v2 ([§8](flow-diagrams.md#8-future-scope-v2--explicitly-out-of-poc)).
 
-### `font.ttf`
+### `font.ttf` or `font.otf`
 
-Per-brand display font ([D10](flow-diagrams.md#appendix-a--design-decision-register)). OFL-licensed; the brand HTML names the typeface. Source the OFL file from Google Fonts or the typeface vendor and drop it in. Not extracted from the HTML.
+Per-brand display font ([D10](flow-diagrams.md#appendix-a--design-decision-register)). OFL-licensed; the brand HTML names the typeface. Source the OFL file from Google Fonts or the typeface vendor and drop it in as either `font.ttf` or `font.otf` — the loader accepts whichever exists. Not extracted from the HTML.
 
 ---
 
@@ -95,7 +95,7 @@ Per-brand display font ([D10](flow-diagrams.md#appendix-a--design-decision-regis
 The HTML guidelines describe a complete design system. Cast's runtime composites text + a corner logo onto a hero image — most of that system has no surface area in the pipeline. Dropped on purpose:
 
 - **Full palette beyond primary/accent.** Compositor draws text and corner logo only; richer palettes have nowhere to land.
-- **Type scale, line-height ramps, weight pairings.** `font.ttf` is rendered at compositor-determined sizes per ratio; the brand's published scale is informational.
+- **Type scale, line-height ramps, weight pairings.** The display font is rendered at compositor-determined sizes per ratio; the brand's published scale is informational.
 - **Spacing / grid tokens.** Cast does not lay out compositions — the GenAI hero image owns the composition.
 - **Illustration style, iconography rules, photography art-direction.** Out of scope for the GenAI prompt's control surface; `promptFragments[]` is the deliberate narrow channel.
 - **Motion / animation specs.** Output creatives are static PNG only ([D26](flow-diagrams.md#appendix-a--design-decision-register)).
@@ -115,7 +115,7 @@ The README's "Onboard a new brand" section promises a directory drop with no cod
 3. Pull tone, do, don't, and synthesized visual `promptFragments[]` into `voice.json`.
 4. Flatten the brand's banned-words / no-fly list into `banned-words.json` (lowercase, deduped). Skip if the brand has no specific terms — defaults still apply.
 5. Capture or export the four logo variants per [D27](flow-diagrams.md#appendix-a--design-decision-register) into `logos/`. Write `logos.json`.
-6. Drop the OFL display font as `font.ttf`.
+6. Drop the OFL display font as `font.ttf` or `font.otf`.
 7. Restart `next dev` (the brand-profile cache TTL is 90 s; restart is faster than waiting). Brand appears in the S1 selector on next page load.
 
 No rebuild, no migration, no code change. The schema is the API.
@@ -124,7 +124,7 @@ No rebuild, no migration, no code change. The schema is the API.
 
 ## Linked decisions
 
-- [D10](flow-diagrams.md#appendix-a--design-decision-register) — Display font: per-brand `font.ttf`.
+- [D10](flow-diagrams.md#appendix-a--design-decision-register) — Display font: per-brand `font.ttf` or `font.otf`.
 - [D11](flow-diagrams.md#appendix-a--design-decision-register) — Per-brand profile directory contract.
 - [D18](flow-diagrams.md#appendix-a--design-decision-register) — Prompt construction (consumes `voice.json`).
 - [D21](flow-diagrams.md#appendix-a--design-decision-register) — Compliance + banned-words (consumes the union list).

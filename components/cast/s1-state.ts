@@ -40,11 +40,24 @@ export type RunState = "editing" | "running" | "complete" | "failed"
  */
 export type Screen = "S1" | "S2" | "S3"
 
-export type LogoVariantId =
-  | "primary-on-light"
-  | "primary-on-dark"
-  | "mono-white"
-  | "mono-black"
+/**
+ * Logo variant id. Each brand's `logos.json` manifest declares its own
+ * variant ids; the type is intentionally `string` (validated against
+ * `SLUG_RE` at boundaries) so manifests with N variants are accepted.
+ */
+export type LogoVariantId = string
+
+/**
+ * Client-safe logo variant. The server's `BrandProfile.logoVariants[*]`
+ * carries an absolute filesystem `path` resolved via `safeJoin` — that
+ * field must NOT cross the server→client boundary. The page-level server
+ * component projects to this shape before passing to `S1Shell`.
+ */
+export interface ClientLogoVariant {
+  id: LogoVariantId
+  displayName: string
+  theme?: "light" | "dark"
+}
 
 /**
  * In-memory upload preview for V2.
@@ -190,7 +203,15 @@ export function s1Reducer(state: S1State, action: S1Action): S1State {
       }
     }
     case "setLogoVariant":
-      return { ...state, logoVariant: action.id }
+      // Mirror the picker selection into `brief.logoVariant` so the
+      // submitted brief carries it through to `/api/generate`. Schema
+      // already validates against `SLUG_RE`; the editor still keeps
+      // `state.logoVariant` as the canonical UI source.
+      return {
+        ...state,
+        logoVariant: action.id,
+        brief: { ...state.brief, logoVariant: action.id },
+      }
     case "upload": {
       // Replace any existing preview for that slug, revoking the old URL.
       const prev = state.uploads[action.productSlug]

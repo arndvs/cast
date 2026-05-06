@@ -145,6 +145,43 @@ describe("loadBrandProfile", () => {
     await loadBrandProfile("acme")
     expect(mockedFs.readFile.mock.calls.length).toBeGreaterThan(readsAfterFirst)
   })
+
+  it("accepts font.otf when font.ttf is absent", async () => {
+    mockedFs.access.mockImplementation(async (p: string) => {
+      const path = String(p).replace(/\\/g, "/")
+      if (path.endsWith("/font.ttf")) throw enoent()
+      return undefined
+    })
+    mockedFs.readFile.mockImplementation(async (p: string) => {
+      const path = String(p).replace(/\\/g, "/")
+      if (path.endsWith("brands/acme/brand.json")) return JSON.stringify(VALID_BRAND)
+      if (path.endsWith("brands/acme/voice.json")) return JSON.stringify(VALID_VOICE)
+      if (path.endsWith("brands/acme/logos/logos.json")) return JSON.stringify(VALID_LOGOS)
+      if (path.endsWith("brands/acme/banned-words.json")) throw enoent()
+      throw enoent()
+    })
+    const profile = await loadBrandProfile("acme")
+    expect(profile.fontPath.replace(/\\/g, "/")).toMatch(/\/font\.otf$/)
+  })
+
+  it("throws BrandIncompleteError when neither font.ttf nor font.otf exists", async () => {
+    mockedFs.access.mockImplementation(async (p: string) => {
+      const path = String(p).replace(/\\/g, "/")
+      if (/\/font\.(ttf|otf)$/.test(path)) throw enoent()
+      return undefined
+    })
+    mockedFs.readFile.mockImplementation(async (p: string) => {
+      const path = String(p).replace(/\\/g, "/")
+      if (path.endsWith("brands/acme/brand.json")) return JSON.stringify(VALID_BRAND)
+      if (path.endsWith("brands/acme/voice.json")) return JSON.stringify(VALID_VOICE)
+      if (path.endsWith("brands/acme/logos/logos.json")) return JSON.stringify(VALID_LOGOS)
+      if (path.endsWith("brands/acme/banned-words.json")) throw enoent()
+      throw enoent()
+    })
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
+      BrandIncompleteError,
+    )
+  })
 })
 
 describe("listBrandSlugs", () => {

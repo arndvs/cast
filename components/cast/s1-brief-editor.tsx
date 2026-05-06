@@ -12,32 +12,33 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { Dropzone, type DropzoneFile } from "@/components/cast/dropzone"
 import { MarketsTypeahead } from "@/components/cast/markets-typeahead"
-import type { LogoVariantId, S1Action, S1State } from "@/components/cast/s1-state"
+import type { S1Action, S1State } from "@/components/cast/s1-state"
 import { ALL_RATIOS, RATIO_LABELS, type AspectRatio } from "@/lib/cast/ratios"
 import { ALL_MARKETS, activeLanguages } from "@/lib/cast/markets"
 import { containsBannedWord, getDefaultBannedWords } from "@/lib/cast/banned-words"
 import { DEMO_BRANDS, getDemoBrand, type DemoBrand } from "@/lib/cast/demo-brands"
 import { buildPromptPreview } from "@/lib/cast/prompt"
 import { SLUG_RE, slugify } from "@/lib/cast/schemas"
+import type { ClientLogoVariant } from "@/components/cast/s1-state"
 import { cn } from "@/lib/utils"
 
-const LOGO_VARIANTS: ReadonlyArray<{
-  id: LogoVariantId
-  label: string
-  light: boolean
-}> = [
-  { id: "primary-on-light", label: "Primary · light", light: true },
-  { id: "primary-on-dark", label: "Primary · dark", light: false },
-  { id: "mono-white", label: "Mono white", light: false },
-  { id: "mono-black", label: "Mono black", light: true },
-]
+/**
+ * Manifest-driven logo variants. The editor renders one tile per entry in
+ * `brand.logoVariants` from `loadBrandProfile` (projected to a client-safe
+ * shape at the server→client boundary). Brands may declare any number of
+ * variants. When no brand profile is available (e.g. fixture missing on
+ * disk), the grid is hidden entirely.
+ */
+type EditorLogoVariant = ClientLogoVariant
 
 interface S1BriefEditorProps {
   state: S1State
   dispatch: React.Dispatch<S1Action>
+  /** Logo variants from the loaded brand profile. Empty when no brand on disk. */
+  logoVariants: readonly EditorLogoVariant[]
 }
 
-export function S1BriefEditor({ state, dispatch }: S1BriefEditorProps) {
+export function S1BriefEditor({ state, dispatch, logoVariants }: S1BriefEditorProps) {
   const [jsonMode, setJsonMode] = React.useState(false)
   const brand = getDemoBrand(state.brandSlug)
 
@@ -68,7 +69,7 @@ export function S1BriefEditor({ state, dispatch }: S1BriefEditorProps) {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-      <Sidebar state={state} dispatch={dispatch} brand={brand} />
+      <Sidebar state={state} dispatch={dispatch} brand={brand} logoVariants={logoVariants} />
 
       <div className="flex min-w-0 flex-col gap-4">
         <div className="flex items-center gap-3">
@@ -119,10 +120,12 @@ function Sidebar({
   state,
   dispatch,
   brand,
+  logoVariants,
 }: {
   state: S1State
   dispatch: React.Dispatch<S1Action>
   brand: DemoBrand
+  logoVariants: readonly EditorLogoVariant[]
 }) {
   return (
     <aside className="flex flex-col gap-5">
@@ -178,37 +181,40 @@ function Sidebar({
         </div>
       </Section>
 
-      <Section title="Logo variant">
-        <div className="grid grid-cols-2 gap-2">
-          {LOGO_VARIANTS.map((v) => {
-            const active = state.logoVariant === v.id
-            return (
-              <button
-                key={v.id}
-                type="button"
-                onClick={() => dispatch({ type: "setLogoVariant", id: v.id })}
-                className={cn(
-                  "flex flex-col items-center gap-1 rounded-md border border-border p-2 text-center transition-colors",
-                  active && "ring-2 ring-brand-cyan",
-                )}
-              >
-                <div
-                  className="flex h-10 w-full items-center justify-center rounded font-display text-base font-bold"
-                  style={{
-                    background: v.light ? "#ffffff" : "#222",
-                    color: v.light ? brand.colors.primary : "#ffffff",
-                  }}
+      {logoVariants.length > 0 && (
+        <Section title="Logo variant">
+          <div className="grid grid-cols-2 gap-2">
+            {logoVariants.map((v) => {
+              const active = state.logoVariant === v.id
+              const isLight = v.theme !== "dark"
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => dispatch({ type: "setLogoVariant", id: v.id })}
+                  className={cn(
+                    "flex flex-col items-center gap-1 rounded-md border border-border p-2 text-center transition-colors",
+                    active && "ring-2 ring-brand-cyan",
+                  )}
                 >
-                  {brand.displayName.slice(0, 1)}
-                </div>
-                <div className="text-[0.625rem] leading-tight text-muted-foreground">
-                  {v.label}
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </Section>
+                  <div
+                    className="flex h-10 w-full items-center justify-center rounded font-display text-base font-bold"
+                    style={{
+                      background: isLight ? "#ffffff" : "#222",
+                      color: isLight ? brand.colors.primary : "#ffffff",
+                    }}
+                  >
+                    {brand.displayName.slice(0, 1)}
+                  </div>
+                  <div className="text-[0.625rem] leading-tight text-muted-foreground">
+                    {v.displayName}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </Section>
+      )}
 
       <Section title="Detected input assets">
         <ul className="flex flex-col gap-1.5 text-xs">

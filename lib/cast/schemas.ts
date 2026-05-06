@@ -133,6 +133,8 @@ export const logoVariantSchema = z.object({
   id: z.string().regex(SLUG_RE),
   displayName: z.string().min(1),
   file: z.string().regex(/^[a-z0-9-]+\.png$/),
+  /** Optional swatch hint for the editor preview. Defaults to "light". */
+  theme: z.enum(["light", "dark"]).optional(),
 })
 
 export const logosManifestSchema = z
@@ -174,8 +176,14 @@ export type BrandProfile = {
   brand: z.infer<typeof brandJsonSchema>
   voice: z.infer<typeof voiceJsonSchema>
   bannedWords: string[]
-  logoVariants: { id: string; displayName: string; path: string }[]
+  logoVariants: {
+    id: string
+    displayName: string
+    path: string
+    theme?: "light" | "dark"
+  }[]
   defaultLogoId: string
+  /** Absolute path to the brand's display font. `font.ttf` or `font.otf`. */
   fontPath: string
 }
 
