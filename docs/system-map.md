@@ -110,6 +110,8 @@ graph TB
             UploadAPI["POST /api/upload<br/>(slug + canonical ext)"]
             DetectedAPI["GET /api/detected-assets"]
             GenerateAPI["POST /api/generate<br/>(NDJSON stream)"]
+            BrandsAPI["GET /api/brands<br/>(brand selector source)"]
+            CapAPI["GET /api/cap<br/>(daily limit + mode)"]
         end
 
         subgraph Engine["Pipeline Engine"]
@@ -124,6 +126,9 @@ graph TB
     end
 
     Editor -->|brief| GenerateAPI
+    Editor -->|brand list| BrandsAPI
+    Editor -->|cap + mode| CapAPI
+    BrandsAPI -->|enumerates| BrandProfile
     DropZone -->|file| UploadAPI
     UploadAPI -->|writes| Inputs
     DetectedPanel -->|polls| DetectedAPI
@@ -242,6 +247,8 @@ A sanity check that every user-story verb has a home in the system map.
 | read brand / products / markets / audience / message        | Brief Editor → Run Orchestrator      |
 | drop product photos in UI                                   | Drop Zone → `POST /api/upload`       |
 | see detected vs missing assets                              | Detected Assets panel → `GET /api/detected-assets` |
+| pick a brand for this campaign                              | Brand selector → `GET /api/brands`    |
+| see remaining daily GenAI allocation                        | Daily allocation indicator → `GET /api/cap` |
 | look up input assets in `inputs/assets/`                    | Asset Resolver                       |
 | read brand profile (colors, voice, logo, font)              | Asset Resolver / Prompt Builder / Compositor → `inputs/brands/[brand]/` |
 | generate hero image when missing                            | Prompt Builder → GenAI API           |
