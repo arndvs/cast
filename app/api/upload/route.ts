@@ -29,14 +29,26 @@ const ALL_EXTS = ["png", "jpg", "jpeg", "webp"] as const
 
 export async function POST(req: Request): Promise<NextResponse> {
   // Require Content-Length so we can short-circuit oversize bodies before
-  // formData() buffers the whole request. A missing or non-numeric header is
-  // rejected (411) rather than silently accepted — this is the only line of
-  // defense before req.formData() reads the entire stream into memory.
+  // formData() buffers the whole request. Parse strictly: only a non-negative
+  // base-10 integer is accepted. `Number("1.5")` and `Number("1e6")` would
+  // otherwise sneak past `Number.isFinite` and either misreport the size or
+  // overflow the comparison. Missing or malformed → 411.
   const declared = req.headers.get("content-length")
-  const declaredBytes = declared !== null ? Number(declared) : NaN
-  if (!Number.isFinite(declaredBytes) || declaredBytes < 0) {
+  if (declared === null || !/^\d+$/.test(declared)) {
     return jsonError(411, [
-      { path: ["content-length"], message: "Content-Length header is required" },
+      {
+        path: ["content-length"],
+        message: "Content-Length header is missing or invalid",
+      },
+    ])
+  }
+  const declaredBytes = Number(declared)
+  if (!Number.isSafeInteger(declaredBytes)) {
+    return jsonError(411, [
+      {
+        path: ["content-length"],
+        message: "Content-Length header is missing or invalid",
+      },
     ])
   }
   if (declaredBytes > MAX_BYTES) {
