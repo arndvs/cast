@@ -633,6 +633,7 @@ POC ships `LocalFsStorage` resolving keys against `ROOTS = { inputs, outputs }` 
 - `safeJoin(rootKey, ...segments)` resolves the absolute path then asserts `result.startsWith(ROOTS[rootKey] + path.sep)`. Mismatch → throw.
 - Every `[campaign]`, `[brand]`, `[product-slug]`, `[market]` token is validated against its regex (`SLUG_RE` or `MARKET_RE`) **before** entering `safeJoin`.
 - Shell calls (`revealOutputFolder`) use `execFile` with explicit argv — never `exec` with a composed string.
+- **Symlinks are not followed safely** — `safeJoin` is lexical only; it does not call `realpath` to re-validate after symlink resolution. Accepted POC limitation (single-machine, no untrusted users). Implementers touching a route that interpolates user-influenced paths (`/api/upload`, `/api/detected-assets`, `revealOutputFolder`, Sharp reads) MUST add a `// TODO(symlink-hardening)` comment alongside each `safeJoin` call so the gap stays visible for the production-hardening pass (which would add `fs.realpath` re-validation after the lexical check).
 
 ### Compliance + banned-words (D21)
 
