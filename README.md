@@ -4,7 +4,7 @@
 
 **POC · Aaron Davis · 2026**
 
-> **Status: spec-locked, app coming next.** This branch ships the full architectural spec (briefSchema, output tree, manifest, GenAI primitives, streaming contract). Runtime scaffolding (`package.json`, `inputs/`, route handlers) lands in PR #3. The Quick Start below describes the **target** developer experience the spec resolves to.
+> **Status: spec-locked, app coming next.** This branch ships the full architectural spec (briefSchema, output tree, manifest, GenAI primitives, streaming contract). Runtime scaffolding (`package.json`, route handlers) lands in PR #3. The Quick Start below describes the **target** developer experience the spec resolves to.
 
 ---
 
@@ -94,7 +94,7 @@ File path shape: `outputs/[campaign]/[market]/[product]/[ratio].png`. The locale
 | **GenAI provider**    | OpenAI — `dall-e-3` default (3 native ratios), `gpt-image-1` when `CAST_GENAI_MODE=cheap` | `dall-e-3` natively renders 1024×1024 / 1792×1024 / 1024×1792, so the three ratios are three API calls with no center-crop loss. `cheap` mode collapses to one `gpt-image-1` call + Sharp center-crop for budget-constrained demos.                       |
 | **Daily spend cap**   | `DAILY_GENERATION_LIMIT` env (default 50)                                  | POC demo discipline. Hard cap on GenAI calls per local day. **Source of truth: `outputs/.cap.json` `{ date, count }`** (UTC, atomic tmp-file rename) — survives `next dev` restarts. `GET /api/cap` reads it; the terminal NDJSON event of `/api/generate` returns the post-run `{ used, limit, remaining }`. Browser LocalStorage is an optimistic UI cache only — used for instant first paint, immediately overwritten by the next server response, never authoritative for enforcement. UI must never gate the Generate button on LocalStorage alone. The cap file lives at `outputs/.cap.json` (one level above any campaign root) so D15's recursive campaign clear cannot wipe it. |
 
-See [docs/](docs/) for the full design trail: [user stories](docs/user-stories.md) → [system map](docs/system-map.md) → [flow diagrams](docs/flow-diagrams.md) → [attributes & screens](docs/attributes-screen-requirements.md). Visual reference: [docs/cast-brand-guidelines.html](docs/cast-brand-guidelines.html).
+See [docs/](docs/) for the full design trail: [user stories](docs/user-stories.md) → [system map](docs/system-map.md) → [flow diagrams](docs/flow-diagrams.md) → [attributes & screens](docs/attributes-screen-requirements.md). Visual reference: [docs/design/cast-brand-guidelines.html](docs/design/cast-brand-guidelines.html) (with sibling guidelines for [onda](docs/design/onda-brand-guidelines.html), [brisa](docs/design/brisa-brand-guidelines.html), [volt](docs/design/volt-brand-guidelines.html)).
 
 ---
 
@@ -135,4 +135,4 @@ S1's brand selector lists every directory found under `inputs/brands/`, so addin
 
 ## Project status
 
-This branch contains **design documentation only**. Application code lands in subsequent PRs. See pull request #1 for the design review trail.
+This branch contains **design documentation only**. PRs #1 and #2 carried the design lockdown; runtime scaffolding lands in PR #3.

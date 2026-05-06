@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<!--
+  ════════════════════════════════════════════════════════════════════
+  VOLT — BRAND GUIDELINES · Volume I
+  A brand of Onda Beverages.
+  ════════════════════════════════════════════════════════════════════
+  Volt is the energy-drink sub-brand. Loud. Performance-oriented.
+  Charged. Volt is the current you hear before you taste it — built
+  for the gym floor, the late shift, and the last lap.
+
+    § 01  Front matter   What Volt is. How it inherits from Onda.
+    § 02  Mark            The bolt · the wordmark · the lockups.
+    § 03  Flavors         Volt Original · Volt Tropic — the SKUs.
+    § 04  Typography      Space Grotesk · Inter · JetBrains Mono.
+    § 05  Color           Carbon · Volt Yellow · Amber · accents.
+    § 06  Foundation      Spacing, radii, motion, charge.
+    § 07  Components      Campaign templates · 1:1 · 9:16 · 16:9.
+    § 08  Voice           How Volt speaks. The banned-words list.
+    § 09  Parent          How Volt answers to Onda.
+
+  Inherits governance from: ../onda-brand-guidelines.html
+  Sister brand: ../brisa/  (sparkling — opposite tone, same parent)
+  ════════════════════════════════════════════════════════════════════
+-->
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volt — Brand Guidelines · Volume I</title>
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      if (window.parent !== window) root.setAttribute('data-embedded', 'true');
+      function apply(dark) {
+        root.classList.toggle('dark', !!dark);
+        var btn = document.querySelector('.theme-toggle');
+        if (btn) btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      }
+      try {
+        var p = new URLSearchParams(location.search).get('theme');
+        if (p === 'dark') apply(true);
+        else if (p === 'light') apply(false);
+        else apply(true); /* Volt defaults to dark — it's an energy drink */
+      } catch (_) { apply(true); }
+      window.addEventListener('message', function (e) {
+        var d = e.data;
+        if (d && d.type === 'volt-theme' || d && d.type === 'onda-theme') apply(!!d.dark);
+      });
+    })();
+  </script>
+  <style>html[data-embedded="true"] .theme-toggle { display: none !important; }</style>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* =========================================================
+       VOLT — Brand Guidelines · Volume I
+       Loud. Charged. Carbon-floor. Default DARK.
+       Add `.dark` to <html> for the standard variant (default).
+       Remove `.dark` for the daylight / packaging variant.
+       ========================================================= */
+    :root {
+      /* ─── Brand primitives — daylight variant ─────────── */
+      --carbon:       #0B0B0F;       /* near-black floor */
+      --carbon-90:    #16161D;
+      --carbon-80:    #22222C;
+      --carbon-60:    #3D3D4A;
+      --carbon-40:    #707082;
+      --carbon-20:    #B5B5C0;
+      --carbon-08:    #E0E0E5;
+
+      --paper:        #FFFFFF;
+      --bone:         #F4F4F2;       /* warm off-white */
+
+      /* Volt Yellow — the brand current. Hazard, but premium. */
+      --volt:         #E8FF1A;       /* primary brand */
+      --volt-soft:    #F0FF66;
+      --volt-deep:    #B8CC00;
+      --volt-dim:     #8A9A00;
+
+      --amber:        #F0A93B;       /* secondary energy */
+      --amber-deep:   #C77A1B;
+      --amber-soft:   #FFD93D;       /* registry swatch */
+
+      --plasma:       #FF5A1F;       /* accent — Tropic flavor only */
+      --ion:          #00D4FF;       /* accent — Original flavor only */
+
+      /* States */
+      --flag:         #FF3B3B;       /* alarm red, full saturation */
+      --flag-08:      rgba(255, 59, 59, 0.10);
+      --ship:         #2EE875;       /* electric green ship */
+
+      /* ─── Semantic surfaces (daylight) ────────────────── */
+      --bg:         var(--bone);
+      --surface:    var(--paper);
+      --surface-2:  #ECECEA;
+      --surface-carbon: var(--carbon);
+
+      --fg:         var(--carbon);
+      --fg-soft:    var(--carbon-80);
+      --muted:      var(--carbon-60);
+      --hairline:   rgba(11, 11, 15, 0.10);
+      --border:     rgba(11, 11, 15, 0.20);
+
+      --accent:      var(--carbon);  /* daylight: ink does the heavy lifting */
+      --accent-deep: var(--carbon);
+      --signal:      var(--volt);    /* the brand current */
+
+      --grid-line: rgba(11, 11, 15, 0.04);
+
+      /* Atmosphere — Volt's signature is the strobe / scanline,
+         not a soft wash. Sharp gradients. */
+      --glow-volt:  radial-gradient(ellipse at 80% 0%, rgba(232, 255, 26, 0.18), transparent 50%);
+      --glow-amber: radial-gradient(ellipse at 0% 80%, rgba(240, 169, 59, 0.14), transparent 50%);
+      --scanline:   repeating-linear-gradient(
+                      0deg,
+                      transparent 0,
+                      transparent 3px,
+                      rgba(11, 11, 15, 0.025) 3px,
+                      rgba(11, 11, 15, 0.025) 4px
+                    );
+
+      /* ─── Type ────────────────────────────────────────── */
+      --font-display: "Space Grotesk", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body:    "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+      /* ─── Spacing — same scale as Onda / Brisa ───────── */
+      --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+      --space-5: 24px; --space-6: 40px; --space-7: 64px; --space-8: 96px; --space-9: 144px;
+
+      /* ─── Radii — Volt is sharp. The opposite of Brisa. ─ */
+      --radius-sm: 0px;
+      --radius-md: 2px;
+      --radius-lg: 4px;
+      --radius-xl: 8px;
+      --radius-pill: 0px;            /* Volt never rounds. */
+
+      /* ─── Elevation — hard, not soft ─────────────────── */
+      --shadow-xs:   0 1px 0 rgba(11, 11, 15, 0.20);
+      --shadow-sm:   0 2px 0 rgba(11, 11, 15, 0.30);   /* hard offset */
+      --shadow-md:   0 4px 0 rgba(11, 11, 15, 0.40);
+      --shadow-glow: 0 0 0 2px var(--volt), 0 8px 24px -4px rgba(232, 255, 26, 0.40);
+
+      --ease:     cubic-bezier(0.2, 0, 0, 1);          /* faster, snappier */
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .dark {
+      /* DARK is Volt's home variant. Carbon floor, volt current. */
+      --bg:        var(--carbon);
+      --surface:   var(--carbon-90);
+      --surface-2: var(--carbon-80);
+
+      --fg:        var(--paper);
+      --fg-soft:   #DDDDE3;
+      --muted:     #8A8A95;
+      --hairline:  rgba(255, 255, 255, 0.10);
+      --border:    rgba(255, 255, 255, 0.22);
+
+      --accent:      var(--volt);
+      --accent-deep: var(--volt-soft);
+      --signal:      var(--volt);
+
+      --grid-line: rgba(232, 255, 26, 0.04);
+
+      --glow-volt:  radial-gradient(ellipse at 80% 0%, rgba(232, 255, 26, 0.16), transparent 50%);
+      --glow-amber: radial-gradient(ellipse at 0% 80%, rgba(255, 90, 31, 0.14), transparent 55%);
+      --scanline:   repeating-linear-gradient(
+                      0deg,
+                      transparent 0,
+                      transparent 3px,
+                      rgba(255, 255, 255, 0.025) 3px,
+                      rgba(255, 255, 255, 0.025) 4px
+                    );
+
+      --shadow-xs: 0 1px 0 rgba(0, 0, 0, 0.50);
+      --shadow-sm: 0 2px 0 rgba(0, 0, 0, 0.60);
+      --shadow-md: 0 4px 0 rgba(232, 255, 26, 0.25), 0 0 0 1px rgba(232, 255, 26, 0.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      line-height: 1.5;
+      transition: background 0.3s var(--ease), color 0.3s var(--ease);
+    }
+    ::selection { background: var(--volt); color: var(--carbon); }
+
+    :focus { outline: 0; }
+    :focus-visible {
+      outline: 2px solid var(--volt);
+      outline-offset: 3px;
+      border-radius: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition: none !important;
+        animation: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    a { color: inherit; text-decoration: none; }
+    svg { display: block; }
+
+    /* Atmosphere — sharp gradients + scanline. Volt's signature charge. */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: var(--glow-volt), var(--glow-amber);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: var(--scanline);
+      pointer-events: none;
+      z-index: 0;
+      mix-blend-mode: multiply;
+    }
+    .dark body::after { mix-blend-mode: screen; }
+
+    /* =========================================================
+       Page chrome
+       ========================================================= */
+    .page-shell {
+      position: relative;
+      z-index: 1;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: var(--space-7) var(--space-5) var(--space-9);
+    }
+
+    .page-header {
+      border-bottom: 2px solid var(--fg);
+      padding-bottom: var(--space-7);
+      margin-bottom: var(--space-8);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: var(--space-6);
+    }
+    @media (max-width: 720px) {
+      .page-header { grid-template-columns: 1fr; }
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 32px;
+      height: 2px;
+      background: currentColor;
+    }
+
+    .page-header h1 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(56px, 9vw, 144px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+      text-transform: uppercase;
+      margin: var(--space-5) 0 0;
+      overflow-wrap: break-word;
+    }
+    .page-header h1 em {
+      font-style: normal;
+      color: var(--fg);
+      background: var(--volt);
+      padding: 0 0.08em;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+    .dark .page-header h1 em { color: var(--carbon); }
+
+    .page-header .meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.10em;
+      color: var(--muted);
+      text-transform: uppercase;
+      display: grid;
+      gap: 6px;
+      text-align: right;
+    }
+    @media (max-width: 720px) {
+      .page-header .meta { text-align: left; }
+    }
+    .page-header .meta strong { color: var(--fg); font-weight: 700; }
+
+    .page-header .lede {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(20px, 2.4vw, 26px);
+      line-height: 1.3;
+      color: var(--fg-soft);
+      max-width: 56ch;
+      margin: var(--space-5) 0 0;
+      grid-column: 1 / -1;
+    }
+
+    /* Parent breadcrumb — Volt always declares its parent. */
+    .parent-crumb {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--fg);
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      margin-bottom: var(--space-4);
+    }
+    .parent-crumb .dot {
+      width: 8px; height: 8px;
+      background: var(--volt);
+    }
+
+    /* Theme toggle */
+    .theme-toggle {
+      position: fixed;
+      top: 24px; right: 24px;
+      z-index: 20;
+      width: 44px; height: 44px;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      color: var(--fg);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s var(--ease), background 0.2s var(--ease);
+    }
+    .theme-toggle:hover { transform: scale(1.05); border-color: var(--volt); }
+    .theme-toggle .sun { display: none; }
+    .theme-toggle .moon { display: inline; }
+    .dark .theme-toggle .sun { display: inline; }
+    .dark .theme-toggle .moon { display: none; }
+
+    /* =========================================================
+       Section rhythm
+       ========================================================= */
+    .section { margin-bottom: var(--space-9); position: relative; }
+    .section-num {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.20em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: var(--space-3);
+      display: block;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(48px, 7vw, 96px);
+      line-height: 0.92;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      margin: 0 0 var(--space-6);
+    }
+    .section-title em {
+      font-style: normal;
+      color: var(--fg);
+      background: var(--volt);
+      padding: 0 0.08em;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+    .dark .section-title em { color: var(--carbon); }
+    .section-intro {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.5;
+      color: var(--fg-soft);
+      max-width: 60ch;
+      margin: 0 0 var(--space-7);
+    }
+
+    .section-grid { display: grid; gap: var(--space-5); }
+    .grid-2 { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+    /* =========================================================
+       Card primitives
+       ========================================================= */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-6);
+    }
+    .card .label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 var(--space-3);
+    }
+    .card h3 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 28px;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      margin: 0 0 var(--space-3);
+    }
+    .card h3 em {
+      font-style: normal;
+      color: var(--fg);
+      background: var(--volt);
+      padding: 0 0.08em;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+    .dark .card h3 em { color: var(--carbon); }
+    .card p { margin: 0 0 var(--space-3); color: var(--fg-soft); }
+    .card p:last-child { margin-bottom: 0; }
+
+    .card-recess {
+      background: var(--surface-2);
+      border-color: transparent;
+    }
+
+    /* Carbon card — for governance & contrast moments. */
+    .surface-carbon {
+      background: var(--carbon);
+      color: var(--paper);
+      border: 2px solid var(--volt);
+      border-radius: var(--radius-md);
+      padding: var(--space-7);
+      position: relative;
+      overflow: hidden;
+    }
+    .surface-carbon::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: var(--glow-volt);
+      pointer-events: none;
+    }
+    .surface-carbon > * { position: relative; z-index: 1; }
+    .surface-carbon .label { color: var(--volt); }
+    .surface-carbon h3 { color: var(--paper); }
+    .surface-carbon h3 em { background: var(--volt); color: var(--carbon); }
+    .surface-carbon p { color: rgba(255, 255, 255, 0.78); }
+
+    /* =========================================================
+       § 01  Front matter
+       ========================================================= */
+    .principle {
+      padding: var(--space-6) 0;
+      border-top: 1px solid var(--hairline);
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: var(--space-5);
+      align-items: baseline;
+    }
+    @media (max-width: 720px) {
+      .principle { grid-template-columns: 1fr; gap: var(--space-2); }
+    }
+    .principle .num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.20em;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    .principle h4 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 26px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      margin: 0 0 var(--space-3);
+    }
+    .principle h4 em {
+      font-style: normal;
+      color: var(--fg);
+      background: var(--volt);
+      padding: 0 0.08em;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+    .dark .principle h4 em { color: var(--carbon); }
+    .principle p { margin: 0; color: var(--fg-soft); max-width: 60ch; }
+
+    /* =========================================================
+       § 02  Mark
+       ========================================================= */
+    .mark-stage {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-6) var(--space-5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 280px;
+      position: relative;
+      overflow: hidden;
+    }
+    .mark-stage.carbon {
+      background: var(--carbon);
+      color: var(--paper);
+      border-color: var(--volt);
+    }
+    .mark-stage.carbon::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: var(--glow-volt);
+      pointer-events: none;
+    }
+    .mark-stage.volt-fill {
+      background: var(--volt);
+      color: var(--carbon);
+    }
+    .mark-stage > * { position: relative; z-index: 1; }
+    .mark-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: var(--space-5);
+    }
+
+    .wordmark-volt {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(56px, 8vw, 112px);
+      line-height: 0.85;
+      letter-spacing: -0.05em;
+      text-transform: uppercase;
+      color: var(--fg);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.04em;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+    .mark-stage.carbon .wordmark-volt { color: var(--paper); }
+    .mark-stage.volt-fill .wordmark-volt { color: var(--carbon); }
+    .wordmark-volt .slash {
+      display: inline-flex;
+      width: 0.5em;
+      height: 0.78em;
+      flex: none;
+    }
+    .wordmark-volt .slash svg { width: 100%; height: 100%; display: block; }
+    .wordmark-volt .slash .bolt-fill { fill: var(--volt); }
+    .mark-stage.volt-fill .wordmark-volt .slash .bolt-fill { fill: var(--carbon); }
+    .mark-stage.carbon .wordmark-volt .slash .bolt-fill { fill: var(--volt); }
+
+    /* The bolt glyph — the brand's only icon. */
+    .bolt {
+      width: 96px;
+      height: 132px;
+    }
+
+    /* =========================================================
+       § 03  Flavors — Original & Tropic
+       ========================================================= */
+    .flavor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: var(--space-5);
+    }
+
+    .flavor {
+      position: relative;
+      border-radius: var(--radius-md);
+      padding: var(--space-7) var(--space-6) var(--space-6);
+      overflow: hidden;
+      border: 2px solid var(--border);
+      min-height: 380px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      transition: transform 0.15s var(--ease), border-color 0.15s var(--ease);
+    }
+    .flavor:hover {
+      transform: translate(-2px, -2px);
+      border-color: var(--volt);
+      box-shadow: 4px 4px 0 0 var(--volt);
+    }
+    .flavor.original {
+      background:
+        radial-gradient(ellipse at 75% 20%, rgba(0, 212, 255, 0.20), transparent 55%),
+        linear-gradient(180deg, var(--carbon-90) 0%, var(--carbon) 100%);
+      color: var(--paper);
+    }
+    .flavor.tropic {
+      background:
+        radial-gradient(ellipse at 75% 20%, rgba(255, 90, 31, 0.30), transparent 55%),
+        linear-gradient(180deg, #2A1810 0%, var(--carbon) 100%);
+      color: var(--paper);
+    }
+
+    .flavor .can {
+      position: absolute;
+      top: var(--space-5);
+      right: var(--space-5);
+      width: 88px;
+      height: 200px;
+      border-radius: 4px;
+      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.50);
+      overflow: hidden;
+    }
+    .flavor.original .can {
+      background: linear-gradient(180deg, var(--carbon) 0%, var(--carbon-80) 100%);
+      border: 1px solid var(--ion);
+    }
+    .flavor.tropic .can {
+      background: linear-gradient(180deg, var(--plasma) 0%, #B33810 100%);
+    }
+    .flavor .can::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.20);
+    }
+    .flavor.original .can::after {
+      content: "VOLT";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-90deg);
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: -0.05em;
+      color: var(--volt);
+    }
+    .flavor.tropic .can::after {
+      content: "VOLT";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-90deg);
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: -0.05em;
+      color: var(--carbon);
+    }
+
+    .flavor .registry {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--volt);
+      margin: 0 0 var(--space-3);
+    }
+    .flavor.tropic .registry { color: var(--plasma); }
+    .flavor h3 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 56px;
+      line-height: 0.9;
+      letter-spacing: -0.04em;
+      text-transform: uppercase;
+      margin: 0 0 var(--space-2);
+      color: var(--paper);
+    }
+    .flavor h3 em {
+      font-style: normal;
+      background: var(--volt);
+      color: var(--carbon);
+      padding: 0 0.06em;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+    .flavor.tropic h3 em { background: var(--plasma); color: var(--paper); }
+
+    .flavor .desc {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 19px;
+      line-height: 1.3;
+      color: rgba(255, 255, 255, 0.80);
+      margin: 0 0 var(--space-5);
+      max-width: 28ch;
+    }
+    .flavor dl {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    .flavor dt {
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.55);
+      letter-spacing: 0.14em;
+      font-size: 10px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .flavor dd { margin: 0; color: var(--paper); font-weight: 500; }
+
+    /* =========================================================
+       § 04  Typography
+       ========================================================= */
+    .type-spec {
+      padding: var(--space-6) 0;
+      border-top: 1px solid var(--hairline);
+    }
+    .type-spec:last-child { border-bottom: 1px solid var(--hairline); }
+    .type-spec .meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      gap: var(--space-5);
+      margin-bottom: var(--space-4);
+      flex-wrap: wrap;
+    }
+    .type-spec .meta strong { color: var(--fg); font-weight: 700; }
+
+    .type-display {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(56px, 9vw, 128px);
+      line-height: 0.9;
+      letter-spacing: -0.04em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+    .type-display em {
+      font-style: normal;
+      color: var(--fg);
+      background: var(--volt);
+      padding: 0 0.06em;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+    .dark .type-display em { color: var(--carbon); }
+
+    .type-h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(28px, 3.6vw, 44px);
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+    .type-h2 em {
+      font-style: normal;
+      background: var(--volt);
+      color: var(--carbon);
+      padding: 0 0.06em;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+
+    .type-body {
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.55;
+      max-width: 60ch;
+      margin: 0;
+    }
+    .type-mono {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.5;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      margin: 0;
+    }
+
+    /* =========================================================
+       § 05  Color
+       ========================================================= */
+    .swatch {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .swatch .chip { height: 120px; width: 100%; }
+    .swatch .meta {
+      padding: var(--space-4);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      display: grid;
+      gap: 4px;
+    }
+    .swatch .meta .name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      color: var(--fg);
+    }
+    .swatch .meta .role {
+      color: var(--muted);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .swatch .meta .hex { color: var(--fg-soft); letter-spacing: 0.05em; font-weight: 500; }
+
+    .swatch.carbon .chip      { background: var(--carbon); }
+    .swatch.bone .chip        { background: var(--bone); }
+    .swatch.paper .chip       { background: var(--paper); border-bottom: 1px solid var(--hairline); }
+    .swatch.volt .chip        { background: var(--volt); }
+    .swatch.volt-deep .chip   { background: var(--volt-deep); }
+    .swatch.amber .chip       { background: var(--amber); }
+    .swatch.amber-soft .chip  { background: var(--amber-soft); }
+    .swatch.plasma .chip      { background: var(--plasma); }
+    .swatch.ion .chip         { background: var(--ion); }
+    .swatch.flag .chip        { background: var(--flag); }
+
+    /* =========================================================
+       § 06  Foundation
+       ========================================================= */
+    .scale-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid var(--hairline);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .scale-row:last-child { border-bottom: 0; }
+    .scale-row .key { width: 80px; color: var(--accent); font-weight: 700; }
+    .scale-row .val { width: 80px; color: var(--muted); }
+    .scale-row .bar {
+      height: 12px;
+      background: var(--volt);
+    }
+    .radius-demo {
+      width: 80px; height: 80px;
+      background: var(--volt);
+      margin-bottom: var(--space-3);
+    }
+
+    /* =========================================================
+       § 07  Components — buttons, badges, campaign templates
+       ========================================================= */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 14px 24px;
+      border-radius: var(--radius-md);
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform 0.12s var(--ease), background 0.15s var(--ease);
+    }
+    .btn:active { transform: translate(1px, 1px); }
+
+    .btn-primary {
+      background: var(--volt);
+      color: var(--carbon);
+      border-color: var(--volt);
+      box-shadow: 4px 4px 0 0 var(--carbon);
+    }
+    .btn-primary:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0 0 var(--carbon);
+    }
+    .btn-primary:active {
+      transform: translate(2px, 2px);
+      box-shadow: 0 0 0 0 var(--carbon);
+    }
+    .dark .btn-primary { box-shadow: 4px 4px 0 0 var(--paper); }
+    .dark .btn-primary:hover { box-shadow: 6px 6px 0 0 var(--paper); }
+    .dark .btn-primary:active { box-shadow: 0 0 0 0 var(--paper); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--fg);
+      border-color: var(--fg);
+    }
+    .btn-ghost:hover { background: var(--fg); color: var(--bg); }
+
+    .btn-carbon {
+      background: var(--carbon);
+      color: var(--volt);
+      border-color: var(--carbon);
+    }
+    .btn-carbon:hover { background: var(--carbon-80); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 0;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .badge::before {
+      content: "";
+      width: 8px; height: 8px;
+      background: currentColor;
+    }
+    .badge-original { color: var(--ion);    border-color: rgba(0, 212, 255, 0.40); background: rgba(0, 212, 255, 0.10); }
+    .badge-tropic   { color: var(--plasma); border-color: rgba(255, 90, 31, 0.40); background: rgba(255, 90, 31, 0.10); }
+    .badge-ship     { color: var(--ship);   border-color: rgba(46, 232, 117, 0.40); background: rgba(46, 232, 117, 0.10); }
+    .badge-flag     { color: var(--flag);   border-color: rgba(255, 59, 59, 0.40); background: var(--flag-08); }
+
+    .input {
+      width: 100%;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--fg);
+      transition: border-color 0.15s var(--ease);
+    }
+    .input::placeholder { color: var(--muted); }
+    .input:focus {
+      outline: 0;
+      border-color: var(--volt);
+    }
+
+    /* ─── Campaign asset templates ─────────────────────
+       Maya's pipeline emits: 1:1, 9:16, 16:9 across two flavors.
+       Volt assets are loud — solid volt fills, slab type, black slabs. */
+    .asset-board {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr;
+      gap: var(--space-4);
+      align-items: start;
+    }
+    @media (max-width: 920px) {
+      .asset-board { grid-template-columns: 1fr; }
+    }
+    .asset {
+      position: relative;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--carbon);
+      color: var(--paper);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: var(--space-5);
+    }
+    .asset .ratio {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.20em;
+      text-transform: uppercase;
+      color: var(--volt);
+    }
+    .asset h4 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(22px, 3.2vw, 40px);
+      line-height: 0.92;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      margin: 0;
+      color: var(--paper);
+    }
+    .asset h4 em {
+      font-style: normal;
+      background: var(--volt);
+      color: var(--carbon);
+      padding: 0 0.06em;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+    .asset .pin {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.65);
+      display: flex;
+      justify-content: space-between;
+    }
+    .asset.original {
+      background:
+        radial-gradient(ellipse at 75% 25%, rgba(0, 212, 255, 0.22), transparent 60%),
+        linear-gradient(180deg, var(--carbon-90) 0%, var(--carbon) 100%);
+    }
+    .asset.tropic {
+      background:
+        radial-gradient(ellipse at 75% 25%, rgba(255, 90, 31, 0.40), transparent 60%),
+        linear-gradient(180deg, #2A1810 0%, var(--carbon) 100%);
+    }
+    .asset.volt-fill {
+      background: var(--volt);
+      color: var(--carbon);
+    }
+    .asset.volt-fill h4 { color: var(--carbon); }
+    .asset.volt-fill h4 em { background: var(--carbon); color: var(--volt); }
+    .asset.volt-fill .ratio { color: var(--carbon); }
+    .asset.volt-fill .pin { color: rgba(11, 11, 15, 0.65); }
+
+    .asset-1x1   { aspect-ratio: 1 / 1; }
+    .asset-9x16  { aspect-ratio: 9 / 16; }
+    .asset-16x9  { aspect-ratio: 16 / 9; }
+
+    /* =========================================================
+       § 08  Voice — banned-words list
+       ========================================================= */
+    .voice-row {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: var(--space-5);
+      padding: var(--space-5) 0;
+      border-bottom: 1px solid var(--hairline);
+      align-items: baseline;
+    }
+    @media (max-width: 720px) {
+      .voice-row { grid-template-columns: 1fr; gap: var(--space-2); }
+    }
+    .voice-row:last-child { border-bottom: 0; }
+    .voice-row .label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .voice-row .quote {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(20px, 2.4vw, 30px);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      color: var(--fg);
+      margin: 0;
+    }
+
+    .banned {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+    .banned .word {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 0;
+      background: var(--flag-08);
+      color: var(--flag);
+      border: 1px solid rgba(255, 59, 59, 0.35);
+      text-decoration: line-through;
+      text-decoration-color: rgba(255, 59, 59, 0.65);
+      text-decoration-thickness: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .banned .word::before {
+      content: "✕";
+      font-size: 10px;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    /* =========================================================
+       Footer
+       ========================================================= */
+    .page-footer {
+      margin-top: var(--space-9);
+      padding-top: var(--space-7);
+      border-top: 2px solid var(--fg);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: var(--space-5);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.10em;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+    .page-footer .colophon { max-width: 50ch; line-height: 1.6; }
+    .page-footer strong { color: var(--fg); font-weight: 700; }
+    .page-footer em {
+      font-style: normal;
+      background: var(--volt);
+      color: var(--carbon);
+      padding: 0 0.2em;
+    }
+
+    /* Helpers */
+    .stack { display: grid; gap: var(--space-3); }
+    .row   { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; }
+    .mt-3  { margin-top: var(--space-3); }
+    .mt-5  { margin-top: var(--space-5); }
+    .mt-6  { margin-top: var(--space-6); }
+  </style>
+</head>
+
+<body>
+  <button class="theme-toggle" aria-label="Toggle theme" aria-pressed="true"
+    onclick="document.documentElement.classList.toggle('dark'); this.setAttribute('aria-pressed', document.documentElement.classList.contains('dark'));">
+    <span class="moon" aria-hidden="true">◐</span>
+    <span class="sun" aria-hidden="true">☀</span>
+  </button>
+
+  <div class="page-shell">
+
+    <!-- ─────────────────────────────────────────────────────
+         Page header
+         ───────────────────────────────────────────────────── -->
+    <header class="page-header">
+      <div>
+        <span class="parent-crumb"><span class="dot"></span>A brand of Onda · 002</span>
+        <br>
+        <span class="eyebrow">Volt Energy · Volume I</span>
+        <h1>Pull the tab.<br>Feel the <em>current</em>.</h1>
+      </div>
+      <div class="meta">
+        <span><strong>Issued</strong> 2026.05</span>
+        <span><strong>Status</strong> Living document</span>
+        <span><strong>Owner</strong> Volt brand team</span>
+        <span><strong>Inherits</strong> Onda · Volume I</span>
+      </div>
+      <p class="lede">
+        Volt is performance you can hear. A premium energy drink for the
+        gym floor, the late shift, and the last lap. This volume covers
+        everything from the bolt glyph to the words a human reviewer
+        kicks back before the can ships.
+      </p>
+    </header>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 01 — Front matter
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="front-matter">
+      <span class="section-num">§ 01 — Front matter</span>
+      <h2 class="section-title">What Volt <em>is</em>.</h2>
+      <p class="section-intro">
+        A premium energy drink for the 18–28 active lifestyle market.
+        200mg caffeine, taurine, B-complex, zero sugar. Volt is the
+        opposite of Brisa by design — loud, charged, and unapologetic.
+      </p>
+
+      <div class="section-grid grid-2">
+        <div class="card surface-carbon">
+          <p class="label">Promise</p>
+          <h3>Performance you can <em>hear</em>.</h3>
+          <p>
+            The hum before the lift. The crack of the tab in a quiet room.
+            The first sip that arrives a half-second before you do. Volt
+            doesn't whisper — and the people who drink it don't either.
+          </p>
+        </div>
+        <div class="card">
+          <p class="label">Audience</p>
+          <h3>18–28. Active. <em>On the move</em>.</h3>
+          <p>
+            Lifters, gamers, riders, runners, late-shift workers. They
+            train in front of mirrors and post the set. They want a drink
+            that shows up the way they do — not the wellness aisle.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <div class="principle">
+          <span class="num">P · 01</span>
+          <div>
+            <h4>Loud is the <em>discipline</em>.</h4>
+            <p>Volt's loudness is structural, not decorative. It shows up as 700-weight type, hard edges, full-bleed Volt Yellow, and zero-radius corners. If a surface looks soft, it's wrong.</p>
+          </div>
+        </div>
+        <div class="principle">
+          <span class="num">P · 02</span>
+          <div>
+            <h4>Charge, not <em>aggression</em>.</h4>
+            <p>Volt is energy, not anger. We never reach for macho clichés, gym-bro put-downs, or hustle-porn. The brand is confident enough not to need them. See § 08.</p>
+          </div>
+        </div>
+        <div class="principle">
+          <span class="num">P · 03</span>
+          <div>
+            <h4>One unit, <em>one watt</em>.</h4>
+            <p>Every Volt asset states one benefit. Caffeine, focus, endurance, recovery — pick one per surface and own it. Stacking claims is how a brand starts sounding like a label.</p>
+          </div>
+        </div>
+        <div class="principle">
+          <span class="num">P · 04</span>
+          <div>
+            <h4>Volt <em>before</em> Onda.</h4>
+            <p>On every consumer surface, Volt leads. The Onda parent appears only in fine print: <em>"Volt is a brand of Onda."</em> See § 09.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 02 — Mark
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="marks">
+      <span class="section-num">§ 02 — Mark</span>
+      <h2 class="section-title">The <em>marks</em>.</h2>
+      <p class="section-intro">
+        A capitalized slab wordmark with a bolt-cut "O", and a freestanding
+        bolt glyph. The wordmark is the brand at full volume; the bolt is
+        the brand at glance distance — on a phone, a hat, a sleeve.
+      </p>
+
+      <div class="mark-grid">
+
+        <div>
+          <div class="mark-stage">
+            <span class="wordmark-volt">V<span class="slash" aria-hidden="true"><svg viewBox="0 0 48 96"><polygon class="bolt-fill" points="30,2 6,54 22,54 18,94 44,38 28,38"/></svg></span>LT</span>
+          </div>
+          <p class="label mt-5">Primary wordmark · daylight</p>
+        </div>
+
+        <div>
+          <div class="mark-stage carbon">
+            <span class="wordmark-volt">V<span class="slash" aria-hidden="true"><svg viewBox="0 0 48 96"><polygon class="bolt-fill" points="30,2 6,54 22,54 18,94 44,38 28,38"/></svg></span>LT</span>
+          </div>
+          <p class="label mt-5">Primary wordmark · carbon</p>
+        </div>
+
+        <div>
+          <div class="mark-stage volt-fill">
+            <span class="wordmark-volt">V<span class="slash" aria-hidden="true"><svg viewBox="0 0 48 96"><polygon class="bolt-fill" points="30,2 6,54 22,54 18,94 44,38 28,38"/></svg></span>LT</span>
+          </div>
+          <p class="label mt-5">Primary wordmark · volt-fill</p>
+        </div>
+
+        <div>
+          <div class="mark-stage carbon">
+            <svg class="bolt" viewBox="0 0 96 132" aria-label="Volt bolt glyph">
+              <polygon
+                points="56,4 14,76 44,76 36,128 86,52 56,52"
+                fill="#E8FF1A"/>
+            </svg>
+          </div>
+          <p class="label mt-5">Bolt glyph — the brand at glance distance</p>
+        </div>
+
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">Clear space &amp; minimum size</p>
+        <h3>Don't crowd the <em>current</em>.</h3>
+        <p>
+          Clear space equals the height of the <strong>L</strong> in VOLT on all sides.
+          Minimum size for the wordmark is <strong>56px</strong> digital,
+          <strong>14mm</strong> print. The bolt glyph holds down to <strong>20px</strong>
+          on its own. The bolt is never set in any colour other than Volt Yellow
+          or pure black.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 03 — Flavors
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="flavors">
+      <span class="section-num">§ 03 — Flavors</span>
+      <h2 class="section-title">Two <em>flavors</em> in market.</h2>
+      <p class="section-intro">
+        The launch line is two SKUs: Volt Original and Volt Tropic.
+        Each carries a flavor accent — used on the can, the campaign asset,
+        and nowhere else. Volt Yellow stays the brand current across both.
+      </p>
+
+      <div class="flavor-grid">
+
+        <article class="flavor original">
+          <div class="can"></div>
+          <p class="registry">Volt · 001 · ORG · 16 fl oz</p>
+          <h3>Volt <em>Original</em></h3>
+          <p class="desc">Citric edge, electric finish, 200mg caffeine.</p>
+          <dl>
+            <div><dt>Profile</dt><dd>Sharp · clean · classic</dd></div>
+            <div><dt>Caffeine</dt><dd>200mg</dd></div>
+            <div><dt>Flavor accent</dt><dd>Ion #00D4FF</dd></div>
+            <div><dt>Built for</dt><dd>Lift · ride · code</dd></div>
+          </dl>
+        </article>
+
+        <article class="flavor tropic">
+          <div class="can"></div>
+          <p class="registry">Volt · 002 · TRP · 16 fl oz</p>
+          <h3>Volt <em>Tropic</em></h3>
+          <p class="desc">Mango, passionfruit, a long-burn finish.</p>
+          <dl>
+            <div><dt>Profile</dt><dd>Sweet-edge · loud · ripe</dd></div>
+            <div><dt>Caffeine</dt><dd>200mg</dd></div>
+            <div><dt>Flavor accent</dt><dd>Plasma #FF5A1F</dd></div>
+            <div><dt>Built for</dt><dd>Run · shift · finish</dd></div>
+          </dl>
+        </article>
+
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">The flavor-accent rule</p>
+        <h3>Accent on the can. <em>Volt</em> on the chrome.</h3>
+        <p>
+          Each flavor owns a single accent — Ion blue for Original, Plasma
+          orange for Tropic. Accents appear only on cans and inside campaign
+          creative. UI chrome — buttons, focus rings, links, status — always
+          uses Volt Yellow, regardless of which SKU the asset is selling.
+          This is what keeps the brand legible across a 60-asset campaign.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 04 — Typography
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="typography">
+      <span class="section-num">§ 04 — Typography</span>
+      <h2 class="section-title">Three <em>typefaces</em>.</h2>
+      <p class="section-intro">
+        Space Grotesk carries the volume — heavy, geometric, all-caps by
+        default. Inter handles every functional surface. JetBrains Mono
+        carries metadata, pack copy, and pipeline output.
+      </p>
+
+      <div class="type-spec">
+        <p class="meta">
+          <span><strong>Display</strong> Space Grotesk 700</span>
+          <span>Tracking −0.04em</span>
+          <span>UPPERCASE default</span>
+          <span>Headlines · pack · hero</span>
+        </p>
+        <p class="type-display">Pull the tab. <em>Feel the current.</em></p>
+      </div>
+
+      <div class="type-spec">
+        <p class="meta">
+          <span><strong>Sub-display</strong> Space Grotesk 700</span>
+          <span>Card heads · section titles</span>
+        </p>
+        <p class="type-h2">Performance you can hear. <em>One unit, one watt.</em></p>
+      </div>
+
+      <div class="type-spec">
+        <p class="meta">
+          <span><strong>Body</strong> Inter 400/500</span>
+          <span>16 / 1.55</span>
+          <span>Web · app · packaging back panel</span>
+        </p>
+        <p class="type-body">
+          Inter is the workhorse. Generous x-height, neutral geometry,
+          extreme legibility on small screens. It carries every piece of
+          functional copy on a Volt surface — ingredients, app states,
+          e-commerce, store locator. It is intentionally quiet so Space
+          Grotesk always wins the room.
+        </p>
+      </div>
+
+      <div class="type-spec">
+        <p class="meta">
+          <span><strong>Mono</strong> JetBrains Mono 500/700</span>
+          <span>11–13 / 0.04em</span>
+          <span>Pack copy · SKU · pipeline metadata</span>
+        </p>
+        <p class="type-mono">VOLT · 002 · TRP · US · 16:9 · v1.4 · 2026.05.04 · 200MG</p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 05 — Color
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="color">
+      <span class="section-num">§ 05 — Color</span>
+      <h2 class="section-title">Carbon, volt, <em>amber</em>.</h2>
+      <p class="section-intro">
+        The Volt palette runs three layers deep. Carbon is the floor; Volt
+        Yellow is the brand current; amber is the warmth between. Plasma
+        and Ion sit on top — used sparingly, and only where the product
+        itself appears.
+      </p>
+
+      <div class="section-grid grid-4">
+        <div class="swatch carbon">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Floor · type</span><span class="name">Carbon</span><span class="hex">#0B0B0F</span></div>
+        </div>
+        <div class="swatch bone">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Daylight bg</span><span class="name">Bone</span><span class="hex">#F4F4F2</span></div>
+        </div>
+        <div class="swatch paper">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Surface</span><span class="name">Paper</span><span class="hex">#FFFFFF</span></div>
+        </div>
+        <div class="swatch volt">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Primary brand</span><span class="name">Volt</span><span class="hex">#E8FF1A</span></div>
+        </div>
+        <div class="swatch volt-deep">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Pressed · daylight</span><span class="name">Volt Deep</span><span class="hex">#B8CC00</span></div>
+        </div>
+        <div class="swatch amber">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Secondary energy</span><span class="name">Amber</span><span class="hex">#F0A93B</span></div>
+        </div>
+        <div class="swatch amber-soft">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Registry · Onda</span><span class="name">Amber Soft</span><span class="hex">#FFD93D</span></div>
+        </div>
+        <div class="swatch ion">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Flavor · Original only</span><span class="name">Ion</span><span class="hex">#00D4FF</span></div>
+        </div>
+        <div class="swatch plasma">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Flavor · Tropic only</span><span class="name">Plasma</span><span class="hex">#FF5A1F</span></div>
+        </div>
+        <div class="swatch flag">
+          <div class="chip"></div>
+          <div class="meta"><span class="role">Alarm · governance</span><span class="name">Flag</span><span class="hex">#FF3B3B</span></div>
+        </div>
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">Inheritance from Onda</p>
+        <h3>Volt <em>does not</em> inherit Onda's palette.</h3>
+        <p>
+          Onda is oceanic deep blue; Volt is carbon-and-current. The two
+          parent and child intentionally do not share accent. Volt borrows
+          the registry's Amber Soft (#FFD93D) only for the parent-context
+          card on the Onda corporate site — never on a Volt surface.
+          See Onda § 08.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 06 — Foundation
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="foundation">
+      <span class="section-num">§ 06 — Foundation</span>
+      <h2 class="section-title"><em>Foundation</em>.</h2>
+      <p class="section-intro">
+        Volt keeps Onda's 4-px spacing scale. It departs sharply on radii
+        (zero by default), shadows (hard offsets, no blur), and motion
+        (faster easing, no float). Volt does not bounce, drift, or fade.
+      </p>
+
+      <div class="section-grid grid-2">
+        <div class="card">
+          <p class="label">Spacing scale</p>
+          <h3>4-px <em>increments</em>.</h3>
+          <div class="mt-5">
+            <div class="scale-row"><span class="key">--space-1</span><span class="val">4</span><div class="bar" style="width: 4px;"></div></div>
+            <div class="scale-row"><span class="key">--space-2</span><span class="val">8</span><div class="bar" style="width: 8px;"></div></div>
+            <div class="scale-row"><span class="key">--space-3</span><span class="val">12</span><div class="bar" style="width: 12px;"></div></div>
+            <div class="scale-row"><span class="key">--space-4</span><span class="val">16</span><div class="bar" style="width: 16px;"></div></div>
+            <div class="scale-row"><span class="key">--space-5</span><span class="val">24</span><div class="bar" style="width: 24px;"></div></div>
+            <div class="scale-row"><span class="key">--space-6</span><span class="val">40</span><div class="bar" style="width: 40px;"></div></div>
+            <div class="scale-row"><span class="key">--space-7</span><span class="val">64</span><div class="bar" style="width: 64px;"></div></div>
+            <div class="scale-row"><span class="key">--space-8</span><span class="val">96</span><div class="bar" style="width: 96px;"></div></div>
+            <div class="scale-row"><span class="key">--space-9</span><span class="val">144</span><div class="bar" style="width: 144px;"></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="label">Radii — sharp by default</p>
+          <h3>Volt never <em>rounds</em>.</h3>
+          <div class="row mt-5" style="gap: var(--space-5); align-items: flex-start;">
+            <div>
+              <div class="radius-demo" style="border-radius: 0;"></div>
+              <p class="type-mono">--radius-sm · 0</p>
+            </div>
+            <div>
+              <div class="radius-demo" style="border-radius: 2px;"></div>
+              <p class="type-mono">--radius-md · 2</p>
+            </div>
+            <div>
+              <div class="radius-demo" style="border-radius: 4px;"></div>
+              <p class="type-mono">--radius-lg · 4</p>
+            </div>
+            <div>
+              <div class="radius-demo" style="border-radius: 8px;"></div>
+              <p class="type-mono">--radius-xl · 8</p>
+            </div>
+          </div>
+          <p class="mt-3">No pill. No 999. If you reach for a pill button, you're working on the wrong brand.</p>
+        </div>
+
+        <div class="card">
+          <p class="label">Motion</p>
+          <h3>Snap, never <em>float</em>.</h3>
+          <p>
+            Default ease: <code style="font-family: var(--font-mono); font-size: 12px; color: var(--accent);">cubic-bezier(0.2, 0, 0, 1)</code>.
+            Default duration: <strong>120ms</strong> for state, <strong>200ms</strong> for surfaces.
+            Hover effects on Volt translate the element <strong>2px</strong> on each axis with a hard offset shadow — never a soft drop.
+            All transitions collapse under <code style="font-family: var(--font-mono); font-size: 12px; color: var(--accent);">prefers-reduced-motion: reduce</code>.
+          </p>
+        </div>
+
+        <div class="card">
+          <p class="label">Charge &amp; atmosphere</p>
+          <h3>Strobe + <em>scanline</em>.</h3>
+          <p>
+            Every Volt page carries two fixed atmosphere layers: a soft
+            volt/amber radial glow, and a 4-pixel scanline overlay. Together
+            they're the brand's signature <em>charge</em> texture. Never
+            disable on a Volt surface; never enable on an Onda or Brisa one.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 07 — Components
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="components">
+      <span class="section-num">§ 07 — Components</span>
+      <h2 class="section-title">Components</h2>
+      <p class="section-intro">
+        Shared components for every Volt surface, plus the campaign asset
+        templates Maya's pipeline emits across three aspect ratios per
+        market.
+      </p>
+
+      <div class="section-grid grid-2">
+        <div class="card">
+          <p class="label">Buttons — slab</p>
+          <h3>Three roles, one <em>slab</em>.</h3>
+          <div class="row mt-5">
+            <button class="btn btn-primary" type="button">Find Volt</button>
+            <button class="btn btn-ghost" type="button">Watch the spot</button>
+            <button class="btn btn-carbon" type="button">Spec sheet</button>
+          </div>
+          <p class="mt-5">
+            Slab buttons carry hard 4-px offset shadows that snap on press.
+            Volt-fill is the terminal action. Ghost is dismissal. Carbon-on-volt
+            is the inverted format used on full-bleed Volt Yellow surfaces.
+          </p>
+        </div>
+
+        <div class="card">
+          <p class="label">Flavor &amp; status badges</p>
+          <h3>The <em>signal</em> layer.</h3>
+          <div class="row mt-5">
+            <span class="badge badge-original">Original</span>
+            <span class="badge badge-tropic">Tropic</span>
+            <span class="badge badge-ship">Shipping</span>
+            <span class="badge badge-flag">Brand · review</span>
+          </div>
+          <p class="mt-5">
+            Flavor badges are the only place flavor accent colours appear in
+            UI. Status badges follow the parent registry convention
+            (<a href="./onda-brand-guidelines.html" style="color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;">Onda § 07</a>).
+          </p>
+        </div>
+
+        <div class="card">
+          <p class="label">Inputs</p>
+          <h3>Form <em>primitives</em>.</h3>
+          <div class="stack mt-5">
+            <input class="input" type="email" placeholder="EMAIL FOR THE DROP">
+            <input class="input" type="text" placeholder="ZIP / POSTAL">
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="label">Pull-quote</p>
+          <h3>An <em>amplified moment</em>.</h3>
+          <p style="font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.1; letter-spacing: -0.025em; text-transform: uppercase; color: var(--fg); margin-top: var(--space-5);">
+            "I cracked one open in the parking lot before the meet.
+            <em>Won the heat. Bought a case.</em>"
+          </p>
+          <p class="type-mono mt-3" style="color: var(--muted);">— J. OKONKWO · CHICAGO · APR 2026</p>
+        </div>
+      </div>
+
+      <h3 class="type-h2 mt-6">Campaign asset templates</h3>
+      <p class="section-intro mt-3" style="margin-bottom: var(--space-6);">
+        The on-brand asset shapes the creative-automation pipeline emits.
+        One headline. One can. One ratio. The pipeline fills the headline,
+        rotates flavor accent, and exports across markets.
+      </p>
+
+      <div class="asset-board">
+        <div class="asset asset-1x1 original">
+          <p class="ratio">1 : 1 · feed</p>
+          <h4>Pull the tab.<br><em>Feel the current.</em></h4>
+          <div class="pin">
+            <span>Volt Original</span>
+            <span>US · v1</span>
+          </div>
+        </div>
+
+        <div class="asset asset-9x16 tropic">
+          <p class="ratio">9 : 16 · story</p>
+          <h4>Tropic. <em>200mg.</em><br>Zero sugar.</h4>
+          <div class="pin">
+            <span>Volt Tropic</span>
+            <span>EU · v1</span>
+          </div>
+        </div>
+
+        <div class="asset asset-16x9 volt-fill">
+          <p class="ratio">16 : 9 · display</p>
+          <h4>Performance you can <em>hear</em>.</h4>
+          <div class="pin">
+            <span>Volt Original</span>
+            <span>UK · v1</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">What the pipeline checks before publish</p>
+        <h3>Three gates. <em>One green light.</em></h3>
+        <p>
+          <strong>① Mark present.</strong> Every asset carries the Volt
+          wordmark or bolt at minimum size.
+          <strong>② Palette in-bounds.</strong> Flavor accent matches the
+          declared SKU; UI chrome stays Volt Yellow.
+          <strong>③ Banned words clear.</strong> Headline runs the § 08
+          banned list before rendering. Any flag blocks publish and routes
+          to a human reviewer — not a model retry.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 08 — Voice & banned words
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="voice">
+      <span class="section-num">§ 08 — Voice</span>
+      <h2 class="section-title">How Volt <em>speaks</em>.</h2>
+      <p class="section-intro">
+        Volt's voice is the current: short, charged, confident. Sensory
+        verbs — pull, crack, lift, run, shift, finish. Numbers and nouns
+        over adjectives. Volt is the loudest brand in the room without
+        ever raising its voice into aggression.
+      </p>
+
+      <div class="stack">
+        <div class="voice-row">
+          <span class="label">We are</span>
+          <p class="quote">Punchy, direct, charged. Verbs first. Numbers second. Adjectives last.</p>
+        </div>
+        <div class="voice-row">
+          <span class="label">We are not</span>
+          <p class="quote">Wellness-soft, gym-bro, hustle-porn, or ironic. Brisa does soft. Volt doesn't.</p>
+        </div>
+        <div class="voice-row">
+          <span class="label">We say</span>
+          <p class="quote">"200mg. Zero sugar. Pull the tab."</p>
+        </div>
+        <div class="voice-row">
+          <span class="label">We don't say</span>
+          <p class="quote">"Crush every workout. Unleash your beast mode. No excuses, only gains. 💪"</p>
+        </div>
+      </div>
+
+      <h3 class="type-h2 mt-6">Banned words</h3>
+      <p class="section-intro mt-3" style="margin-bottom: var(--space-5);">
+        Words and phrases the pipeline flags before any Volt asset ships.
+        Some are legal (function claims). Some are voice (off-tone). All are
+        non-negotiable.
+      </p>
+
+      <div class="card">
+        <p class="label">Function-claim flags · legal</p>
+        <div class="banned mt-3">
+          <span class="word">cures fatigue</span>
+          <span class="word">treats ADHD</span>
+          <span class="word">improves focus</span>
+          <span class="word">boosts metabolism</span>
+          <span class="word">burns fat</span>
+          <span class="word">builds muscle</span>
+          <span class="word">replaces sleep</span>
+          <span class="word">prevents crash</span>
+          <span class="word">healthier than coffee</span>
+          <span class="word">safe for kids</span>
+        </div>
+      </div>
+
+      <div class="card mt-5">
+        <p class="label">Off-voice flags · macho · gym-bro</p>
+        <div class="banned mt-3">
+          <span class="word">beast mode</span>
+          <span class="word">crush it</span>
+          <span class="word">no excuses</span>
+          <span class="word">no pain no gain</span>
+          <span class="word">grind never stops</span>
+          <span class="word">alpha</span>
+          <span class="word">savage</span>
+          <span class="word">dominate</span>
+          <span class="word">unleash</span>
+          <span class="word">gains</span>
+          <span class="word">go hard or go home</span>
+          <span class="word">bro</span>
+        </div>
+      </div>
+
+      <div class="card mt-5">
+        <p class="label">Off-voice flags · hustle · category cliché</p>
+        <div class="banned mt-3">
+          <span class="word">rise and grind</span>
+          <span class="word">hustle harder</span>
+          <span class="word">level up</span>
+          <span class="word">unlock your potential</span>
+          <span class="word">limitless</span>
+          <span class="word">extreme</span>
+          <span class="word">x-treme</span>
+          <span class="word">to the max</span>
+          <span class="word">unstoppable</span>
+          <span class="word">fuel your fire</span>
+          <span class="word">zero limits</span>
+          <span class="word">push past</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 09 — Parent
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="parent">
+      <span class="section-num">§ 09 — Parent</span>
+      <h2 class="section-title">How Volt <em>answers</em> to Onda.</h2>
+      <p class="section-intro">
+        Volt is sub-brand <strong>002</strong> in the Onda registry. The
+        relationship is governed by Onda § 08 — co-branding &amp; governance.
+        These are the four rules Volt carries from that document.
+      </p>
+
+      <div class="section-grid grid-2">
+        <div class="card surface-carbon">
+          <p class="label">Rule 01 · The fine print</p>
+          <h3><em>"A brand of Onda."</em></h3>
+          <p>
+            Every Volt packaging back panel, legal footer, and corporate
+            page carries the line <em>"Volt is a brand of Onda Beverages"</em>
+            — set in JetBrains Mono, 11px, paper or carbon depending on
+            context. That is the only place Onda appears on a Volt surface.
+          </p>
+        </div>
+        <div class="card">
+          <p class="label">Rule 02 · No co-lockup</p>
+          <h3>Never <em>side by side</em>.</h3>
+          <p>
+            The Volt wordmark and the Onda wordmark do not appear together
+            on a hero asset, a can, or a paid post. Lockups are reserved for
+            corporate, regulatory, and HR contexts only.
+          </p>
+        </div>
+        <div class="card">
+          <p class="label">Rule 03 · Palette stays home</p>
+          <h3>Volt is <em>Volt's</em>.</h3>
+          <p>
+            Volt never borrows Onda's tide blue. Onda never reaches for
+            Volt Yellow on a corporate surface. Each brand's palette stops
+            at its own boundary.
+          </p>
+        </div>
+        <div class="card">
+          <p class="label">Rule 04 · Voice stays home</p>
+          <h3>Volt never sounds like Brisa.</h3>
+          <p>
+            A Volt asset that uses Brisa's quiet editorial italics is a
+            governance failure, even if the words are technically on-brand
+            for Brisa. The pipeline catches this before publish.
+          </p>
+        </div>
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">Where to read more</p>
+        <h3>The full <em>governance layer</em>.</h3>
+        <p>
+          For the full co-branding policy, the registry definition, and the
+          rules every Onda sub-brand inherits, see
+          <a href="./onda-brand-guidelines.html" style="color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;">Onda — Parent Brand Guidelines · Volume I</a>,
+          sections § 02 (Portfolio) and § 08 (Co-branding &amp; governance).
+          For the sister brand, see
+          <a href="./brisa-brand-guidelines.html" style="color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;">Brisa — Volume I</a>.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         Footer
+         ───────────────────────────────────────────────────── -->
+    <footer class="page-footer">
+      <div class="colophon">
+        <p>
+          <strong>Volt Energy — Brand Guidelines · Volume I.</strong>
+          Set in Space Grotesk, Inter, and JetBrains Mono. Issued 2026.05.
+          <em>A brand of Onda.</em>
+        </p>
+      </div>
+      <div>
+        <p>volt · 002 · v1.0</p>
+      </div>
+    </footer>
+
+  </div>
+</body>
+
+</html>

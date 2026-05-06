@@ -1,6 +1,6 @@
 # User Stories — Cast: Creative Automation Pipeline
 
-### Local Next.js App · POC · v5
+### Local Next.js App · POC · v1
 
 ---
 
@@ -78,4 +78,4 @@ Success looks like: Aaron **opens** `localhost:3000`, **clicks Generate** with t
 
 ---
 
-_Cast · User Stories v5 · Adobe FDE Take-Home · Aaron Davis · 2026_
+_Cast · User Stories v1 · Adobe FDE Take-Home · Aaron Davis · 2026_

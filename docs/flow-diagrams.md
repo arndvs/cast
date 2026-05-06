@@ -184,31 +184,31 @@ Two input paths, one folder, one resolver. Maya doesn't have to learn the slug r
 - Slugs must match `SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/` server-side. Non-conforming → 400.
 - **Asset extension matrix** — the only authoritative answer to “which extensions are allowed where?”:
 
-  | Operation                   | Accepted MIME types (filename ext ignored)         | Notes                                                                                |
-  | --------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------ |
-  | Upload (`POST /api/upload`) | `image/png`, `image/jpeg`, `image/webp`            | Filename extension is **not** trusted; canonical disk extension is derived from MIME (`png`→`.png`, `jpeg`→`.jpg`, `webp`→`.webp`). Anything else → 415. |
-  | Resolver lookup             | `.png`, `.jpg`, `.jpeg`, `.webp`                   | First hit wins. Pre-placed `.jpeg` files are accepted on read.                        |
-  | Disk write extensions       | `.png`, `.jpg`, `.jpeg`, `.webp`                   | The set of files Resolver may unlink before a re-upload (delete-then-write). `.jpeg` is included so a pre-placed file doesn't orphan after a drop-zone upload. |
-  | Output creative             | `.png`                                             | Always PNG. Sharp encodes from the composited buffer.                                  |
-  | Animated formats            | _none_                                             | `.gif`, `.mp4`, `.webm` are rejected at upload (415) and ignored at resolve (D26).    |
+  | Operation                   | Accepted MIME types (filename ext ignored) | Notes                                                                                                                                                          |
+  | --------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | Upload (`POST /api/upload`) | `image/png`, `image/jpeg`, `image/webp`    | Filename extension is **not** trusted; canonical disk extension is derived from MIME (`png`→`.png`, `jpeg`→`.jpg`, `webp`→`.webp`). Anything else → 415.       |
+  | Resolver lookup             | `.png`, `.jpg`, `.jpeg`, `.webp`           | First hit wins. Pre-placed `.jpeg` files are accepted on read.                                                                                                 |
+  | Disk write extensions       | `.png`, `.jpg`, `.jpeg`, `.webp`           | The set of files Resolver may unlink before a re-upload (delete-then-write). `.jpeg` is included so a pre-placed file doesn't orphan after a drop-zone upload. |
+  | Output creative             | `.png`                                     | Always PNG. Sharp encodes from the composited buffer.                                                                                                          |
+  | Animated formats            | _none_                                     | `.gif`, `.mp4`, `.webm` are rejected at upload (415) and ignored at resolve (D26).                                                                             |
 
 - No file found → Asset Resolver falls back to GenAI on Generate.
 
 **Two ways an asset gets into `inputs/assets/`:**
 
-| Path                            | How                                                                                                       | When used                              |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| **Drop zone (per product row)** | Maya drags a file onto the product row in S1 → `POST /api/upload` saves it as `inputs/assets/[slug].ext`  | Story 1 — Maya's primary path          |
-| **Pre-placement**               | File already exists at `inputs/assets/[slug].{png,jpg,jpeg,webp}` before app launch                       | Story 3 — Aaron's repo-shipped example |
+| Path                            | How                                                                                                      | When used                              |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| **Drop zone (per product row)** | Maya drags a file onto the product row in S1 → `POST /api/upload` saves it as `inputs/assets/[slug].ext` | Story 1 — Maya's primary path          |
+| **Pre-placement**               | File already exists at `inputs/assets/[slug].{png,jpg,jpeg,webp}` before app launch                      | Story 3 — Aaron's repo-shipped example |
 
 **Component:** [`shadcn-dropzone`](https://shadcn-dropzone.vercel.app/docs) — installed via `npx shadcn@latest add 'https://shadcn-dropzone.vercel.app/dropzone.json'`. Built on the shadcn primitive set we're already using. Single-file mode per product row, `accept: image/png,image/jpeg,image/webp`, image-preview variant, retry + remove file slots wire to `/api/upload` retry semantics. `useDropzone()` hook bound per row; `onDropFile` calls upload then triggers `/api/detected-assets` re-fetch.
 
 **Panel rendering (per product in the brief):**
 
-| Brief product        | Resolver looks for                     | Panel shows                                       |
-| -------------------- | -------------------------------------- | ------------------------------------------------- |
-| `"Brisa Citrus"`     | `brisa-citrus.{png,jpg,jpeg,webp}`     | found: `brisa-citrus.png` (using local asset)     |
-| `"Brisa Berry"`      | `brisa-berry.{png,jpg,…}`              | no asset found — will generate via GenAI          |
+| Brief product    | Resolver looks for                 | Panel shows                                   |
+| ---------------- | ---------------------------------- | --------------------------------------------- |
+| `"Brisa Citrus"` | `brisa-citrus.{png,jpg,jpeg,webp}` | found: `brisa-citrus.png` (using local asset) |
+| `"Brisa Berry"`  | `brisa-berry.{png,jpg,…}`          | no asset found — will generate via GenAI      |
 
 The panel re-scans whenever the brief's product list changes _or_ an upload completes. This makes the resolver's behavior _visible before commitment_, which kills a whole class of "why did it generate when I had a photo?" demo questions.
 
@@ -273,11 +273,11 @@ Response: text/x-ndjson  (streamed)
 The **single source of truth** for brief validation. Same schema used client-side (editor validation) and server-side (`/api/generate` entry). Every other doc references this block; field names and shapes do not get restated elsewhere.
 
 ```ts
-import { z } from 'zod'
+import { z } from "zod";
 
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-const MARKET_RE = /^[a-z]{2}-[a-z]{2}$/   // <region>-<lang>, e.g. us-en, mx-es
-const RATIO = z.enum(['1x1', '9x16', '16x9'])
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const MARKET_RE = /^[a-z]{2}-[a-z]{2}$/; // <region>-<lang>, e.g. us-en, mx-es
+const RATIO = z.enum(["1x1", "9x16", "16x9"]);
 
 export const briefSchema = z
   .object({
@@ -305,35 +305,35 @@ export const briefSchema = z
   .superRefine((brief, ctx) => {
     // Every market's locale (suffix after `-`) must have a message string.
     for (const market of brief.markets) {
-      const locale = market.split('-').pop()!
+      const locale = market.split("-").pop()!;
       if (!(locale in brief.message)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['message'],
+          path: ["message"],
           message: `market ${market} requires message["${locale}"]`,
-        })
+        });
       }
     }
     // Derived product slugs must be unique — same slug means same
     // upload target, same resolver hit, same output folder. Catches
     // "Brisa Citrus" vs "Brisa  Citrus" (extra space) collisions before
     // they corrupt the run.
-    const seen = new Map<string, number>()
+    const seen = new Map<string, number>();
     brief.products.forEach((p, i) => {
-      const slug = slugify(p.name)
+      const slug = slugify(p.name);
       if (seen.has(slug)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['products', i, 'name'],
+          path: ["products", i, "name"],
           message: `product name slugs to "${slug}" which collides with products[${seen.get(slug)}].name`,
-        })
+        });
       } else {
-        seen.set(slug, i)
+        seen.set(slug, i);
       }
-    })
-  })
+    });
+  });
 
-export type Brief = z.infer<typeof briefSchema>
+export type Brief = z.infer<typeof briefSchema>;
 ```
 
 **`slugify` is the same function used by `/api/upload` and the Asset Resolver** — lowercase, non-alphanumeric runs collapsed to `-`, leading/trailing `-` stripped. One implementation, one import path; not three independent regexes that drift.
@@ -403,14 +403,14 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
 - `source` ∈ `'local' | 'genai'`. `compliance.badge` ∈ `'OK' | 'WARN' | 'FAIL'`.
 - `errors[].stage` ∈ `'resolve' | 'genai' | 'resize' | 'compose' | 'compliance' | 'write'` — names the pipeline stage that threw. Closed enum; do not invent new values without updating this table:
 
-  | stage         | When it fires                                                                 |
-  | ------------- | ----------------------------------------------------------------------------- |
-  | `resolve`     | Asset Resolver couldn't read a pre-placed file (corrupt, EACCES, unreadable). |
-  | `genai`       | OpenAI Images API call failed, timed out, or hit the daily cap.               |
-  | `resize`      | Sharp threw decoding or resizing the source image.                            |
-  | `compose`     | Text overlay / logo composite failed (font load, alpha-channel issue).        |
-  | `compliance`  | Compliance checker threw (palette sample, banned-words read, logo template).  |
-  | `write`       | Output PNG write failed (ENOSPC, EACCES, path collision).                     |
+  | stage        | When it fires                                                                 |
+  | ------------ | ----------------------------------------------------------------------------- |
+  | `resolve`    | Asset Resolver couldn't read a pre-placed file (corrupt, EACCES, unreadable). |
+  | `genai`      | OpenAI Images API call failed, timed out, or hit the daily cap.               |
+  | `resize`     | Sharp threw decoding or resizing the source image.                            |
+  | `compose`    | Text overlay / logo composite failed (font load, alpha-channel issue).        |
+  | `compliance` | Compliance checker threw (palette sample, banned-words read, logo template).  |
+  | `write`      | Output PNG write failed (ENOSPC, EACCES, path collision).                     |
 
 **Parallel generation (D20)** — for each product, all requested ratios fan out via `Promise.all`. Markets iterate sequentially in the outer loop (deterministic log order); ratios run in parallel within each `(product, market)` pair. The sequence diagram caption in §4 reflects this.
 
@@ -470,40 +470,49 @@ This is the security boundary for the brand axis: every field that becomes a pat
 The brand directory is a typed contract, not a free-form folder. `loadBrandProfile(brand)` Zod-validates each file on first read and caches the parsed result for 90 s.
 
 ```ts
-import { z } from 'zod'
+import { z } from "zod";
 
-const HEX = /^#[0-9a-fA-F]{6}$/
+const HEX = /^#[0-9a-fA-F]{6}$/;
 
 export const brandColorsSchema = z.object({
   primary: z.string().regex(HEX),
   accent: z.string().regex(HEX),
   background: z.string().regex(HEX).optional(),
   text: z.string().regex(HEX).optional(),
-})
+});
 
 export const brandJsonSchema = z.object({
   displayName: z.string().min(1),
   colors: brandColorsSchema,
   tokens: z.record(z.string(), z.string()).optional(),
-})
+});
 
 export const voiceJsonSchema = z.object({
   tone: z.string().min(1),
   do: z.array(z.string()).default([]),
   dont: z.array(z.string()).default([]),
   promptFragments: z.array(z.string()).default([]),
-})
+});
 
-export const bannedWordsSchema = z.array(z.string().min(1))
+export const bannedWordsSchema = z.array(z.string().min(1));
+
+// Aggregator — the external contract `loadBrandProfile` validates against.
+// system-map §3 references this symbol by name; the three per-file schemas
+// above are its building blocks.
+export const brandProfileSchema = z.object({
+  brand: brandJsonSchema,
+  voice: voiceJsonSchema,
+  bannedWords: bannedWordsSchema.default([]),
+});
 
 export type BrandProfile = {
-  slug: string
-  brand: z.infer<typeof brandJsonSchema>
-  voice: z.infer<typeof voiceJsonSchema>
-  bannedWords: string[]   // [] when banned-words.json is absent
-  logoPath: string         // absolute, safeJoin-validated
-  fontPath: string         // absolute, safeJoin-validated
-}
+  slug: string;
+  brand: z.infer<typeof brandJsonSchema>;
+  voice: z.infer<typeof voiceJsonSchema>;
+  bannedWords: string[]; // [] when banned-words.json is absent
+  logoPath: string; // absolute, safeJoin-validated
+  fontPath: string; // absolute, safeJoin-validated
+};
 ```
 
 **Missing `banned-words.json`** is allowed. The loader returns `bannedWords: []`, the orchestrator emits a `step` event — `{ \"type\": \"step\", \"message\": \"no banned-words list for brand X — skipping pre-flight + per-creative checks\" }` — and both client-side pre-flight and server-side per-creative checks become no-ops for that run. Optional means optional; visibility comes from the log line, not a blocked Generate.
@@ -512,10 +521,10 @@ export type BrandProfile = {
 
 OpenAI Images API. Model: `dall-e-3` for the default path; `gpt-image-1` when `CAST_GENAI_MODE=cheap`.
 
-| Mode             | Model           | Calls per missing product | Sizes                                                                   |
-| ---------------- | --------------- | -------------------------- | ---------------------------------------------------------------------- |
-| Default          | `dall-e-3`      | One per requested ratio    | `1024x1024` (1x1), `1792x1024` (16x9), `1024x1792` (9x16) — native    |
-| `cheap`          | `gpt-image-1`   | One per missing product    | `1024x1024` only; Sharp center-crops to 9x16 / 16x9                    |
+| Mode    | Model         | Calls per missing product | Sizes                                                              |
+| ------- | ------------- | ------------------------- | ------------------------------------------------------------------ |
+| Default | `dall-e-3`    | One per requested ratio   | `1024x1024` (1x1), `1792x1024` (16x9), `1024x1792` (9x16) — native |
+| `cheap` | `gpt-image-1` | One per missing product   | `1024x1024` only; Sharp center-crops to 9x16 / 16x9                |
 
 Mode is selected by env var **`CAST_GENAI_MODE`** (`default` | `cheap`, default `default`); the chosen mode is exposed to the UI via `GET /api/cap` so S1 renders a read-only mode badge. There is no CLI flag — this is a Next.js app, not a CLI. A missing product with all three ratios requested costs three API calls in default mode (no upscale loss, no center-crop). The `cheap` path costs one call, trading edge fidelity for spend.
 
@@ -535,10 +544,10 @@ One interface, one POC implementation:
 
 ```ts
 interface Storage {
-  read(key: string): Promise<Buffer>
-  write(key: string, data: Buffer): Promise<void>
-  list(prefix: string): Promise<string[]>
-  exists(key: string): Promise<boolean>
+  read(key: string): Promise<Buffer>;
+  write(key: string, data: Buffer): Promise<void>;
+  list(prefix: string): Promise<string[]>;
+  exists(key: string): Promise<boolean>;
 }
 ```
 
@@ -598,24 +607,24 @@ stateDiagram-v2
 
 Final sanity pass. If any verb lacks a screen, the flow diagram is broken.
 
-| Story verb                           | Screen                           | State                               |
-| ------------------------------------ | -------------------------------- | ----------------------------------- |
-| open app                             | S1                               | Editing                             |
-| edit brief                           | S1                               | Editing                             |
-| **drop product photos onto rows**    | S1 (drop zone → `/api/upload`)   | Editing                             |
+| Story verb                          | Screen                           | State                               |
+| ----------------------------------- | -------------------------------- | ----------------------------------- |
+| open app                            | S1                               | Editing                             |
+| edit brief                          | S1                               | Editing                             |
+| **drop product photos onto rows**   | S1 (drop zone → `/api/upload`)   | Editing                             |
 | pre-place files in `inputs/assets/` | (filesystem path — Aaron's demo) | confirmed via Detected Assets panel |
-| confirm assets will be picked up     | S1 (Detected Assets panel)       | Editing                             |
-| click Generate                       | S1                               | Editing → Running                   |
-| watch pipeline log                   | S2                               | Running                             |
-| recover from a run failure           | S2′                              | Failed                              |
-| review output grid                   | S3                               | Complete                            |
-| read compliance badge                | S3                               | Complete                            |
-| click flagged tile                   | S3 → S4                          | Complete → DetailOpen               |
-| read compliance detail               | S4                               | DetailOpen                          |
-| reveal output folder                 | S3 → S5                          | Complete (server action)            |
-| copy absolute output path            | S3                               | Complete                            |
-| download files                       | OS file explorer                 | (post-handoff)                      |
-| narrate demo                         | S2 + S3                          | Running, Complete                   |
+| confirm assets will be picked up    | S1 (Detected Assets panel)       | Editing                             |
+| click Generate                      | S1                               | Editing → Running                   |
+| watch pipeline log                  | S2                               | Running                             |
+| recover from a run failure          | S2′                              | Failed                              |
+| review output grid                  | S3                               | Complete                            |
+| read compliance badge               | S3                               | Complete                            |
+| click flagged tile                  | S3 → S4                          | Complete → DetailOpen               |
+| read compliance detail              | S4                               | DetailOpen                          |
+| reveal output folder                | S3 → S5                          | Complete (server action)            |
+| copy absolute output path           | S3                               | Complete                            |
+| download files                      | OS file explorer                 | (post-handoff)                      |
+| narrate demo                        | S2 + S3                          | Running, Complete                   |
 
 Every verb maps to a screen, a state, or a defined action. No orphans.
 
@@ -661,34 +670,34 @@ Captured here so the POC's omissions are deliberate, not accidental:
 
 **Canonical decision register for the Cast POC.** Every `Dn` referenced in any doc resolves here. Numbers are append-only — never renumber (preserves grep stability across the doc set). Adding a new decision means appending the next free number and updating this table in the same commit.
 
-| ID  | Decision                                            | Choice                                                                                                                                                          |
-| --- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | Markets × locales × tree shape                      | Output tree includes `[market]` segment: `outputs/[campaign]/[market]/[product]/[ratio].png`. Locale derived: `locale = market.split('-').pop()`. Brief rejected if any market's locale is missing from `message{}`. |
-| D2  | Brief schema — single source of truth               | One Zod `briefSchema` defined in [§4.2](#42-api-contract--streaming-generate--light-uploadpreview). Same schema used client-side (editor validation) and server-side (`/api/generate` entry). Other docs reference the schema; do not restate field shapes elsewhere. |
-| D3  | Manifest + `report.json` shape                      | One canonical object (camelCase). The `manifest` delivered in the `complete` event === `report.json` content on disk. Includes `counts`, per-creative `source`/`compliance`/`path` (nullable), `errors[]`. See [§4.2](#42-api-contract--streaming-generate--light-uploadpreview). |
-| D4  | JPEG handling                                       | Read-only acceptance for pre-placed `.jpeg`. Uploads canonicalize to `.jpg` (MIME-derived). Resolver lookup: `{png, jpg, jpeg, webp}`. Disk write extensions: `{png, jpg, jpeg, webp}`. Output always `.png`. |
-| D5  | Asset path placeholder                              | `inputs/assets/[product-slug].{png,jpg,jpeg,webp}` everywhere — single placeholder convention.                                                                  |
-| D6  | Output path leading slash                           | Tree visuals are repo-relative (no leading `/`). Absolute paths only in `manifest.outputDir` and S3 copyable code block.                                        |
-| D7  | Ratio naming                                        | `1x1` / `9x16` / `16x9` for data, filenames, schema enum. `1:1` / `9:16` / `16:9` only in display strings.                                                      |
-| D8  | Locale / market field shape                         | `markets: string[]` (form `<region>-<lang>`, validated by `MARKET_RE`). `message: Record<lang, string>`. No separate `locales` field; no singular `region`.    |
-| D9  | GenAI provider                                      | OpenAI Images API. `dall-e-3` default (3 native sizes, 1 call per ratio); `gpt-image-1` when `CAST_GENAI_MODE=cheap` (1 call total + Sharp center-crop).         |
-| D10 | Display font                                        | OFL-licensed `font.ttf` shipped per brand at `inputs/brands/[brand]/font.ttf`. Compositor loads it; no system-font fallback (deterministic across machines).    |
-| D11 | Per-brand profile                                   | `inputs/brands/[brand]/` directory contract: `brand.json`, `voice.json`, `logo.png`, `font.ttf`, optional `banned-words.json`. Validated by `brandProfileSchema`. Demo brands `brisa` and `volt` ship with the repo (sub-brands of fictional Onda Beverages). |
-| D12 | Path safety: `safeJoin`                             | Every filesystem write resolves through `safeJoin(rootKey, ...segments)` against `ROOTS = { inputs, outputs }`; mismatch throws.                                |
-| D13 | Path safety: regex-validated tokens + `execFile`    | `[campaign]`, `[brand]`, `[product-slug]`, `[market]` validated against `SLUG_RE` / `MARKET_RE` before `safeJoin`. Shell calls use `execFile` + explicit argv.   |
-| D14 | Streaming render mode                               | S2 log + progress update incrementally on each NDJSON event; output grid hydrates only on the terminal `complete` event (no flicker, clean S2→S3 transition).   |
-| D15 | Run idempotency                                     | Both Generate (S1) and Retry (S2′) clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products of the run, not preserved artifacts — the recursive clear is what guarantees a failed run cannot leave a stale `report.json` claiming success on disk. End state of any successful run is invariant under retry. No partial-resume; no orphan folders across runs. The cap file at `outputs/.cap.json` (D22) lives one level above the campaign root and is not affected. |
-| D16 | `.gitignore`                                        | `coverage/`, `.swc/`, `outputs/` fully ignored. `inputs/brands/` directory allowlisted so demo brand profiles are version-controlled.                            |
-| D17 | Storage abstraction                                 | `Storage` interface (`read`/`write`/`list`/`exists`); POC ships `LocalFsStorage`; cloud backends (S3 / Azure / Dropbox) are a single-class swap, deferred to v2. |
-| D18 | Prompt construction                                 | Three-layer deterministic assembly: brand voice → product overrides → pure `buildPrompt({...})`. No LLM-on-LLM. S1 renders the assembled prompt read-only.       |
-| D19 | `creatives[].path` is nullable                      | Repo-relative `string` on success, `null` on failure. Grid renders a red placeholder tile for `null`. `counts.failed === errors.length`.                         |
-| D20 | Concurrency model                                   | Markets sequential (deterministic log order); ratios fan out via `Promise.all` per `(product, market)` pair. System-map sequence diagram uses `par`/`and`/`end`. |
-| D21 | Compliance + banned-words                           | Two-pass string check (NOT OCR): client-side pre-flight against `brief.message`; server-side post locale-resolution against the resolved overlay string.         |
-| D22 | Daily generation cap                                | `DAILY_GENERATION_LIMIT` env (default 50). SoT: `outputs/.cap.json` `{ date, count }` (UTC). `GET /api/cap` is the read endpoint. LocalStorage = optimistic only. The cap file sits at `outputs/.cap.json` (one level above any `outputs/[campaign]/`) so D15's recursive campaign clear cannot wipe it. |
-| D23 | Target audience field                               | `audience` stays a freeform string (`z.string().min(1).max(500)`). Fed deterministically into `buildPrompt`. No tag UI / structured parsing in POC.              |
-| D24 | Markets typeahead                                   | Schema stays `markets: string[]` with `MARKET_RE`. S1 UI offers a typeahead with seed values (`us-en`, `mx-es`, `de-de`, `jp-ja`); users may type any conforming value. |
-| D25 | Ratio picker                                        | Schema enum locked to `[1x1, 9x16, 16x9]` for v1. S1 exposes pill toggles, default all checked, at least one required. `4x5` / `2x1` deferred to v1.5 (out of POC). |
-| D26 | Animated formats                                    | `.gif`, `.mp4`, `.webm` rejected at upload (415) and ignored at resolve. Output creatives are always `.png`. Motion creatives are v2 (Future scope §8).         |
+| ID  | Decision                                         | Choice                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Markets × locales × tree shape                   | Output tree includes `[market]` segment: `outputs/[campaign]/[market]/[product]/[ratio].png`. Locale derived: `locale = market.split('-').pop()`. Brief rejected if any market's locale is missing from `message{}`.                                                                                                                                                                                                                                                                                                                                                                                                              |
+| D2  | Brief schema — single source of truth            | One Zod `briefSchema` defined in [§4.2](#42-api-contract--streaming-generate--light-uploadpreview). Same schema used client-side (editor validation) and server-side (`/api/generate` entry). Other docs reference the schema; do not restate field shapes elsewhere.                                                                                                                                                                                                                                                                                                                                                             |
+| D3  | Manifest + `report.json` shape                   | One canonical object (camelCase). The `manifest` delivered in the `complete` event === `report.json` content on disk. Includes `counts`, per-creative `source`/`compliance`/`path` (nullable), `errors[]`. See [§4.2](#42-api-contract--streaming-generate--light-uploadpreview).                                                                                                                                                                                                                                                                                                                                                 |
+| D4  | JPEG handling                                    | Read-only acceptance for pre-placed `.jpeg`. Uploads canonicalize to `.jpg` (MIME-derived). Resolver lookup: `{png, jpg, jpeg, webp}`. Disk write extensions: `{png, jpg, jpeg, webp}`. Output always `.png`.                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| D5  | Asset path placeholder                           | `inputs/assets/[product-slug].{png,jpg,jpeg,webp}` everywhere — single placeholder convention.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| D6  | Output path leading slash                        | Tree visuals are repo-relative (no leading `/`). Absolute paths only in `manifest.outputDir` and S3 copyable code block.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| D7  | Ratio naming                                     | `1x1` / `9x16` / `16x9` for data, filenames, schema enum. `1:1` / `9:16` / `16:9` only in display strings.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| D8  | Locale / market field shape                      | `markets: string[]` (form `<region>-<lang>`, validated by `MARKET_RE`). `message: Record<lang, string>`. No separate `locales` field; no singular `region`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| D9  | GenAI provider                                   | OpenAI Images API. `dall-e-3` default (3 native sizes, 1 call per ratio); `gpt-image-1` when `CAST_GENAI_MODE=cheap` (1 call total + Sharp center-crop).                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| D10 | Display font                                     | OFL-licensed `font.ttf` shipped per brand at `inputs/brands/[brand]/font.ttf`. Compositor loads it; no system-font fallback (deterministic across machines).                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| D11 | Per-brand profile                                | `inputs/brands/[brand]/` directory contract: `brand.json`, `voice.json`, `logo.png`, `font.ttf`, optional `banned-words.json`. Validated by `brandProfileSchema`. Demo brands `brisa` and `volt` ship with the repo (sub-brands of fictional Onda Beverages).                                                                                                                                                                                                                                                                                                                                                                     |
+| D12 | Path safety: `safeJoin`                          | Every filesystem write resolves through `safeJoin(rootKey, ...segments)` against `ROOTS = { inputs, outputs }`; mismatch throws.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| D13 | Path safety: regex-validated tokens + `execFile` | `[campaign]`, `[brand]`, `[product-slug]`, `[market]` validated against `SLUG_RE` / `MARKET_RE` before `safeJoin`. Shell calls use `execFile` + explicit argv.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| D14 | Streaming render mode                            | S2 log + progress update incrementally on each NDJSON event; output grid hydrates only on the terminal `complete` event (no flicker, clean S2→S3 transition).                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| D15 | Run idempotency                                  | Both Generate (S1) and Retry (S2′) clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products of the run, not preserved artifacts — the recursive clear is what guarantees a failed run cannot leave a stale `report.json` claiming success on disk. End state of any successful run is invariant under retry. No partial-resume; no orphan folders across runs. The cap file at `outputs/.cap.json` (D22) lives one level above the campaign root and is not affected. |
+| D16 | `.gitignore`                                     | `coverage/`, `.swc/`, `outputs/` fully ignored. `inputs/brands/` directory allowlisted so demo brand profiles are version-controlled.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| D17 | Storage abstraction                              | `Storage` interface (`read`/`write`/`list`/`exists`); POC ships `LocalFsStorage`; cloud backends (S3 / Azure / Dropbox) are a single-class swap, deferred to v2.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| D18 | Prompt construction                              | Three-layer deterministic assembly: brand voice → product overrides → pure `buildPrompt({...})`. No LLM-on-LLM. S1 renders the assembled prompt read-only.                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| D19 | `creatives[].path` is nullable                   | Repo-relative `string` on success, `null` on failure. Grid renders a red placeholder tile for `null`. `counts.failed === errors.length`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| D20 | Concurrency model                                | Markets sequential (deterministic log order); ratios fan out via `Promise.all` per `(product, market)` pair. System-map sequence diagram uses `par`/`and`/`end`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| D21 | Compliance + banned-words                        | Two-pass string check (NOT OCR): client-side pre-flight against `brief.message`; server-side post locale-resolution against the resolved overlay string.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| D22 | Daily generation cap                             | `DAILY_GENERATION_LIMIT` env (default 50). SoT: `outputs/.cap.json` `{ date, count }` (UTC). `GET /api/cap` is the read endpoint. LocalStorage = optimistic only. The cap file sits at `outputs/.cap.json` (one level above any `outputs/[campaign]/`) so D15's recursive campaign clear cannot wipe it.                                                                                                                                                                                                                                                                                                                          |
+| D23 | Target audience field                            | `audience` stays a freeform string (`z.string().min(1).max(500)`). Fed deterministically into `buildPrompt`. No tag UI / structured parsing in POC.                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| D24 | Markets typeahead                                | Schema stays `markets: string[]` with `MARKET_RE`. S1 UI offers a typeahead with seed values (`us-en`, `mx-es`, `de-de`, `jp-ja`); users may type any conforming value.                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| D25 | Ratio picker                                     | Schema enum locked to `[1x1, 9x16, 16x9]` for v1. S1 exposes pill toggles, default all checked, at least one required. `4x5` / `2x1` deferred to v1.5 (out of POC).                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| D26 | Animated formats                                 | `.gif`, `.mp4`, `.webm` rejected at upload (415) and ignored at resolve. Output creatives are always `.png`. Motion creatives are v2 (Future scope §8).                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 ---
 

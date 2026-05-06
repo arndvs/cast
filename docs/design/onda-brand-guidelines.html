@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<!--
+  ════════════════════════════════════════════════════════════════════
+  ONDA — PARENT BRAND GUIDELINES · Volume I
+  ════════════════════════════════════════════════════════════════════
+  Onda is the holding company. It does not ship a product.
+  Its job is to host a portfolio of consumer sub-brands —
+  Brisa (sparkling water), Volt (energy), and others — and to
+  govern how they relate to one another and to the parent.
+
+    § 01  Front matter   What Onda is, and what it isn't.
+    § 02  Portfolio      The sub-brands. Their tokens. Their voices.
+    § 03  Marks          Onda wordmark, the wave glyph, lockups.
+    § 04  Typography     Fraunces · Inter · JetBrains Mono.
+    § 05  Color          Ink, tide, sand, depth. The parent palette.
+    § 06  Foundation     Spacing, radii, motion, elevation.
+    § 07  Components     Buttons, cards, badges, registry rows.
+    § 08  Co-branding    When Onda appears. When it steps back.
+    § 09  Voice          Parent voice. Sub-brand inheritance.
+
+  This document governs the parent only. Brisa and Volt each carry
+  their own brand guidelines, which inherit from this document for
+  governance and depart from it for personality.
+  ════════════════════════════════════════════════════════════════════
+-->
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Onda — Parent Brand Guidelines · Volume I</title>
+
+  <!-- Theme sync: read ?theme= on first paint, listen for postMessage,
+       hide our toggle when embedded so there is one source of truth. -->
+  <script>
+    (function () {
+      var root = document.documentElement;
+      if (window.parent !== window) root.setAttribute('data-embedded', 'true');
+      function apply(dark) {
+        root.classList.toggle('dark', !!dark);
+        var btn = document.querySelector('.theme-toggle');
+        if (btn) btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      }
+      try {
+        var p = new URLSearchParams(location.search).get('theme');
+        if (p === 'dark') apply(true);
+        else if (p === 'light') apply(false);
+      } catch (_) { }
+      window.addEventListener('message', function (e) {
+        var d = e.data;
+        if (d && d.type === 'onda-theme') apply(!!d.dark);
+      });
+    })();
+  </script>
+  <style>html[data-embedded="true"] .theme-toggle { display: none !important; }</style>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,30..100&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* =========================================================
+       ONDA — Parent Brand Guidelines · Volume I
+       Corporate. Oceanic. Architectural. Default LIGHT (linen).
+       Add `.dark` to <html> to flip to ink.
+       ========================================================= */
+    :root {
+      /* ─── Brand primitives ─────────────────────────────── */
+      --ink:        #0A1628;       /* deep oceanic — the floor */
+      --ink-80:     #1B2A40;
+      --ink-60:     #3A4A63;
+      --ink-40:     #6E7B92;
+      --ink-20:     #B5BCC9;
+      --ink-08:     #E4E6EC;
+
+      --linen:      #F4F1EA;       /* warm parent-paper */
+      --linen-soft: #EFEBE2;
+      --paper:      #FBFAF6;       /* page canvas */
+
+      --tide:       #1B4D8C;       /* the wave — corporate accent */
+      --tide-deep:  #0E3163;       /* on linen / pressed states */
+      --tide-lt:    #6B9BD2;       /* on ink / dark mode lift */
+      --tide-mist:  rgba(27, 77, 140, 0.08);
+
+      --sand:       #C9B89A;       /* warm secondary — shoreline */
+      --sand-deep:  #8A7754;
+      --sand-lt:    #E8DEC8;
+
+      --coral:      #C76558;       /* failure / flag — warm, not alarm */
+      --coral-08:   rgba(199, 101, 88, 0.10);
+      --coral-lt:   #E59A8F;       /* dark-mode lift */
+
+      --kelp:       #3F6B5C;       /* ok / shipping state */
+      --kelp-lt:    #9CC0B3;
+
+      /* ─── Semantic surfaces (light) ────────────────────── */
+      --bg:         var(--linen);
+      --surface:    var(--paper);
+      --surface-2:  var(--linen-soft);
+      --surface-ink: var(--ink);
+
+      --fg:         var(--ink);
+      --fg-soft:    var(--ink-80);
+      --muted:      var(--ink-60);
+      --hairline:   rgba(10, 22, 40, 0.08);
+      --border:     rgba(10, 22, 40, 0.14);
+
+      --accent:      var(--tide);
+      --accent-deep: var(--tide-deep);
+
+      /* ─── Section surfaces — page rhythm ─────────────── */
+      --surface-linen:  var(--linen);
+      --surface-paper:  var(--paper);
+      --surface-recess: var(--linen-soft);
+      --surface-tide:   rgba(27, 77, 140, 0.06);
+      --surface-sand:   rgba(201, 184, 154, 0.18);
+
+      /* Atmosphere — radial washes for ink surfaces only.
+         Light mode keeps everything quiet. */
+      --glow-tide: radial-gradient(ellipse at 80% 20%, rgba(107, 155, 210, 0.18), transparent 60%);
+      --glow-sand: radial-gradient(ellipse at 20% 80%, rgba(201, 184, 154, 0.14), transparent 60%);
+      --glow-deep: radial-gradient(ellipse at 50% 0%, rgba(27, 77, 140, 0.20), transparent 55%);
+
+      --grid-line: rgba(10, 22, 40, 0.025);
+
+      /* ─── Type ────────────────────────────────────────── */
+      --font-display: "Fraunces", "Cormorant Garamond", Georgia, serif;
+      --font-body:    "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+      /* ─── Spacing ─────────────────────────────────────── */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 24px;
+      --space-6: 40px;
+      --space-7: 64px;
+      --space-8: 96px;
+      --space-9: 144px;
+
+      /* ─── Radii — corporate, structural ─────────────── */
+      --radius-sm: 2px;
+      --radius-md: 4px;
+      --radius-lg: 8px;
+      --radius-xl: 14px;
+
+      /* ─── Elevation ──────────────────────────────────── */
+      --shadow-xs:   0 1px 2px rgba(10, 22, 40, 0.04);
+      --shadow-sm:   0 1px 3px rgba(10, 22, 40, 0.06), 0 4px 16px -6px rgba(10, 22, 40, 0.10);
+      --shadow-md:   0 2px 6px rgba(10, 22, 40, 0.08), 0 12px 32px -10px rgba(10, 22, 40, 0.14);
+      --shadow-glow: 0 24px 48px -20px rgba(27, 77, 140, 0.40);
+
+      --ease:     cubic-bezier(0.32, 0.72, 0, 1);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .dark {
+      /* In dark mode the page sits on ink. Surfaces only LIFT.
+         We never go blacker than --ink. */
+      --bg:        var(--ink);
+      --surface:   #131F33;
+      --surface-2: #1B2A40;
+
+      --fg:        var(--linen);
+      --fg-soft:   #D5D2C9;
+      --muted:     #9AA3B5;
+      --hairline:  rgba(244, 241, 234, 0.10);
+      --border:    rgba(244, 241, 234, 0.18);
+
+      --accent:      var(--tide-lt);
+      --accent-deep: var(--tide-lt);
+
+      --surface-linen:  var(--ink);
+      --surface-paper:  #131F33;
+      --surface-recess: #1B2A40;
+      --surface-tide:   rgba(107, 155, 210, 0.10);
+      --surface-sand:   rgba(232, 222, 200, 0.06);
+
+      --glow-tide: radial-gradient(ellipse at 80% 20%, rgba(107, 155, 210, 0.16), transparent 60%);
+      --glow-sand: radial-gradient(ellipse at 20% 80%, rgba(232, 222, 200, 0.10), transparent 60%);
+      --glow-deep: radial-gradient(ellipse at 50% 0%, rgba(107, 155, 210, 0.14), transparent 55%);
+
+      --grid-line: rgba(244, 241, 234, 0.030);
+
+      --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45), 0 8px 24px -8px rgba(0, 0, 0, 0.60);
+      --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.50), 0 16px 40px -12px rgba(0, 0, 0, 0.70);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      line-height: 1.55;
+      transition: background 0.5s var(--ease), color 0.5s var(--ease);
+    }
+    ::selection { background: var(--tide-lt); color: var(--ink); }
+
+    :focus { outline: 0; }
+    :focus-visible {
+      outline: 2px solid var(--tide);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+    .dark :focus-visible { outline-color: var(--tide-lt); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition: none !important;
+        animation: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    a { color: inherit; text-decoration: none; }
+    svg { display: block; }
+
+    /* Editorial grid overlay — fixed, behind everything. */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* =========================================================
+       Page chrome
+       ========================================================= */
+    .page-shell {
+      position: relative;
+      z-index: 1;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: var(--space-7) var(--space-5) var(--space-9);
+    }
+
+    .page-header {
+      border-bottom: 1px solid var(--ink);
+      padding-bottom: var(--space-7);
+      margin-bottom: var(--space-8);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: var(--space-6);
+    }
+    .dark .page-header { border-bottom-color: var(--linen); }
+    @media (max-width: 720px) {
+      .page-header { grid-template-columns: 1fr; }
+    }
+
+    .eyebrow {
+      color: var(--accent-deep);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 24px;
+      height: 1px;
+      background: currentColor;
+    }
+
+    .page-header h1 {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-size: clamp(56px, 9vw, 128px);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      margin: var(--space-5) 0 0;
+      font-variation-settings: "opsz" 144, "SOFT" 30;
+    }
+    .page-header h1 em {
+      font-style: italic;
+      color: var(--accent-deep);
+      font-variation-settings: "opsz" 144, "SOFT" 100;
+    }
+    .page-header .meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+      display: grid;
+      gap: 6px;
+      text-align: right;
+    }
+    @media (max-width: 720px) {
+      .page-header .meta { text-align: left; }
+    }
+    .page-header .meta strong {
+      color: var(--fg);
+      font-weight: 500;
+    }
+    .page-header .lede {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-style: italic;
+      font-size: clamp(20px, 2.4vw, 28px);
+      line-height: 1.4;
+      color: var(--fg-soft);
+      max-width: 60ch;
+      margin: var(--space-5) 0 0;
+      grid-column: 1 / -1;
+    }
+
+    /* =========================================================
+       Theme toggle
+       ========================================================= */
+    .theme-toggle {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 20;
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--fg);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-xs);
+      transition: transform 0.2s var(--ease), background 0.3s var(--ease);
+    }
+    .theme-toggle:hover { transform: scale(1.05); }
+    .theme-toggle .sun { display: none; }
+    .theme-toggle .moon { display: inline; }
+    .dark .theme-toggle .sun { display: inline; }
+    .dark .theme-toggle .moon { display: none; }
+
+    /* =========================================================
+       Section rhythm
+       ========================================================= */
+    .section { margin-bottom: var(--space-9); position: relative; }
+    .section-num {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      color: var(--accent-deep);
+      text-transform: uppercase;
+      margin-bottom: var(--space-3);
+      display: block;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-size: clamp(40px, 5.5vw, 72px);
+      line-height: 1;
+      letter-spacing: -0.03em;
+      margin: 0 0 var(--space-6);
+      font-variation-settings: "opsz" 96, "SOFT" 40;
+    }
+    .section-title em {
+      font-style: italic;
+      color: var(--accent-deep);
+      font-variation-settings: "opsz" 96, "SOFT" 100;
+    }
+    .section-intro {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-style: italic;
+      font-size: clamp(18px, 1.8vw, 22px);
+      line-height: 1.5;
+      color: var(--fg-soft);
+      max-width: 62ch;
+      margin: 0 0 var(--space-7);
+    }
+
+    .section-grid { display: grid; gap: var(--space-5); }
+    .grid-2 { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+    /* =========================================================
+       Card primitives
+       ========================================================= */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      box-shadow: var(--shadow-xs);
+    }
+    .card .label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 var(--space-3);
+    }
+    .card h3 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: 28px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin: 0 0 var(--space-3);
+    }
+    .card h3 em { color: var(--accent-deep); font-style: italic; }
+    .card p { margin: 0 0 var(--space-3); color: var(--fg-soft); }
+    .card p:last-child { margin-bottom: 0; }
+
+    .card-recess {
+      background: var(--surface-recess);
+      border-color: transparent;
+      box-shadow: none;
+    }
+
+    /* Section that sits on ink, dark for both themes. */
+    .surface-ink {
+      background: var(--ink);
+      color: var(--linen);
+      border-radius: var(--radius-xl);
+      padding: var(--space-7);
+      position: relative;
+      overflow: hidden;
+    }
+    .surface-ink::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--glow-deep);
+      pointer-events: none;
+    }
+    .surface-ink > * { position: relative; z-index: 1; }
+    .surface-ink .label { color: var(--tide-lt); }
+    .surface-ink h3 { color: var(--linen); }
+    .surface-ink h3 em { color: var(--tide-lt); }
+    .surface-ink p { color: rgba(244, 241, 234, 0.78); }
+
+    /* =========================================================
+       § 01  Front matter — what Onda is
+       ========================================================= */
+    .front-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-5);
+    }
+    @media (max-width: 720px) {
+      .front-grid { grid-template-columns: 1fr; }
+    }
+
+    .principle {
+      padding: var(--space-6) var(--space-5);
+      border-top: 1px solid var(--ink);
+    }
+    .dark .principle { border-top-color: var(--linen); }
+    .principle .num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: var(--accent-deep);
+    }
+    .principle h4 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: 22px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      margin: var(--space-3) 0 var(--space-3);
+    }
+    .principle p { margin: 0; color: var(--fg-soft); }
+
+    /* =========================================================
+       § 02  Portfolio — the sub-brand registry
+       ========================================================= */
+    .portfolio-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: var(--space-5);
+    }
+
+    .brand-card {
+      position: relative;
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      overflow: hidden;
+      border: 1px solid var(--hairline);
+      transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
+    }
+    .brand-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+    .brand-card .brand-swatch {
+      position: absolute;
+      top: 0; right: 0;
+      width: 96px;
+      height: 96px;
+      clip-path: polygon(100% 0, 0 0, 100% 100%);
+      opacity: 0.95;
+    }
+    .brand-card .registry {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 var(--space-3);
+    }
+    .brand-card h3 {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-size: 44px;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      margin: 0 0 var(--space-2);
+    }
+    .brand-card .desc {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 300;
+      font-size: 17px;
+      color: var(--fg-soft);
+      margin: 0 0 var(--space-5);
+    }
+    .brand-card dl {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3) var(--space-4);
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+    }
+    .brand-card dt {
+      text-transform: uppercase;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      font-size: 10px;
+      margin-bottom: 2px;
+    }
+    .brand-card dd {
+      margin: 0;
+      color: var(--fg);
+    }
+    .brand-card .row { grid-column: 1 / -1; }
+
+    .brand-card.brisa { background: linear-gradient(180deg, #F4FBFB 0%, #FBFAF6 100%); }
+    .brand-card.volt  { background: linear-gradient(180deg, #FFF8E6 0%, #FBFAF6 100%); }
+    .brand-card.placeholder {
+      background: var(--surface-recess);
+      border-style: dashed;
+    }
+    .dark .brand-card.brisa { background: linear-gradient(180deg, #15293A 0%, #131F33 100%); }
+    .dark .brand-card.volt  { background: linear-gradient(180deg, #2C2614 0%, #131F33 100%); }
+    .dark .brand-card.placeholder { background: var(--surface-recess); }
+
+    /* =========================================================
+       § 03  Marks
+       ========================================================= */
+    .mark-stage {
+      background: var(--surface-recess);
+      border-radius: var(--radius-lg);
+      padding: var(--space-7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 280px;
+      position: relative;
+      overflow: hidden;
+    }
+    .mark-stage.ink {
+      background: var(--ink);
+      color: var(--linen);
+    }
+    .mark-stage.ink::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--glow-tide);
+      pointer-events: none;
+    }
+    .mark-stage > * { position: relative; z-index: 1; }
+
+    .wordmark-onda {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-size: clamp(72px, 10vw, 144px);
+      line-height: 0.9;
+      letter-spacing: -0.05em;
+      color: var(--ink);
+      font-variation-settings: "opsz" 144, "SOFT" 20;
+    }
+    .ink .wordmark-onda { color: var(--linen); }
+    .wordmark-onda .dot {
+      color: var(--tide);
+      font-style: normal;
+    }
+    .ink .wordmark-onda .dot { color: var(--tide-lt); }
+
+    .mark-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: var(--space-5);
+    }
+
+    /* =========================================================
+       § 04  Typography specimens
+       ========================================================= */
+    .type-spec {
+      padding: var(--space-6) 0;
+      border-top: 1px solid var(--hairline);
+    }
+    .type-spec:last-child { border-bottom: 1px solid var(--hairline); }
+    .type-spec .meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      gap: var(--space-5);
+      margin-bottom: var(--space-4);
+      flex-wrap: wrap;
+    }
+    .type-spec .meta strong {
+      color: var(--fg);
+      font-weight: 500;
+    }
+
+    .type-display {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-size: clamp(40px, 6vw, 80px);
+      line-height: 1;
+      letter-spacing: -0.03em;
+      margin: 0;
+      font-variation-settings: "opsz" 96, "SOFT" 50;
+    }
+    .type-display em {
+      font-style: italic;
+      color: var(--accent-deep);
+      font-variation-settings: "opsz" 96, "SOFT" 100;
+    }
+    .type-h2 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(28px, 3.4vw, 40px);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    .type-body {
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.6;
+      max-width: 60ch;
+      margin: 0;
+    }
+    .type-mono {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.5;
+      letter-spacing: 0.02em;
+      color: var(--accent-deep);
+      margin: 0;
+    }
+
+    /* =========================================================
+       § 05  Color
+       ========================================================= */
+    .swatch {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--hairline);
+      background: var(--surface);
+    }
+    .swatch .chip {
+      height: 120px;
+      width: 100%;
+    }
+    .swatch .meta {
+      padding: var(--space-4);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      display: grid;
+      gap: 4px;
+    }
+    .swatch .meta .name {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 14px;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--fg);
+    }
+    .swatch .meta .role {
+      color: var(--muted);
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+    .swatch .meta .hex {
+      color: var(--fg-soft);
+      letter-spacing: 0.05em;
+    }
+
+    .swatch.ink .chip       { background: var(--ink); }
+    .swatch.linen .chip     { background: var(--linen); }
+    .swatch.paper .chip     { background: var(--paper); }
+    .swatch.tide .chip      { background: var(--tide); }
+    .swatch.tide-deep .chip { background: var(--tide-deep); }
+    .swatch.tide-lt .chip   { background: var(--tide-lt); }
+    .swatch.sand .chip      { background: var(--sand); }
+    .swatch.sand-deep .chip { background: var(--sand-deep); }
+    .swatch.coral .chip     { background: var(--coral); }
+    .swatch.kelp .chip      { background: var(--kelp); }
+
+    /* =========================================================
+       § 06  Foundation — spacing, radii, motion
+       ========================================================= */
+    .scale-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid var(--hairline);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .scale-row:last-child { border-bottom: 0; }
+    .scale-row .key { width: 80px; color: var(--accent-deep); }
+    .scale-row .val { width: 80px; color: var(--muted); }
+    .scale-row .bar {
+      height: 12px;
+      background: var(--tide);
+      border-radius: 2px;
+    }
+
+    .radius-demo {
+      width: 80px;
+      height: 80px;
+      background: var(--tide);
+      margin-bottom: var(--space-3);
+    }
+
+    /* =========================================================
+       § 07  Components
+       ========================================================= */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      padding: 12px 22px;
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease);
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary {
+      background: var(--ink);
+      color: var(--linen);
+    }
+    .btn-primary:hover { background: var(--ink-80); }
+    .dark .btn-primary {
+      background: var(--linen);
+      color: var(--ink);
+    }
+    .dark .btn-primary:hover { background: #E4E0D5; }
+
+    .btn-tide {
+      background: var(--tide);
+      color: var(--linen);
+    }
+    .btn-tide:hover { background: var(--tide-deep); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--fg);
+      border-color: var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface-recess); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .badge::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .badge-shipping  { color: var(--kelp); border-color: rgba(63, 107, 92, 0.30); background: rgba(63, 107, 92, 0.08); }
+    .badge-review    { color: var(--sand-deep); border-color: rgba(138, 119, 84, 0.30); background: rgba(138, 119, 84, 0.10); }
+    .badge-blocked   { color: var(--coral); border-color: rgba(199, 101, 88, 0.30); background: var(--coral-08); }
+    .dark .badge-shipping  { color: var(--kelp-lt); }
+    .dark .badge-blocked   { color: var(--coral-lt); }
+
+    .input {
+      width: 100%;
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 12px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--fg);
+      transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    }
+    .input::placeholder { color: var(--muted); }
+    .input:focus {
+      outline: 0;
+      border-color: var(--tide);
+      box-shadow: 0 0 0 3px rgba(27, 77, 140, 0.15);
+    }
+
+    .registry-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .registry-table th, .registry-table td {
+      text-align: left;
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--hairline);
+    }
+    .registry-table th {
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .registry-table td .dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    .registry-table .name {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    /* =========================================================
+       § 08  Co-branding & governance
+       ========================================================= */
+    .gov-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-5);
+    }
+    @media (max-width: 720px) { .gov-grid { grid-template-columns: 1fr; } }
+
+    .do-card, .dont-card {
+      padding: var(--space-5);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--hairline);
+      background: var(--surface);
+    }
+    .do-card {
+      border-left: 3px solid var(--kelp);
+    }
+    .dont-card {
+      border-left: 3px solid var(--coral);
+    }
+    .do-card .head, .dont-card .head {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: var(--space-3);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .do-card .head { color: var(--kelp); }
+    .dont-card .head { color: var(--coral); }
+    .dark .do-card .head { color: var(--kelp-lt); }
+    .dark .dont-card .head { color: var(--coral-lt); }
+    .do-card p, .dont-card p {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 300;
+      font-size: 18px;
+      line-height: 1.4;
+      color: var(--fg);
+      margin: 0;
+    }
+
+    /* =========================================================
+       § 09  Voice
+       ========================================================= */
+    .voice-row {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: var(--space-5);
+      padding: var(--space-5) 0;
+      border-bottom: 1px solid var(--hairline);
+      align-items: baseline;
+    }
+    @media (max-width: 720px) {
+      .voice-row { grid-template-columns: 1fr; gap: var(--space-2); }
+    }
+    .voice-row:last-child { border-bottom: 0; }
+    .voice-row .label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+    .voice-row .quote {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(20px, 2.2vw, 26px);
+      line-height: 1.4;
+      color: var(--fg);
+      margin: 0;
+    }
+
+    /* =========================================================
+       Footer
+       ========================================================= */
+    .page-footer {
+      margin-top: var(--space-9);
+      padding-top: var(--space-7);
+      border-top: 1px solid var(--ink);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: var(--space-5);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.10em;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+    .dark .page-footer { border-top-color: var(--linen); }
+    .page-footer .colophon {
+      max-width: 50ch;
+      line-height: 1.6;
+    }
+    .page-footer strong { color: var(--fg); font-weight: 500; }
+
+    /* Helpers */
+    .stack { display: grid; gap: var(--space-3); }
+    .row   { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; }
+    .mt-5  { margin-top: var(--space-5); }
+    .mt-6  { margin-top: var(--space-6); }
+  </style>
+</head>
+
+<body>
+  <button class="theme-toggle" aria-label="Toggle theme" aria-pressed="false"
+    onclick="document.documentElement.classList.toggle('dark'); this.setAttribute('aria-pressed', document.documentElement.classList.contains('dark'));">
+    <span class="moon" aria-hidden="true">◐</span>
+    <span class="sun" aria-hidden="true">☀</span>
+  </button>
+
+  <div class="page-shell">
+
+    <!-- ─────────────────────────────────────────────────────
+         Page header
+         ───────────────────────────────────────────────────── -->
+    <header class="page-header">
+      <div>
+        <span class="eyebrow">Onda Beverages · Volume I</span>
+        <h1>A house of brands,<br>all from one <em>wave</em>.</h1>
+      </div>
+      <div class="meta">
+        <span><strong>Issued</strong> 2026.05</span>
+        <span><strong>Status</strong> Living document</span>
+        <span><strong>Owner</strong> Brand &amp; Identity</span>
+        <span><strong>Scope</strong> Parent only</span>
+      </div>
+      <p class="lede">
+        Onda is the parent. It does not ship a bottle, can, or pouch — it shepherds
+        the brands that do. This volume governs how Onda looks, sounds, and grants
+        identity to every wave that follows from it.
+      </p>
+    </header>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 01 — Front matter
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="front-matter">
+      <span class="section-num">§ 01 — Front matter</span>
+      <h2 class="section-title">What Onda <em>is</em>.</h2>
+      <p class="section-intro">
+        A holding company in the beverage category, headquartered globally,
+        operated locally. Onda owns the corporate identity, the standards, and
+        the registry. Each sub-brand owns its category, its consumer, and its voice.
+      </p>
+
+      <div class="front-grid">
+        <div class="card surface-ink">
+          <p class="label">Mission</p>
+          <h3>Make the wave. <em>Then get out of its way.</em></h3>
+          <p>
+            Onda exists to give consumer brands the back-of-house they need to move
+            fast — distribution, governance, creative ops — without ever crowding
+            the shelf they appear on.
+          </p>
+        </div>
+        <div class="card">
+          <p class="label">What Onda is not</p>
+          <h3>A consumer brand.</h3>
+          <p>
+            You will not see <em>Onda</em> on a can. You will see it in the fine
+            print, the boardroom, the brand portal, and the regulatory filing.
+            Brisa pours. Volt pours. Onda <em>holds</em>.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <div class="principle">
+          <span class="num">P · 01</span>
+          <h4>One sea, many waves.</h4>
+          <p>Every Onda sub-brand is a different wave from the same body of water. They share a parent, a registry, and a standards layer — and almost nothing else.</p>
+        </div>
+        <div class="principle">
+          <span class="num">P · 02</span>
+          <h4>Sub-brands lead. Onda follows.</h4>
+          <p>In market, the consumer brand is the hero. The Onda mark is reserved for parent contexts: corporate communication, governance, regulatory, and packaging fine print.</p>
+        </div>
+        <div class="principle">
+          <span class="num">P · 03</span>
+          <h4>Govern the system, not the surface.</h4>
+          <p>Onda standards cover process: what each brand must declare, how it inherits tokens, how violations get flagged. We do not dictate sub-brand aesthetics.</p>
+        </div>
+        <div class="principle">
+          <span class="num">P · 04</span>
+          <h4>Velocity is a brand value.</h4>
+          <p>The portfolio model exists so brands ship faster. Anything that slows a sub-brand without protecting the parent is friction — and friction is a defect.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 02 — Portfolio
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="portfolio">
+      <span class="section-num">§ 02 — Portfolio</span>
+      <h2 class="section-title">The <em>registry</em>.</h2>
+      <p class="section-intro">
+        Every active sub-brand carries an entry below. The registry is the
+        source of truth for sub-brand identity, voice, and governance. Each
+        line maps to a full brand guidelines volume of its own.
+      </p>
+
+      <div class="portfolio-grid">
+
+        <article class="brand-card brisa">
+          <span class="brand-swatch" style="background: linear-gradient(135deg, #7BC4C4 0%, #4FA0A0 100%);"></span>
+          <p class="registry">Onda · 001 · Active</p>
+          <h3>Brisa</h3>
+          <p class="desc">A breeze, in a can.</p>
+          <dl>
+            <div><dt>Category</dt><dd>Sparkling water</dd></div>
+            <div><dt>Audience</dt><dd>25–40 · urban · wellness</dd></div>
+            <div><dt>Tone</dt><dd>Light · clean · radiant</dd></div>
+            <div><dt>Tier</dt><dd>Premium</dd></div>
+            <div class="row"><dt>Tagline</dt><dd>Crack open something brighter.</dd></div>
+          </dl>
+        </article>
+
+        <article class="brand-card volt">
+          <span class="brand-swatch" style="background: linear-gradient(135deg, #FFD93D 0%, #F0A93B 100%);"></span>
+          <p class="registry">Onda · 002 · Active</p>
+          <h3>Volt</h3>
+          <p class="desc">Performance you can hear.</p>
+          <dl>
+            <div><dt>Category</dt><dd>Energy drink</dd></div>
+            <div><dt>Audience</dt><dd>18–28 · active · loud</dd></div>
+            <div><dt>Tone</dt><dd>Punchy · direct · charged</dd></div>
+            <div><dt>Tier</dt><dd>Mainstream</dd></div>
+            <div class="row"><dt>Tagline</dt><dd>Pull the tab. Feel the current.</dd></div>
+          </dl>
+        </article>
+
+        <article class="brand-card placeholder">
+          <p class="registry">Onda · 003 · Reserved</p>
+          <h3>—</h3>
+          <p class="desc">Future portfolio entry.</p>
+          <dl>
+            <div><dt>Category</dt><dd>TBD</dd></div>
+            <div><dt>Audience</dt><dd>TBD</dd></div>
+            <div><dt>Tone</dt><dd>TBD</dd></div>
+            <div><dt>Tier</dt><dd>TBD</dd></div>
+          </dl>
+        </article>
+
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">How a sub-brand inherits</p>
+        <h3>Inheritance is opt-in. <em>Identity is opt-out.</em></h3>
+        <p>
+          A sub-brand inherits Onda's <strong>governance</strong> by default —
+          the registry entry, the legal voice, the corporate footer, the
+          portfolio reference. It opts out of Onda's <strong>identity</strong>
+          by default — its own palette, type, mark, and consumer voice. Crossing
+          the boundary requires a declared lockup (see § 08).
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 03 — Marks
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="marks">
+      <span class="section-num">§ 03 — Marks</span>
+      <h2 class="section-title">The <em>marks</em>.</h2>
+      <p class="section-intro">
+        The Onda parent mark is a wordmark with a single tide-blue stop. The stop
+        is the wave's origin point — the sea before it becomes a wave. Use the
+        mark sparingly; the parent is rarely the hero.
+      </p>
+
+      <div class="mark-grid">
+
+        <div>
+          <div class="mark-stage">
+            <span class="wordmark-onda">onda<span class="dot">.</span></span>
+          </div>
+          <p class="label mt-5">Primary wordmark · light</p>
+        </div>
+
+        <div>
+          <div class="mark-stage ink">
+            <span class="wordmark-onda">onda<span class="dot">.</span></span>
+          </div>
+          <p class="label mt-5">Primary wordmark · ink</p>
+        </div>
+
+      </div>
+
+      <div class="mt-6 mark-grid">
+        <div>
+          <div class="mark-stage">
+            <!-- The wave glyph: three parametric arcs, ascending. -->
+            <svg width="180" height="120" viewBox="0 0 180 120" aria-label="Onda wave glyph">
+              <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="color: var(--ink);">
+                <path d="M 10 90 Q 45 60, 80 90 T 170 90" opacity="0.30"/>
+                <path d="M 10 70 Q 45 40, 80 70 T 170 70" opacity="0.55"/>
+                <path d="M 10 50 Q 45 20, 80 50 T 170 50" opacity="0.95" style="color: var(--tide);" stroke="currentColor"/>
+              </g>
+            </svg>
+          </div>
+          <p class="label mt-5">Wave glyph — three arcs, the rising swell</p>
+        </div>
+
+        <div>
+          <div class="mark-stage">
+            <div style="display: flex; align-items: center; gap: 24px;">
+              <svg width="56" height="38" viewBox="0 0 180 120" aria-hidden="true">
+                <g fill="none" stroke-width="6" stroke-linecap="round" style="color: var(--tide);">
+                  <path d="M 10 50 Q 45 20, 80 50 T 170 50" stroke="currentColor"/>
+                </g>
+              </svg>
+              <span class="wordmark-onda" style="font-size: 64px;">onda<span class="dot">.</span></span>
+            </div>
+          </div>
+          <p class="label mt-5">Horizontal lockup — glyph + wordmark</p>
+        </div>
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">Clear space &amp; minimum size</p>
+        <h3>Give it room. <em>Or don't show it at all.</em></h3>
+        <p>
+          Clear space equals the height of the lowercase <strong>o</strong> on all sides.
+          Minimum size is <strong>72px</strong> for digital, <strong>14mm</strong> for print.
+          Below that, omit the mark entirely — the parent does not need to whisper.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 04 — Typography
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="typography">
+      <span class="section-num">§ 04 — Typography</span>
+      <h2 class="section-title">Three <em>voices</em>.</h2>
+      <p class="section-intro">
+        A serif for the parent's editorial register. A sans for systems and
+        product. A mono for the technical metadata that runs the registry.
+      </p>
+
+      <div class="type-spec">
+        <p class="meta">
+          <span><strong>Display</strong> Fraunces</span>
+          <span>Variable · opsz · SOFT</span>
+          <span>300 / italic</span>
+          <span>Letter-spacing −0.03em</span>
+        </p>
+        <p class="type-display">A house of brands, all from one <em>wave</em>.</p>
+      </div>
+
+      <div class="type-spec">
+        <p class="meta">
+          <span><strong>Sub-display</strong> Fraunces 400</span>
+          <span>Section titles &amp; card heads</span>
+        </p>
+        <p class="type-h2">The portfolio is the product. The product is velocity.</p>
+      </div>
+
+      <div class="type-spec">
+        <p class="meta">
+          <span><strong>Body</strong> Inter</span>
+          <span>17 / 1.6</span>
+          <span>System &amp; product surfaces</span>
+        </p>
+        <p class="type-body">
+          Inter carries every functional surface inside the Onda system —
+          dashboards, brand portal, governance docs, the registry itself.
+          It is engineered for screen, multilingual at scale, and quiet
+          enough that the editorial serif always wins the room.
+        </p>
+      </div>
+
+      <div class="type-spec">
+        <p class="meta">
+          <span><strong>Mono</strong> JetBrains Mono</span>
+          <span>11–13 / 0.16em tracking</span>
+          <span>Metadata · SKU · registry</span>
+        </p>
+        <p class="type-mono">ONDA · 001 · BRISA · CITRUS · EU · 16:9 · v1.4 · QA-PASS · 2026.05.04</p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 05 — Color
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="color">
+      <span class="section-num">§ 05 — Color</span>
+      <h2 class="section-title">Ink, tide, <em>sand</em>.</h2>
+      <p class="section-intro">
+        The parent palette is deliberately oceanic and reserved. Sub-brands
+        are bright; Onda is the floor they stand on. Tide is the only accent —
+        used for wayfinding, links, and the punctuation in the wordmark.
+      </p>
+
+      <div class="section-grid grid-4">
+        <div class="swatch ink">
+          <div class="chip"></div>
+          <div class="meta">
+            <span class="role">Primary · floor</span>
+            <span class="name">Ink</span>
+            <span class="hex">#0A1628</span>
+          </div>
+        </div>
+        <div class="swatch linen">
+          <div class="chip"></div>
+          <div class="meta">
+            <span class="role">Primary · canvas</span>
+            <span class="name">Linen</span>
+            <span class="hex">#F4F1EA</span>
+          </div>
+        </div>
+        <div class="swatch paper">
+          <div class="chip"></div>
+          <div class="meta">
+            <span class="role">Surface</span>
+            <span class="name">Paper</span>
+            <span class="hex">#FBFAF6</span>
+          </div>
+        </div>
+        <div class="swatch tide">
+          <div class="chip"></div>
+          <div class="meta">
+            <span class="role">Accent · the wave</span>
+            <span class="name">Tide</span>
+            <span class="hex">#1B4D8C</span>
+          </div>
+        </div>
+        <div class="swatch tide-deep">
+          <div class="chip"></div>
+          <div class="meta">
+            <span class="role">Accent · pressed</span>
+            <span class="name">Tide Deep</span>
+            <span class="hex">#0E3163</span>
+          </div>
+        </div>
+        <div class="swatch tide-lt">
+          <div class="chip"></div>
+          <div class="meta">
+            <span class="role">Accent · on ink</span>
+            <span class="name">Tide Light</span>
+            <span class="hex">#6B9BD2</span>
+          </div>
+        </div>
+        <div class="swatch sand">
+          <div class="chip"></div>
+          <div class="meta">
+            <span class="role">Secondary · warmth</span>
+            <span class="name">Sand</span>
+            <span class="hex">#C9B89A</span>
+          </div>
+        </div>
+        <div class="swatch sand-deep">
+          <div class="chip"></div>
+          <div class="meta">
+            <span class="role">Secondary · pressed</span>
+            <span class="name">Sand Deep</span>
+            <span class="hex">#8A7754</span>
+          </div>
+        </div>
+        <div class="swatch coral">
+          <div class="chip"></div>
+          <div class="meta">
+            <span class="role">State · flag / fail</span>
+            <span class="name">Coral</span>
+            <span class="hex">#C76558</span>
+          </div>
+        </div>
+        <div class="swatch kelp">
+          <div class="chip"></div>
+          <div class="meta">
+            <span class="role">State · ship / pass</span>
+            <span class="name">Kelp</span>
+            <span class="hex">#3F6B5C</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">Rule of thumb</p>
+        <h3>If it's loud, it isn't <em>Onda</em>.</h3>
+        <p>
+          Saturated reds, neon yellows, and electric magentas belong to the
+          sub-brands (and only some of them). The parent palette stays
+          oceanic and architectural so it can host any sub-brand without
+          collision.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 06 — Foundation
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="foundation">
+      <span class="section-num">§ 06 — Foundation</span>
+      <h2 class="section-title"><em>Foundation</em>.</h2>
+      <p class="section-intro">
+        The structural layer beneath every Onda surface. Spacing is a 4-px
+        scale. Radii are small and architectural. Motion is quick, eased,
+        and respects user preference.
+      </p>
+
+      <div class="section-grid grid-2">
+        <div class="card">
+          <p class="label">Spacing scale</p>
+          <h3>4-px <em>increments</em>.</h3>
+          <div class="mt-5">
+            <div class="scale-row"><span class="key">--space-1</span><span class="val">4</span><div class="bar" style="width: 4px;"></div></div>
+            <div class="scale-row"><span class="key">--space-2</span><span class="val">8</span><div class="bar" style="width: 8px;"></div></div>
+            <div class="scale-row"><span class="key">--space-3</span><span class="val">12</span><div class="bar" style="width: 12px;"></div></div>
+            <div class="scale-row"><span class="key">--space-4</span><span class="val">16</span><div class="bar" style="width: 16px;"></div></div>
+            <div class="scale-row"><span class="key">--space-5</span><span class="val">24</span><div class="bar" style="width: 24px;"></div></div>
+            <div class="scale-row"><span class="key">--space-6</span><span class="val">40</span><div class="bar" style="width: 40px;"></div></div>
+            <div class="scale-row"><span class="key">--space-7</span><span class="val">64</span><div class="bar" style="width: 64px;"></div></div>
+            <div class="scale-row"><span class="key">--space-8</span><span class="val">96</span><div class="bar" style="width: 96px;"></div></div>
+            <div class="scale-row"><span class="key">--space-9</span><span class="val">144</span><div class="bar" style="width: 144px;"></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="label">Radii</p>
+          <h3>Small. <em>Structural.</em></h3>
+          <div class="row mt-5" style="gap: var(--space-5); align-items: flex-start;">
+            <div>
+              <div class="radius-demo" style="border-radius: 2px;"></div>
+              <p class="type-mono">--radius-sm · 2px</p>
+            </div>
+            <div>
+              <div class="radius-demo" style="border-radius: 4px;"></div>
+              <p class="type-mono">--radius-md · 4px</p>
+            </div>
+            <div>
+              <div class="radius-demo" style="border-radius: 8px;"></div>
+              <p class="type-mono">--radius-lg · 8px</p>
+            </div>
+            <div>
+              <div class="radius-demo" style="border-radius: 14px;"></div>
+              <p class="type-mono">--radius-xl · 14px</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="label">Motion</p>
+          <h3>Quick. <em>Eased.</em> Optional.</h3>
+          <p>
+            Default ease: <code style="font-family: var(--font-mono); font-size: 12px;">cubic-bezier(0.32, 0.72, 0, 1)</code>.
+            Default duration: <strong>200ms</strong> for state, <strong>400ms</strong> for surfaces, <strong>500ms</strong> for theme.
+            Every transition collapses to <strong>0</strong> under <code style="font-family: var(--font-mono); font-size: 12px;">prefers-reduced-motion: reduce</code>.
+          </p>
+        </div>
+
+        <div class="card">
+          <p class="label">Elevation</p>
+          <h3>Quiet. <em>Layered.</em></h3>
+          <div class="stack mt-5">
+            <div style="padding: 16px; background: var(--surface); border-radius: 6px; box-shadow: var(--shadow-xs);">--shadow-xs · ambient</div>
+            <div style="padding: 16px; background: var(--surface); border-radius: 6px; box-shadow: var(--shadow-sm);">--shadow-sm · resting</div>
+            <div style="padding: 16px; background: var(--surface); border-radius: 6px; box-shadow: var(--shadow-md);">--shadow-md · raised</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 07 — Components
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="components">
+      <span class="section-num">§ 07 — Components</span>
+      <h2 class="section-title">Components</h2>
+      <p class="section-intro">
+        The shared component layer powers internal Onda surfaces — the brand
+        portal, governance dashboards, the registry. Sub-brand consumer
+        surfaces re-skin these primitives at the token layer.
+      </p>
+
+      <div class="section-grid grid-2">
+
+        <div class="card">
+          <p class="label">Buttons</p>
+          <h3>Three <em>roles</em>, one shape.</h3>
+          <div class="row mt-5">
+            <button class="btn btn-primary" type="button">Approve campaign</button>
+            <button class="btn btn-tide" type="button">Open registry</button>
+            <button class="btn btn-ghost" type="button">Cancel</button>
+          </div>
+          <p class="mt-5">
+            Primary is ink: terminal action, one per surface. Tide is wayfinding:
+            navigate to a registry entry. Ghost is dismissal.
+          </p>
+        </div>
+
+        <div class="card">
+          <p class="label">Status badges</p>
+          <h3>The <em>signal</em> layer.</h3>
+          <div class="row mt-5">
+            <span class="badge badge-shipping">Shipping</span>
+            <span class="badge badge-review">In review</span>
+            <span class="badge badge-blocked">Blocked · brand</span>
+          </div>
+          <p class="mt-5">
+            Every campaign asset carries a single status badge. <em>Blocked · brand</em>
+            means a governance check failed — wrong palette, banned word, missing
+            disclosure. See § 08.
+          </p>
+        </div>
+
+        <div class="card">
+          <p class="label">Inputs</p>
+          <h3>Form <em>primitives</em>.</h3>
+          <div class="stack mt-5">
+            <input class="input" type="text" placeholder="Search the registry…">
+            <input class="input" type="text" placeholder="Sub-brand · region · campaign">
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="label">Registry row</p>
+          <h3>Anatomy of a <em>brand entry</em>.</h3>
+          <table class="registry-table mt-5">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Brand</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>001</td>
+                <td><span class="dot" style="background: #4FA0A0;"></span><span class="name">Brisa</span></td>
+                <td>Active</td>
+              </tr>
+              <tr>
+                <td>002</td>
+                <td><span class="dot" style="background: #F0A93B;"></span><span class="name">Volt</span></td>
+                <td>Active</td>
+              </tr>
+              <tr>
+                <td>003</td>
+                <td><span class="dot" style="background: var(--ink-20);"></span><span class="name">—</span></td>
+                <td>Reserved</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 08 — Co-branding & governance
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="cobranding">
+      <span class="section-num">§ 08 — Co-branding &amp; governance</span>
+      <h2 class="section-title">When Onda <em>appears</em>.</h2>
+      <p class="section-intro">
+        The parent mark only appears in four contexts. Anywhere else, the
+        sub-brand stands alone. This is the most-violated rule in the system,
+        and the one the registry checks for before any asset ships.
+      </p>
+
+      <div class="card surface-ink">
+        <p class="label">The four parent contexts</p>
+        <h3>Corporate · regulatory · governance · fine print.</h3>
+        <p>
+          Annual reports, investor decks, and corporate communications — Onda leads.
+          Regulatory disclosures and legal notices — Onda is the entity. Internal
+          governance surfaces (the brand portal, the registry, this document) —
+          Onda is the host. Packaging fine print — <em>"a brand of Onda"</em>, set in mono, at the foot of the panel.
+        </p>
+      </div>
+
+      <h3 class="type-h2 mt-6">Do · Don't</h3>
+      <div class="gov-grid mt-5">
+        <div class="do-card">
+          <p class="head">✓ Do</p>
+          <p>Lead with the sub-brand on the can, the spot, the post. Reference Onda only in fine print: <em>"Brisa is a brand of Onda."</em></p>
+        </div>
+        <div class="dont-card">
+          <p class="head">✗ Don't</p>
+          <p>Stack the Onda mark beside the Brisa mark on a hero asset. The consumer is meeting Brisa, not its parent.</p>
+        </div>
+
+        <div class="do-card">
+          <p class="head">✓ Do</p>
+          <p>Inherit Onda's palette only on parent surfaces. The brand portal uses tide. Brisa packaging never does.</p>
+        </div>
+        <div class="dont-card">
+          <p class="head">✗ Don't</p>
+          <p>Borrow Volt's amber for an Onda corporate slide. Sub-brand colour belongs to the sub-brand alone.</p>
+        </div>
+
+        <div class="do-card">
+          <p class="head">✓ Do</p>
+          <p>Run every campaign asset through the registry's brand-check before publish. Logos present, palette in-bounds, banned-word list clear.</p>
+        </div>
+        <div class="dont-card">
+          <p class="head">✗ Don't</p>
+          <p>Mix sub-brand voices in a single asset. A Brisa post that uses Volt's punchy tone is a governance failure, even if the words are on-brand for Volt.</p>
+        </div>
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">The lockup exception</p>
+        <h3>Portfolio lockups exist. <em>They are rare.</em></h3>
+        <p>
+          A formal Onda × Sub-brand lockup is permitted in three cases: a corporate
+          press release announcing the brand, a regulatory filing referencing the
+          entity, and an internal HR or finance document. It is not permitted on
+          any consumer-facing surface without legal sign-off.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         § 09 — Voice
+         ───────────────────────────────────────────────────── -->
+    <section class="section" id="voice">
+      <span class="section-num">§ 09 — Voice</span>
+      <h2 class="section-title">Parent <em>voice</em>.</h2>
+      <p class="section-intro">
+        Onda speaks in the corporate register: precise, multi-lingual, structural,
+        unhurried. It never tries to be the sub-brand. The voice below covers
+        every parent surface — investor letters, governance docs, the brand portal.
+      </p>
+
+      <div class="stack">
+        <div class="voice-row">
+          <span class="label">We are</span>
+          <p class="quote">Architectural. Multilingual. Quietly confident in the system we built.</p>
+        </div>
+        <div class="voice-row">
+          <span class="label">We are not</span>
+          <p class="quote">Loud, clever, or consumer-facing. Save the volume for the brands that need it.</p>
+        </div>
+        <div class="voice-row">
+          <span class="label">We say</span>
+          <p class="quote">"The portfolio shipped 142 campaigns this quarter across nine markets."</p>
+        </div>
+        <div class="voice-row">
+          <span class="label">We don't say</span>
+          <p class="quote">"We crushed it this Q. ⚡ Onda is the wave you didn't know you needed."</p>
+        </div>
+        <div class="voice-row">
+          <span class="label">When in doubt</span>
+          <p class="quote">Defer to the sub-brand's voice. The parent is rarely the speaker.</p>
+        </div>
+      </div>
+
+      <div class="card mt-6">
+        <p class="label">Inheritance, in voice</p>
+        <h3>Sub-brands write <em>their own</em> voice charters.</h3>
+        <p>
+          See <strong>Brisa Brand Guidelines</strong> and <strong>Volt Brand Guidelines</strong>
+          for the consumer voices used in market. Onda's only voice obligation to its
+          sub-brands is the corporate footer line — set in mono, at the foot of every
+          legal surface: <em>A brand of Onda Beverages.</em>
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────
+         Footer
+         ───────────────────────────────────────────────────── -->
+    <footer class="page-footer">
+      <div class="colophon">
+        <p>
+          <strong>Onda Beverages — Parent Brand Guidelines · Volume I.</strong>
+          Set in Fraunces, Inter, and JetBrains Mono. Issued 2026.05. This document
+          governs the parent only; each sub-brand carries its own volume.
+        </p>
+      </div>
+      <div>
+        <p>onda · 001 · v1.0</p>
+      </div>
+    </footer>
+
+  </div>
+</body>
+
+</html>
