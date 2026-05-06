@@ -1,19 +1,39 @@
-import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Topbar } from "@/components/cast/topbar"
 
 export default function Page() {
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
+    <div className="min-h-svh flex flex-col">
+      <Topbar crumb="skeleton · v1" />
+      <main className="flex-1 px-8 py-10">
+        <div className="mx-auto max-w-3xl">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display text-3xl tracking-[-0.02em]">
+                Cast skeleton ready
+              </CardTitle>
+              <CardDescription className="font-mono text-xs uppercase tracking-[0.12em]">
+                brand · brisa &nbsp;·&nbsp; mode ·{" "}
+                {process.env.NEXT_PUBLIC_CAST_GENAI_MODE ?? "default"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-muted-foreground">
+              From brief to broadcast. The runtime shell is wired — design
+              tokens, fonts, and the wordmark match{" "}
+              <code className="font-mono text-xs">
+                docs/design/cast-brand-guidelines.html
+              </code>
+              . Next slice (V2): the S1 brief editor.
+            </CardContent>
+          </Card>
         </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
+      </main>
     </div>
   )
 }
