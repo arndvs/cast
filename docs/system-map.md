@@ -12,21 +12,23 @@ The "things" the system stores, moves, and renders. Pulled from the user-story v
 
 ```mermaid
 graph LR
-    Brief["Brief<br/>brand · products · markets<br/>audience · message (locale → copy) · ratios"]
+    Brief["Brief<br/>brand · products · markets<br/>audience · message · ratios"]
     Product["Product<br/>name · sku"]
     InputAsset["Input Asset<br/>inputs/assets/[product-slug].{png,jpg,jpeg,webp}"]
     HeroImage["Hero Image<br/>GenAI fallback"]
     Creative["Output Creative<br/>1:1 · 9:16 · 16:9"]
+    Message["Localized Message<br/>per locale"]
     Compliance["Compliance Result<br/>OK · WARN · FAIL"]
     RunLog["Run Log<br/>streamed steps"]
     Report["Report<br/>report.json"]
 
     Brief -->|lists| Product
-    Brief -.->|message composited onto| Creative
+    Brief -->|carries| Message
     Product -->|resolves to| InputAsset
     Product -.->|falls back to| HeroImage
     InputAsset -->|source for| Creative
     HeroImage -->|source for| Creative
+    Message -->|composited onto| Creative
     Creative -->|evaluated by| Compliance
     Creative -->|listed in| Report
     Compliance -->|listed in| Report
@@ -261,7 +263,7 @@ graph LR
     Grid --> Scan{"All green?"}
     Scan -->|yes| Ship["ship"]
     Scan -->|no| Click["click flagged tile"]
-    Click --> Detail["Creative Detail<br/>compliance violation · or pipeline error"]
+    Click --> Detail["Compliance Detail<br/>which check failed · why"]
     Detail -.->|open for full detail| ReportFile["report.json<br/>per-creative compliance · errors[]"]
     Detail --> Decide{"fixable in brief?"}
     Decide -->|yes| EditBrief["edit brief<br/>(re-run)"]
@@ -298,7 +300,7 @@ A sanity check that every user-story verb has a home in the system map. **Source
 | open output folder / grab files                                    | Reveal in folder → `revealOutputFolder` server action → OS shell      | Story 1 ("opens the output folder")          |
 | check logo / colors / prohibited words                             | Compliance Checker                                                     | Story 2 (Priya)                              |
 | badge each output OK / WARN / FAIL                                 | Compliance Checker → Badge UI                                          | Story 2                                      |
-| drill into flagged creative for full detail                        | Creative Detail → `report.json`                                        | Story 2 ("opens the report")                 |
+| drill into flagged creative for full detail                        | Compliance Detail → `report.json`                                      | Story 2 ("opens the report")                 |
 | write `brief.json`                                                 | Run Orchestrator                                                       | Story 1                                      |
 | write `report.json` (counts, creatives[], errors[])                | Reporter                                                               | Story 1 + Story 2                            |
 | aggregate step failures into `errors[]` (run never aborts)         | Run Orchestrator → Reporter                                            | Story 1 ("not blocked") + README             |

@@ -248,7 +248,7 @@ Dual-mode modal: **compliance violation** (badge ∈ WARN / FAIL, path is a real
 - Product name + market + ratio label (the failure coordinates)
 - Pipeline `stage` from the matching `errors[]` entry — closed enum from [§4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview): `resolve | genai | resize | compose | compliance | write`
 - Human-readable `message` from the same `errors[]` entry (e.g. "OpenAI request timed out after 60s")
-- Per-check results: shown only when `errors[].stage` is `write` and a `compliance` object is present on the failed creative; otherwise omitted (compliance was not reached or did not complete)
+- Per-check results: shown only when `errors[].stage === 'write'` (where compliance has already completed and the failure was on PNG write). Stages `resolve | genai | resize | compose` precede compliance, so no compliance object exists for those failures; stage `compliance` itself produced no result. The `compliance` field is therefore omitted on every failed creative except `write`-stage failures — the manifest shape encodes this directly.
 
 **Engage — what the user can do:**
 
