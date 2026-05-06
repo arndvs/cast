@@ -4,7 +4,7 @@
 
 **POC · Aaron Davis · 2026**
 
-> **Status: spec-locked, app coming next.** This branch ships the full architectural spec (briefSchema, output tree, manifest, GenAI primitives, streaming contract). Runtime scaffolding (`package.json`, `inputs/`, route handlers) lands in PR #3. The Quick Start below describes the **target** developer experience the spec resolves to.
+> **Status: spec-locked, app coming next.** This branch ships the full architectural spec (briefSchema, output tree, manifest, GenAI primitives, streaming contract). Runtime scaffolding (`package.json`, `inputs/`, route handlers) lands in a follow-up implementation PR. The Quick Start below describes the **target** developer experience the spec resolves to.
 
 ---
 
@@ -108,7 +108,7 @@ See [docs/](docs/) for the full design trail: [user stories](docs/user-stories.m
 - **Compliance checks are heuristic, not a legal review.** Logo presence is detected by template match in a configurable corner; brand-color check samples dominant colors; banned-word check is a flat list scan against the resolved overlay string per `(market, ratio)` (the exact string the compositor draws — not an OCR pass on the PNG).
 - **No run history.** Each Generate run is independent. No multi-run comparison view in the POC.
 - **Generate and Retry are destructive at the campaign root (D15).** Both clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products, not preserved artifacts — the recursive clear ensures a failed run cannot leave a stale `report.json` claiming success on disk. End state of any successful run is invariant under retry. The cap file at `outputs/.cap.json` is one level above the campaign root and is not touched by the clear.
-- **Symlinks under `inputs/` and `outputs/` are not followed safely.** `safeJoin` validates that a path is a lexical child of a known root, but does not call `realpath` to re-validate after symlink resolution. Production hardening would add `fs.realpath` re-validation at every boundary that interpolates user-influenced strings (`/api/upload`, `/api/detected-assets`, the `revealOutputFolder` server action, Sharp reads). Implementers touching those routes in PR #3 should add a `TODO(symlink-hardening)` comment alongside each `safeJoin` call so the gap stays visible. Out of POC scope.
+- **Symlinks under `inputs/` and `outputs/` are not followed safely.** `safeJoin` validates that a path is a lexical child of a known root, but does not call `realpath` to re-validate after symlink resolution. Production hardening would add `fs.realpath` re-validation at every boundary that interpolates user-influenced strings (`/api/upload`, `/api/detected-assets`, the `revealOutputFolder` server action, Sharp reads). Implementers touching those routes should add a `TODO(symlink-hardening)` comment alongside each `safeJoin` call so the gap stays visible. Out of POC scope.
 - **Localized message support is provided-not-translated.** The brief carries a locale → string map; the pipeline composites the right one. It does not call a translation API.
 - **`manifest.outputDir` is an absolute filesystem path exposed to the client by design.** S5 (Reveal in file explorer) needs an absolute path to hand to the OS shell command. Acceptable in a localhost-only POC; for any networked deployment, the manifest would expose only the repo-relative `creatives[].path` and the reveal action would resolve absolutes server-side.
 
