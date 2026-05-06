@@ -12,21 +12,23 @@ The "things" the system stores, moves, and renders. Pulled from the user-story v
 
 ```mermaid
 graph LR
-    Brief["Brief<br/>brand · products · markets<br/>audience · message (locale → copy) · ratios"]
+    Brief["Brief<br/>brand · products · markets<br/>audience · message · ratios"]
     Product["Product<br/>name · sku"]
     InputAsset["Input Asset<br/>inputs/assets/[product-slug].{png,jpg,jpeg,webp}"]
     HeroImage["Hero Image<br/>GenAI fallback"]
     Creative["Output Creative<br/>1:1 · 9:16 · 16:9"]
+    Message["Localized Message<br/>per locale"]
     Compliance["Compliance Result<br/>OK · WARN · FAIL"]
     RunLog["Run Log<br/>streamed steps"]
     Report["Report<br/>report.json"]
 
     Brief -->|lists| Product
-    Brief -.->|message composited onto| Creative
+    Brief -->|carries| Message
     Product -->|resolves to| InputAsset
     Product -.->|falls back to| HeroImage
     InputAsset -->|source for| Creative
     HeroImage -->|source for| Creative
+    Message -->|composited onto| Creative
     Creative -->|evaluated by| Compliance
     Creative -->|listed in| Report
     Compliance -->|listed in| Report
@@ -83,7 +85,7 @@ The verbs from the stories cluster into seven subsystems. Anything inside the da
 graph TB
     subgraph External["External / filesystem"]
         Inputs[("inputs/assets/<br/>product photos")]
-        BrandProfile[("inputs/brands/[brand]/<br/>brand.json · voice.json · logo · font · banned-words.json?<br/>loaded via loadBrandProfile · Zod-validated · 90s in-process cache")]
+        BrandProfile[("inputs/brands/[brand]/<br/>brand.json · voice.json · logos/ + logos.json · font · banned-words.json?<br/>loaded via loadBrandProfile · Zod-validated · 90s in-process cache<br/>bannedWords = lib defaults ∪ brand file (D11, D21)")]
         subgraph CampaignOut["outputs/[campaign]/"]
             Outputs[("[market]/[product]/[ratio].png")]
             BriefFile[("brief.json")]
@@ -110,7 +112,8 @@ graph TB
             UploadAPI["POST /api/upload<br/>(slug + canonical ext)"]
             DetectedAPI["GET /api/detected-assets"]
             GenerateAPI["POST /api/generate<br/>(NDJSON stream)"]
-            BrandsAPI["GET /api/brands<br/>(brand selector source)"]
+            BrandsAPI["GET /api/brands<br/>(brand selector list)"]
+            BrandDetailAPI["GET /api/brands/[slug]<br/>(union banned-words + logo variants)<br/>+ GET /api/brands/[slug]/logos/[id]<br/>(safeJoin proxy — not a static tree)"]
             CapAPI["GET /api/cap<br/>(daily limit + mode)"]
         end
 
@@ -131,8 +134,11 @@ graph TB
 
     Editor -->|brief| GenerateAPI
     Editor -->|brand list| BrandsAPI
+    Editor -->|brand detail · banned-words union · logo variants| BrandDetailAPI
     Editor -->|cap + mode| CapAPI
     BrandsAPI -->|enumerates| BrandProfile
+    BrandDetailAPI -->|reads + Zod-validates| BrandProfile
+    GenerateAPI -->|loadBrandProfile · integrity check| BrandProfile
     DropZone -->|file| UploadAPI
     UploadAPI -->|writes| Inputs
     DetectedPanel -->|polls| DetectedAPI
@@ -257,7 +263,7 @@ graph LR
     Grid --> Scan{"All green?"}
     Scan -->|yes| Ship["ship"]
     Scan -->|no| Click["click flagged tile"]
-    Click --> Detail["Creative Detail<br/>compliance violation · or pipeline error"]
+    Click --> Detail["Creative Detail<br/>which check failed · why"]
     Detail -.->|open for full detail| ReportFile["report.json<br/>per-creative compliance · errors[]"]
     Detail --> Decide{"fixable in brief?"}
     Decide -->|yes| EditBrief["edit brief<br/>(re-run)"]
@@ -278,6 +284,8 @@ A sanity check that every user-story verb has a home in the system map. **Source
 | drop product photos in UI                                          | Drop Zone → `POST /api/upload`                                         | Story 1                                      |
 | see detected vs missing assets                                     | Detected Assets panel → `GET /api/detected-assets`                     | Design addition (supports Story 1 drop verb) |
 | pick a brand for this campaign                                     | Brand selector → `GET /api/brands`                                     | Story 1 ("selects Brisa")                    |
+| fetch brand detail (union banned-words + logo variants)            | Brand selector → `GET /api/brands/[slug]`                              | Design addition (D11, D21, D27)              |
+| select logo variant for the campaign                               | Logo picker → `brief.logoVariant` (cross-validated server-side)        | Design addition (D27)                        |
 | see remaining daily GenAI allocation                               | Daily allocation indicator → `GET /api/cap`                            | Design addition (README: Daily spend cap)    |
 | look up input assets in `inputs/assets/`                           | Asset Resolver                                                         | Story 1                                      |
 | read brand profile (colors, voice, logo, font)                     | Asset Resolver / Prompt Builder / Compositor → `inputs/brands/[brand]/` | Story 1                                      |

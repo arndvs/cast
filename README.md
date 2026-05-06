@@ -109,6 +109,7 @@ See [docs/](docs/) for the full design trail: [user stories](docs/user-stories.m
 - **No run history.** Each Generate run is independent. No multi-run comparison view in the POC.
 - **Generate and Retry are destructive at the campaign root (D15).** Both clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products, not preserved artifacts — the recursive clear ensures a failed run cannot leave a stale `report.json` claiming success on disk. End state of any successful run is invariant under retry. The cap file at `outputs/.cap.json` is one level above the campaign root and is not touched by the clear.
 - **Symlinks under `inputs/` and `outputs/` are not followed safely.** `safeJoin` validates that a path is a lexical child of a known root, but does not call `realpath` to re-validate after symlink resolution. Production hardening would add `fs.realpath` re-validation at every boundary that interpolates user-influenced strings (`/api/upload`, `/api/detected-assets`, the `revealOutputFolder` server action, Sharp reads). Implementers touching those routes should add a `TODO(symlink-hardening)` comment alongside each `safeJoin` call so the gap stays visible. Out of POC scope.
+- **Brand-profile cache is time-based, not file-watched.** `loadBrandProfile` caches parsed brand state (`brand.json`, `voice.json`, `banned-words.json`, `logos.json`) for 90 s in-process. Edits to `inputs/brands/[brand]/*` mid-session may not take effect until the cache expires; restart `next dev` to force-refresh. Accepted POC behavior — production would invalidate on file mtime.
 - **Localized message support is provided-not-translated.** The brief carries a locale → string map; the pipeline composites the right one. It does not call a translation API.
 - **`manifest.outputDir` is an absolute filesystem path exposed to the client by design.** S5 (Reveal in file explorer) needs an absolute path to hand to the OS shell command. Acceptable in a localhost-only POC; for any networked deployment, the manifest would expose only the repo-relative `creatives[].path` and the reveal action would resolve absolutes server-side.
 
@@ -122,12 +123,17 @@ Drop a directory under `inputs/brands/`:
 inputs/brands/[brand-slug]/
 ├── brand.json          # primary/accent colors (hex), tokens
 ├── voice.json          # tone, do/don't lists, prompt fragments
-├── logo.png            # corner-composited logo
+├── logos/              # corner-composited logo variants (D27)
+│   ├── primary-on-light.png
+│   ├── primary-on-dark.png
+│   ├── mono-white.png
+│   └── mono-black.png
+├── logos.json          # { default: variantId, variants: [{ id, displayName, file }] }
 ├── font.ttf            # OFL display font
-└── banned-words.json?  # optional, brand-specific
+└── banned-words.json?  # optional brand-specific terms (added on top of lib defaults — union, never replacement)
 ```
 
-Reference it from a brief: `"brand": "[brand-slug]"`. No code change. The repo ships two demo profiles — `inputs/brands/brisa/` (sparkling water) and `inputs/brands/volt/` (energy) — representing two sub-brands of the fictional Onda Beverages portfolio. Use them as templates.
+Reference it from a brief: `"brand": "[brand-slug]"`. No code change. The repo ships two demo profiles — `inputs/brands/brisa/` (sparkling water) and `inputs/brands/volt/` (energy) — representing two sub-brands of the fictional Onda Beverages portfolio. Use them as templates. The recipe for reducing a brand book (HTML, PDF, Figma) into the JSON files above is in [docs/brand-extraction.md](docs/brand-extraction.md).
 
 S1's brand selector lists every directory found under `inputs/brands/`, so adding a new profile makes it available in the UI on the next page load.
 

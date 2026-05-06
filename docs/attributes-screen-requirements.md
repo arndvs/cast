@@ -20,6 +20,7 @@ Fields are defined by the canonical Zod `briefSchema` in [flow-diagrams.md §4.2
 - `audience` (string, 1–500 chars)
 - `message` — `Record<lang, string>` (locale → copy)
 - `ratios[]` — enum subset of `[1x1, 9x16, 16x9]`
+- `logoVariant?` — optional id of the logo variant the run uses; cross-validated server-side against the loaded brand's `logos.variants[]`. Absent → falls back to `brandProfile.defaultLogoId` (D27).
 
 ### Product
 
@@ -67,8 +68,9 @@ Loaded by `loadBrandProfile(brand)` at `/api/generate` entry; validated against 
 - slug (matches `brief.brand`)
 - brand (`brand.json` — `displayName`, `colors`, optional `tokens`)
 - voice (`voice.json` — `tone`, `do`, `dont`, `promptFragments`)
-- bannedWords (`banned-words.json?` — `[]` when absent; loader emits a `step` event noting checks are skipped)
-- logoPath (absolute, `safeJoin`-validated)
+- bannedWords — **union** of `lib/banned-words.ts` defaults (`getDefaultBannedWords()`) and `inputs/brands/[brand]/banned-words.json` (when present); deduped, lowercased. Defaults always apply. Missing brand file emits a `step` event noting only brand-specific additions are skipped — the floor remains in force.
+- logoVariants[] (`logos.json` — each `{ id, displayName, path }`; `path` resolved via `safeJoin` against `inputs/brands/[brand]/logos/`) — D27
+- defaultLogoId (`logos.json` `default` — used when `brief.logoVariant` is absent)
 - fontPath (absolute, `safeJoin`-validated)
 
 Cached in-process for 90 s. Missing directory → `BrandNotFoundError` → `400`. Missing required file → `BrandIncompleteError` → `400`. Schema violation → `BrandInvalidError` → `400`.
@@ -110,7 +112,7 @@ Using the Inform → Engage → Invite framework.
 - Pre-loaded example brief in a JSON editor (editable)
 - GenAI mode badge — reads `CAST_GENAI_MODE` (default | cheap) via `GET /api/cap`. Read-only; surfaces which model the run will hit before Generate fires.
 - Campaign name, brand, audience, message fields surfaced as readable form
-- Brand selector — dropdown listing every directory under `inputs/brands/` (slug + display name from each brand's `brand.json`). Required; one brand per brief. Demo ships two profiles (`brisa`, `volt`) modeling sub-brands of the fictional Onda Beverages portfolio. Selection drives palette swatches, voice preview, banned-words list, and prompt preview shown elsewhere on the screen. The selector also consumes `hasBannedWords` from `GET /api/brands` to decide whether the pre-flight banned-words indicator below renders the active-check or the no-op state.
+- Brand selector — dropdown listing every directory under `inputs/brands/` (slug + display name from `GET /api/brands`). Required; one brand per brief. Demo ships two profiles (`brisa`, `volt`) modeling sub-brands of the fictional Onda Beverages portfolio. On selection, S1 fetches `GET /api/brands/[slug]` to populate palette swatches, voice preview, the **union banned-words list** (lib defaults + brand file), the logo picker (D27), and the prompt preview shown elsewhere on the screen.
 - Markets field — typeahead input accepting any conforming `<region>-<lang>` value; suggestion list seeds common values (`us-en`, `mx-es`, `de-de`, `jp-ja`)
 - Ratios picker — three pill toggles (`1:1`, `9:16`, `16:9`); default all checked; at least one must remain selected
 - Products list — each row shows: name, sku, slug preview
@@ -118,10 +120,9 @@ Using the Inform → Engage → Invite framework.
 - Detected Assets panel — per-product status:
   - found: `brisa-citrus.png` — using local asset
   - missing: no asset found — will generate via GenAI
+- Logo picker (D27) — radio grid beneath the brand selector, populated from `GET /api/brands/[slug]` `logos.variants[]`. Each option renders the variant PNG (served by `GET /api/brands/[slug]/logos/[id]`) on a checkered alpha background plus its `displayName`. Default selected = `logos.default`. Selection writes `brief.logoVariant`. One choice per campaign — used by every creative the run produces. Auto-selection by hero luminance is v2 ([flow-diagrams.md §8](flow-diagrams.md#8-future-scope-v2--explicitly-out-of-poc)).
 - Read-only prompt preview — shows the prompt that will hit OpenAI per missing product (assembled from brand `voice.json` + product overrides)
-- Pre-flight banned-words check — two states driven by the selected brand's `hasBannedWords` flag from `GET /api/brands`:
-  - **Active (`hasBannedWords: true`):** if any locale's `message` contains a banned word for this brand, the Generate button is disabled with an inline warning naming the term and locale.
-  - **No-op (`hasBannedWords: false`):** indicator shows "no banned-words list for this brand — checks skipped". Mirrors the server-side `step` event the orchestrator emits at run start ([flow-diagrams.md §4.3](flow-diagrams.md#brand-profile-schema-d11--contract)). Generate is **not** gated; per-creative server-side checks also become no-ops for this run.
+- Pre-flight banned-words check — always active. The selected brand's union list (`lib/banned-words.ts` defaults + `inputs/brands/[brand]/banned-words.json` if present) is fetched via `GET /api/brands/[slug]`; if any locale's `message` contains a banned word, the Generate button is disabled with an inline warning naming the term and locale. The defaults floor (violence, hate, NSFW, weapons, drugs, self-harm) applies to every brand — a brand without `banned-words.json` still gets the floor; the indicator does not have a "checks skipped" state.
 - Generate button (enabled when brief is valid + no banned-word violations)
 - Validation badge on brief (valid / invalid)
 - Daily allocation indicator — reads `GET /api/cap` on mount and after each `complete` event. Format: "remaining today: **X** (this run will use **~Y**)". `Y` is computed client-side from the brief + Detected Assets state: for each product without a local asset, count `ratios.length` calls in default mode or `1` in cheap mode; sum across products. Projection recomputes on brief edit (debounced) and on detected-assets refresh, so Maya sees whether her run fits before clicking Generate. LocalStorage caches the last server value for instant first paint only — never authoritative.
@@ -247,7 +248,7 @@ Dual-mode modal: **compliance violation** (badge ∈ WARN / FAIL, path is a real
 - Product name + market + ratio label (the failure coordinates)
 - Pipeline `stage` from the matching `errors[]` entry — closed enum from [§4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview): `resolve | genai | resize | compose | compliance | write`
 - Human-readable `message` from the same `errors[]` entry (e.g. "OpenAI request timed out after 60s")
-- Per-check results: shown only when `errors[].stage` is `write` and a `compliance` object is present on the failed creative; otherwise omitted (compliance was not reached or did not complete)
+- Per-check results: shown only when `errors[].stage === 'write'` (where compliance has already completed and the failure was on PNG write). Stages `resolve | genai | resize | compose` precede compliance, so no compliance object exists for those failures; stage `compliance` itself produced no result. The `compliance` field is therefore omitted on every failed creative except `write`-stage failures — the manifest shape encodes this directly.
 
 **Engage — what the user can do:**
 
@@ -288,6 +289,7 @@ Dual-mode modal: **compliance violation** (badge ∈ WARN / FAIL, path is a real
 | open app                | S1      | Pre-loaded example brief             |
 | edit brief              | S1      | JSON editor + structured fields      |
 | selects brand           | S1      | Brand selector (drives palette / voice / banned-words) |
+| select logo variant     | S1      | Logo picker (radio grid, fed by `GET /api/brands/[slug]` `logos.variants[]`; writes `brief.logoVariant`) — D27 |
 | drop product photos     | S1      | Per-product drop zone                |
 | confirm assets detected | S1      | Detected Assets panel                |
 | sees GenAI mode         | S1      | GenAI mode badge (reads `CAST_GENAI_MODE` via `GET /api/cap`) |

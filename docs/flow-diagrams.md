@@ -270,6 +270,8 @@ Response: text/x-ndjson  (streamed)
   { "type": "complete", "manifest": { "campaign": "...", "brand": "...", "outputDir": "/abs/path/outputs/...", "creatives": [...] } }
 ```
 
+**Error-transport contract.** Validation errors that fire **before** the stream opens (briefSchema rejection, brand-profile load failures — `BrandNotFoundError` / `BrandIncompleteError` / `BrandInvalidError`, `briefSchema` `superRefine` violations including unknown `logoVariant`) return `application/json` with a `400` status and a `{ errors: [{ path, message }] }` body. Once the first NDJSON byte ships, all subsequent failures emit `{ "type": "error", "stage": ..., "message": ... }` events on the stream and the run continues per failure semantics — the response code stays `200`. Clients distinguish by HTTP status code and the `Content-Type` response header (`400 application/json` vs `200 application/x-ndjson`).
+
 ### Brief schema (canonical Zod definition)
 
 The **single source of truth** for brief validation. Same schema used client-side (editor validation) and server-side (`/api/generate` entry). Every other doc references this block; field names and shapes do not get restated elsewhere.
@@ -303,6 +305,10 @@ export const briefSchema = z
     audience: z.string().min(1).max(500),
     message: z.record(z.string().regex(/^[a-z]{2}$/), z.string().min(1)),
     ratios: z.array(RATIO).min(1),
+    // Optional logo variant id; cross-validated against the loaded brand
+    // at /api/generate entry (briefSchema alone has no brand state). When
+    // omitted, the orchestrator falls back to `brandProfile.defaultLogoId`. (D27)
+    logoVariant: z.string().regex(SLUG_RE).optional(),
   })
   .superRefine((brief, ctx) => {
     // Every market's locale (suffix after `-`) must have a message string.
@@ -381,11 +387,7 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
       "market": "mx-es",
       "ratio": "9x16",
       "source": "genai",
-      "path": null,
-      "compliance": {
-        "badge": "FAIL",
-        "checks": { "logoPresent": false, "colorsOk": false, "bannedWords": [] }
-      }
+      "path": null
     }
   ],
   "errors": [
@@ -402,7 +404,9 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
 
 - `creatives[].path` is repo-relative `string` on success, `null` on failure (D19). The grid renders a red placeholder tile for `null` paths. Join with `manifest.outputDir` (absolute) for filesystem operations; render `path` directly for repo-relative links.
 - `errors[]` is the dedicated failure log: every `null`-path creative has a corresponding entry. Top-level `counts.failed === errors.length`.
-- `source` ∈ `'local' | 'genai'`. `compliance.badge` ∈ `'OK' | 'WARN' | 'FAIL'`.
+- **Counts invariant:** `counts.generated + counts.reused === counts.succeeded`. Failed creatives do **not** increment `generated` / `reused` — those buckets are success-only. `flagged` and `failed` are independent axes: `flagged` counts successful creatives whose compliance badge is `WARN` or `FAIL`. A failed creative does not increment `flagged` even when a `write`-stage failure preserves a compliance object — `flagged` is gated on success, not on compliance presence.
+- `source` ∈ `'local' | 'genai'` reflects the **path attempted**, not the path that produced bytes: a `resolve`-stage failure (pre-placed file unreadable) carries `source: 'local'`; a `genai`-stage failure (OpenAI error or cap exhaustion) carries `source: 'genai'`. This keeps the failed-tile error mode in S4 informative about which input pathway broke.
+- `compliance.badge` ∈ `'OK' | 'WARN' | 'FAIL'`. The `compliance` field is **omitted** on every failed creative except `write`-stage failures. Pipeline order is `resolve → genai → resize → compose → compliance → write`: failures at `resolve | genai | resize | compose` precede compliance (no result possible); a `compliance`-stage throw produced no completed result; a `write`-stage failure occurs *after* compliance succeeded, so the completed compliance object is preserved on the manifest entry even though `path === null`. The grid still never renders a compliance badge for a failed tile — the red placeholder + stage label takes its place — but S4 (Creative Detail, error mode) reads the preserved compliance for `write`-stage failures.
 - `errors[].stage` ∈ `'resolve' | 'genai' | 'resize' | 'compose' | 'compliance' | 'write'` — names the pipeline stage that threw. Closed enum; do not invent new values without updating this table:
 
   | stage        | When it fires                                                                 |
@@ -437,33 +441,62 @@ Cast serves arbitrary clients; brand identity is a per-campaign input, not a con
 inputs/brands/[brand-slug]/
 ├── brand.json          # primary/accent colors (hex), tokens
 ├── voice.json          # tone, do/don't lists, prompt fragments
-├── logo.png            # corner-composited logo (PNG with alpha)
+├── logos/              # corner-composited logo variants (PNG with alpha) — D27
+│   ├── primary-on-light.png
+│   ├── primary-on-dark.png
+│   ├── mono-white.png
+│   └── mono-black.png
+├── logos.json          # { default: variantId, variants: [{ id, displayName, file }] }
 ├── font.ttf            # OFL-licensed display font for text overlay (D10)
-└── banned-words.json?  # optional brand-specific term list
+└── banned-words.json?  # additive layer — merged with library defaults at load time (D11, D27 sibling)
 ```
 
-The repo ships two demo profiles (`inputs/brands/brisa/` and `inputs/brands/volt/`), modeling the sub-brands of a fictional Onda Beverages portfolio. Onboarding a new brand is a directory drop — no code change. The Asset Resolver, prompt builder, and compliance checker all read from this directory based on `brief.brand`.
+The repo ships two demo profiles (`inputs/brands/brisa/` and `inputs/brands/volt/`), modeling the sub-brands of a fictional Onda Beverages portfolio. Onboarding a new brand is a directory drop — no code change. The Asset Resolver, prompt builder, and compliance checker all read from this directory based on `brief.brand`. The reduction from each brand's HTML guidelines under [docs/design/](design/) into the JSON files above is documented in [brand-extraction.md](brand-extraction.md) (D28).
 
 **One brand per brief.** A brief targets exactly one brand; portfolio runs are sequential briefs (Brisa run → Volt run → ...). Mixing brands in one brief breaks the brand-voice promise: each sub-brand has its own palette, banned-words list, and tone. Multi-brand briefs are listed in [§8 Future scope](#8-future-scope-v2--explicitly-out-of-poc).
 
-**Brand discovery in S1.** S1's brand selector lists every directory found under `inputs/brands/`, served by **`GET /api/brands`**:
+**Brand discovery in S1.** S1's brand selector lists every directory found under `inputs/brands/`, served by **`GET /api/brands`** (list) and **`GET /api/brands/[slug]`** (detail):
 
 ```
 GET /api/brands
 Response: [
-  { "slug": "brisa", "displayName": "Brisa",  "hasBannedWords": true  },
-  { "slug": "volt",  "displayName": "Volt",   "hasBannedWords": false }
+  { "slug": "brisa", "displayName": "Brisa" },
+  { "slug": "volt",  "displayName": "Volt"  }
 ]
+
+GET /api/brands/[slug]
+Response: {
+  "slug": "brisa",
+  "displayName": "Brisa",
+  "bannedWords": [
+    /* union: lib defaults from `lib/banned-words.ts` (`getDefaultBannedWords()`)
+       + brand-specific terms from `inputs/brands/[brand]/banned-words.json`,
+       deduped, lowercased. Defaults always apply — even when the brand file is absent. */
+  ],
+  "logos": {
+    "default": "primary-on-light",
+    "variants": [
+      { "id": "primary-on-light", "displayName": "Primary · on light", "url": "/api/brands/brisa/logos/primary-on-light" },
+      { "id": "primary-on-dark",  "displayName": "Primary · on dark",  "url": "/api/brands/brisa/logos/primary-on-dark"  },
+      { "id": "mono-white",       "displayName": "Mono · white",       "url": "/api/brands/brisa/logos/mono-white"       },
+      { "id": "mono-black",       "displayName": "Mono · black",       "url": "/api/brands/brisa/logos/mono-black"       }
+    ]
+  }
+}
+
+GET /api/brands/[slug]/logos/[id]
+Response: image/png  (the variant file, served through safeJoin against ROOTS.inputs;
+                     `inputs/` is NOT exposed as a static tree — every byte ships through this proxy)
 ```
 
-The handler enumerates `inputs/brands/*/`, validates each subdirectory's slug against `SLUG_RE`, reads `displayName` from `brand.json`, and reports whether `banned-words.json` is present (drives the S1 pre-flight UI). Adding a profile makes it available in the UI on next page load — no rebuild.
+The **list** handler enumerates `inputs/brands/*/`, validates each subdirectory's slug against `SLUG_RE`, and reads `displayName` from `brand.json`. The **detail** handler additionally returns the union banned-words list (lib defaults + brand file) and the parsed `logos.json` with proxied variant URLs. Adding a profile makes it available in the UI on next page load — no rebuild.
 
 **Brand existence + integrity check (server-side at `/api/generate` entry).** `briefSchema` validates the slug shape, not its presence on disk. Before the run starts, the orchestrator calls `loadBrandProfile(brief.brand)` which:
 
 - Verifies `inputs/brands/[brand]/` exists → else throws `BrandNotFoundError` → mapped to `400 { errors: [{ path: ['brand'], message: 'unknown brand: ...' }] }`.
-- Verifies required files exist (`brand.json`, `voice.json`, `logo.png`, `font.ttf`) → else throws `BrandIncompleteError` → mapped to `400 { errors: [{ path: ['brand', '<missing-file>'], message: '...' }] }`.
-- Validates `brand.json` and `voice.json` against `brandProfileSchema` (see [Brand profile schema](#brand-profile-schema)) → else throws `BrandInvalidError` → mapped to `400` with the Zod issue path.
-- On success, returns the parsed `BrandProfile` and caches it in-process for 90 s (cheap reads on repeat runs in the same `next dev` session).
+- Verifies required files exist (`brand.json`, `voice.json`, `logos.json`, at least one PNG referenced by `logos.json` `variants[].file` under `logos/`, `font.ttf`) → else throws `BrandIncompleteError` → mapped to `400 { errors: [{ path: ['brand', '<missing-file>'], message: '...' }] }`.
+- Validates `brand.json` and `voice.json` against `brandProfileSchema` (see [Brand profile schema](#brand-profile-schema-d11--contract)) → else throws `BrandInvalidError` → mapped to `400` with the Zod issue path.
+- On success, returns the parsed `BrandProfile` and caches it in-process for 90 s (cheap reads on repeat runs in the same `next dev` session). **The cache is keyed on slug with a fixed 90 s TTL; there is no mtime invalidation.** Edits to `inputs/brands/[brand]/*` mid-session may not take effect until the cache expires — accepted POC behavior, documented in the README assumptions. Restart `next dev` to force-refresh.
 
 This is the security boundary for the brand axis: every field that becomes a path segment is regex-validated by the schema **and** existence-validated by the loader before anything touches the filesystem.
 
@@ -498,26 +531,63 @@ export const voiceJsonSchema = z.object({
 
 export const bannedWordsSchema = z.array(z.string().min(1));
 
+export const logoVariantSchema = z.object({
+  id: z.string().regex(SLUG_RE),
+  displayName: z.string().min(1),
+  file: z.string().regex(/^[a-z0-9-]+\.png$/), // safeJoin-resolved against logos/
+});
+
+export const logosManifestSchema = z
+  .object({
+    default: z.string().regex(SLUG_RE),
+    variants: z.array(logoVariantSchema).min(1),
+  })
+  .superRefine((m, ctx) => {
+    const ids = new Set(m.variants.map((v) => v.id));
+    if (!ids.has(m.default)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["default"],
+        message: `default "${m.default}" not found in variants[]`,
+      });
+    }
+    const seen = new Set<string>();
+    m.variants.forEach((v, i) => {
+      if (seen.has(v.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["variants", i, "id"],
+          message: `duplicate variant id "${v.id}"`,
+        });
+      }
+      seen.add(v.id);
+    });
+  });
+
 // Aggregator — the external contract `loadBrandProfile` validates against.
-// system-map §3 references this symbol by name; the three per-file schemas
+// system-map §3 references this symbol by name; the per-file schemas
 // above are its building blocks.
 export const brandProfileSchema = z.object({
   brand: brandJsonSchema,
   voice: voiceJsonSchema,
   bannedWords: bannedWordsSchema.default([]),
+  logos: logosManifestSchema,
 });
 
 export type BrandProfile = {
   slug: string;
   brand: z.infer<typeof brandJsonSchema>;
   voice: z.infer<typeof voiceJsonSchema>;
-  bannedWords: string[]; // [] when banned-words.json is absent
-  logoPath: string; // absolute, safeJoin-validated
+  bannedWords: string[]; // union: lib defaults + brand file (deduped, lowercased)
+  logoVariants: { id: string; displayName: string; path: string }[]; // each path safeJoin-validated
+  defaultLogoId: string;
   fontPath: string; // absolute, safeJoin-validated
 };
 ```
 
-**Missing `banned-words.json`** is allowed. The loader returns `bannedWords: []`, the orchestrator emits a `step` event — `{ \"type\": \"step\", \"message\": \"no banned-words list for brand X — skipping pre-flight + per-creative checks\" }` — and both client-side pre-flight and server-side per-creative checks become no-ops for that run. Optional means optional; visibility comes from the log line, not a blocked Generate.
+**Banned-words composition.** `loadBrandProfile` always returns the **union** of (a) `getDefaultBannedWords()` from `lib/banned-words.ts` — the universal floor covering violence, hate, NSFW, weapons, drugs, self-harm — and (b) the brand-specific terms in `inputs/brands/[brand]/banned-words.json` (when present). The list is deduped and lowercased. Both pre-flight (S1, via `GET /api/brands/[slug]`) and per-creative server-side checks operate on this union; defaults always apply.
+
+**Missing `banned-words.json`** is allowed and means "no brand-specific additions" — **not** "checks disabled." The loader emits a `step` event — `{ \"type\": \"step\", \"message\": \"no brand-specific banned-words for X — running default list only\" }` — and the run proceeds with only the lib defaults. Optional means optional on the brand layer, not on the floor.
 
 ### GenAI provider (D9)
 
@@ -564,10 +634,10 @@ POC ships `LocalFsStorage` resolving keys against `ROOTS = { inputs, outputs }` 
 
 ### Compliance + banned-words (D21)
 
-Banned words are checked twice:
+Banned words are checked twice, both passes operating on the same union list (lib defaults + brand file) returned by `loadBrandProfile`:
 
-- **Client-side, pre-flight** — the editor in S1 cross-references the brief's message strings against `inputs/brands/[brand]/banned-words.json`. Hits disable the Generate button with an inline warning.
-- **Server-side, post locale-resolution** — for each `(market, ratio)` the compliance checker re-checks the **resolved overlay string** (the exact string the compositor will draw, after locale lookup) against the brand's banned-words list. Hits flag the creative with `WARN` (or `FAIL` for high-severity terms) and append to `report.json`'s `errors[]`.
+- **Client-side, pre-flight** — the editor in S1 fetches the brand's union list via `GET /api/brands/[slug]` on selection and cross-references the brief's message strings using `containsBannedWord(text, list)` from `lib/banned-words.ts`. Hits disable the Generate button with an inline warning.
+- **Server-side, post locale-resolution** — for each `(market, ratio)` the compliance checker re-checks the **resolved overlay string** (the exact string the compositor will draw, after locale lookup) against the same union list. Hits flag the creative with `WARN` (or `FAIL` for high-severity terms) and append to `report.json`'s `errors[]`.
 
 This is a string check, not OCR — the server composited the text itself, so OCR'ing the rendered PNG would be redundant and unreliable on stylized fonts. Catches both authoring mistakes (early) and locale-map errors that slip past pre-flight (late).
 
@@ -644,7 +714,7 @@ With screens + flow + states + API contract locked, the next step (wireframes) h
 
 - **One Next.js route** (`/`) handling four states: `Editing`, `Running`, `Complete`, `Failed`.
 - **One modal/drawer** for `DetailOpen` (S4).
-- **One server action** for S5 — `revealOutputFolder(absPath)` reveals the generated output folder via the OS (`start` on Windows / `open` on macOS / `xdg-open` on Linux). `absPath` must be normalized and validated to remain within the expected outputs directory before invocation. Do **not** build the command via string interpolation or shell concatenation of untrusted input; use a `spawn`/`execFile`-style API with explicit args. Fallback: copyable absolute path on screen.
+- **One server action** for S5 — `revealOutputFolder(absPath)` reveals the generated output folder via the OS (`explorer.exe` on Windows / `open` on macOS / `xdg-open` on Linux). `absPath` must be normalized and validated to remain within the expected outputs directory before invocation. Do **not** build the command via string interpolation or shell concatenation of untrusted input; use a `spawn`/`execFile`-style API with explicit args. Fallback: copyable absolute path on screen.
 - **Per-product drop zone** on S1 → `POST /api/upload` (multipart, `productSlug` + `file`) writes to `inputs/assets/[slug].ext`.
 - **Asset preview read** — `GET /api/detected-assets?slugs=...` on S1 mount (immediate), on brief change (300 ms debounced), and after each upload (immediate). Returns `[{ slug, foundFile | null }]` for the Detected Assets panel.
 - **Streaming generate** — `POST /api/generate` returns NDJSON; terminal `complete` event carries the full manifest. S2 reads the stream; S3 hydrates from the manifest. **No separate output-read endpoint.**
@@ -664,12 +734,15 @@ Captured here so the POC's omissions are deliberate, not accidental:
 - **Edge transforms** — ImageKit-style URL-driven crops/transforms for downstream platform variants.
 - **Brief Interpreter** — natural-language brief → structured Zod brief (LLM-assisted, validated).
 - **Brand-voice editor** — Studio-like UI for `inputs/brands/[brand]/voice.json`.
+- **Brand onboarding UI** — front-end flow to create a new brand profile without touching the filesystem. Replaces the hand-curated PR process documented in [brand-extraction.md](brand-extraction.md). Form fields map 1:1 to the runtime contract: displayName + colors (primary, accent, optional background/text) → `brand.json`; tone + do/dont lists + promptFragments[] → `voice.json`; banned-words textarea (one term per line, deduped server-side) → `banned-words.json`; logo uploads (4 D27 variants, drag-drop, MIME + dimension validated) → `logos/*.png` + generated `logos.json`; optional font upload (TTF/OTF, OFL license attestation checkbox) → `font.ttf`. Persists via a `POST /api/brands` endpoint that writes the full directory atomically (temp dir → rename) and revalidates `/api/brands` cache. Out of POC because it requires multi-part upload handling, write-side authorization (POC is single-machine, no auth), an edit/delete surface, and validation parity with `brandProfileSchema` on the client. Composes with **Brand-voice editor** above (which becomes the edit mode of this same UI).
 - **Multi-run history** — persist past runs, side-by-side comparison, approvals.
 - **Comments + approval workflow** — Priya marks creatives approved/rejected with comments persisted to manifest.
 - **Translation API** — auto-fill `message{}` for missing locales.
-- **Multi-logo per brand** — primary/secondary/dark/light variants selected per ratio.
+- **Multi-logo per brand** — D27 ships the **manual** campaign-level picker (one variant chosen for the whole run via `brief.logoVariant`). Per-ratio and per-market variant selection remains v2.
+- **Automatic logo variant selection** — v2 follow-on to D27. Sample luminance of the corner region where the logo will composite (post-resize, pre-overlay) and pick `mono-white` over dark areas / `mono-black` over light. Mid-tone fallback rule (e.g. luminance ∈ [0.4, 0.6]) defers to the brand's `defaultLogoId` or surfaces a `WARN` badge with reason `'logo-contrast-ambiguous'`. Out of POC: requires per-creative luminance pass before composite, plus a tested threshold table per brand.
 - **Per-market brand variations** — region-specific palette/voice overrides under `inputs/brands/[brand]/markets/[market]/`.
 - **Multi-brand campaign briefs** — single brief targeting multiple sub-brands in one run (e.g. an Onda portfolio launch covering both Brisa and Volt). Requires a `brands[]` field, per-product brand tagging, an extra `[brand]` segment in the output tree, and per-product compliance switching. Out of POC because it changes the campaign contract and dilutes the brand-voice promise; portfolio runs today are sequential single-brand briefs.
+- **Parent brand inheritance (Onda → Brisa, Volt)** — explicitly out of POC. The Onda Beverages framing is narrative-only: it gives Brisa and Volt a believable shared universe (one corporate parent, two sub-brands with contrasting voices) so the demo's multi-brand story is concrete instead of abstract. The HTML brand guidelines under [docs/design/](design/) reference Onda for that context — they are designer-facing artifacts, not a runtime contract. Cast does NOT model parent-brand inheritance at runtime: there is no `inputs/brands/onda/` profile loaded by `loadBrandProfile`, no token cascade from parent → child, no shared banned-words/voice resolution chain. Each sub-brand's `inputs/brands/[brand]/` directory is fully self-contained ([D11](#appendix-a--design-decision-register)). Modeling true inheritance (parent profile + child overrides with merge precedence rules) composes with **Multi-brand campaign briefs** above and **Per-market brand variations** below; all three are v2.
 - **Motion creatives** — animated outputs (5-second loops, `.gif` and `.mp4` parallel to `.png` per ratio). Pipeline fan-out becomes `(product × market × ratio × format)`. Resolver, compositor, and storage each gain a format axis. Compliance gains motion-specific checks (frame-1 logo presence, looping integrity).
 
 ---
@@ -690,8 +763,8 @@ Captured here so the POC's omissions are deliberate, not accidental:
 | D8  | Locale / market field shape                      | `markets: string[]` (form `<region>-<lang>`, validated by `MARKET_RE`). `message: Record<lang, string>`. No separate `locales` field; no singular `region`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | D9  | GenAI provider                                   | OpenAI Images API. `dall-e-3` default (3 native sizes, 1 call per ratio); `gpt-image-1` when `CAST_GENAI_MODE=cheap` (1 call total + Sharp center-crop).                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | D10 | Display font                                     | OFL-licensed `font.ttf` shipped per brand at `inputs/brands/[brand]/font.ttf`. Compositor loads it; no system-font fallback (deterministic across machines).                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| D11 | Per-brand profile                                | `inputs/brands/[brand]/` directory contract: `brand.json`, `voice.json`, `logo.png`, `font.ttf`, optional `banned-words.json`. Validated by `brandProfileSchema`. Demo brands `brisa` and `volt` ship with the repo (sub-brands of fictional Onda Beverages).                                                                                                                                                                                                                                                                                                                                                                     |
-| D12 | Path safety: `safeJoin`                          | Every filesystem write resolves through `safeJoin(rootKey, ...segments)` against `ROOTS = { inputs, outputs }`; mismatch throws.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| D11 | Per-brand profile                                | `inputs/brands/[brand]/` directory contract: `brand.json`, `voice.json`, `logos/` + `logos.json` (D27), `font.ttf`, optional `banned-words.json` (additive on top of `lib/banned-words.ts` defaults — union, never replacement). Validated by `brandProfileSchema`. Demo brands `brisa` and `volt` ship with the repo (sub-brands of fictional Onda Beverages).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| D12 | Path safety: `safeJoin`                          | Every filesystem write resolves through `safeJoin(rootKey, ...segments)` against `ROOTS = { inputs, outputs }`; mismatch throws.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | D13 | Path safety: regex-validated tokens + `execFile` | `[campaign]`, `[brand]`, `[product-slug]`, `[market]` validated against `SLUG_RE` / `MARKET_RE` before `safeJoin`. Shell calls use `execFile` + explicit argv.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | D14 | Streaming render mode                            | S2 log + progress update incrementally on each NDJSON event; output grid hydrates only on the terminal `complete` event (no flicker, clean S2→S3 transition).                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | D15 | Run idempotency                                  | Both Generate (S1) and Retry (S2′) clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products of the run, not preserved artifacts — the recursive clear is what guarantees a failed run cannot leave a stale `report.json` claiming success on disk. End state of any successful run is invariant under retry. No partial-resume; no orphan folders across runs. The cap file at `outputs/.cap.json` (D22) lives one level above the campaign root and is not affected. |
@@ -706,7 +779,8 @@ Captured here so the POC's omissions are deliberate, not accidental:
 | D24 | Markets typeahead                                | Schema stays `markets: string[]` with `MARKET_RE`. S1 UI offers a typeahead with seed values (`us-en`, `mx-es`, `de-de`, `jp-ja`); users may type any conforming value.                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | D25 | Ratio picker                                     | Schema enum locked to `[1x1, 9x16, 16x9]` for v1. S1 exposes pill toggles, default all checked, at least one required. `4x5` / `2x1` deferred to v1.5 (out of POC).                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | D26 | Animated formats                                 | `.gif`, `.mp4`, `.webm` rejected at upload (415) and ignored at resolve. Output creatives are always `.png`. Motion creatives are v2 (Future scope §8).                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-
+| D27 | Logo variants                                    | Per-brand `inputs/brands/[brand]/logos/` directory + `logos.json` manifest (`{ default, variants[] }`). Brief carries optional `logoVariant: string` — cross-validated against the loaded brand at `/api/generate` entry; absent → falls back to `brandProfile.defaultLogoId`. Variants served via `GET /api/brands/[slug]/logos/[id]` (safeJoin proxy; `inputs/` is not a static tree). Replaces the singular `logo.png` from earlier drafts. Manual picker only; automatic per-creative selection by hero luminance is v2 (§8).                                                                                              |
+| D28 | Brand profile extraction methodology             | HTML guidelines under `docs/design/[brand]-brand-guidelines.html` are the canonical source for each shipped brand profile (Brisa, Volt). `inputs/brands/[brand]/*.json` are a hand-curated reduction following the lift map in [brand-extraction.md](brand-extraction.md). Discarded fields (full palette, type scale, spacing, illustration style, motion, print) are intentional — Cast composites text + corner logo only. Banned-words HTML categories flatten to a single deduped lowercased array; categories are HTML-side organization only. `voice.json.promptFragments[]` is synthesis (concrete visual phrases for the GenAI image prompt), not direct lift. Logos are screenshots of the four D27 variants from each brand's HTML. Cast (tool UI) and Onda (narrative-only parent per §8) are not runtime profiles. No scripted parser — hand-curated, peer-reviewed via PR. |
 ---
 
 _Cast · Flow Diagrams v1 · Adobe FDE Take-Home · Aaron Davis · 2026_
