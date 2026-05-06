@@ -4,7 +4,7 @@
 
 **POC · Aaron Davis · 2026**
 
-> **Status: spec-locked, app coming next.** This branch ships the full architectural spec (briefSchema, output tree, manifest, GenAI primitives, streaming contract). Runtime scaffolding (`package.json`, route handlers) lands in PR #3. The Quick Start below describes the **target** developer experience the spec resolves to.
+> **Status: spec-locked, app coming next.** This branch ships the full architectural spec (briefSchema, output tree, manifest, GenAI primitives, streaming contract). Runtime scaffolding (`package.json`, `inputs/`, route handlers) lands in PR #3. The Quick Start below describes the **target** developer experience the spec resolves to.
 
 ---
 
@@ -135,4 +135,4 @@ S1's brand selector lists every directory found under `inputs/brands/`, so addin
 
 ## Project status
 
-This branch contains **design documentation only**. PRs #1 and #2 carried the design lockdown; runtime scaffolding lands in PR #3.
+This branch contains **design documentation only**. Application code lands in subsequent PRs. See pull request #1 for the design review trail.
