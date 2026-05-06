@@ -119,7 +119,7 @@
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-.dark {
+html.dark {
   /* Dark surfaces — ported from docs/design/cast-brand-guidelines.html.
      Brand (cyan/lime) and status (--ok/--warn/--bad) stay shared with :root.
      Only surfaces and foreground tiers flip. `color-scheme: light` stays on
