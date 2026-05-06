@@ -95,7 +95,7 @@ Using the Inform → Engage → Invite framework.
 - Pre-flight banned-words check — if any locale's `message` contains a banned word for this brand, the Generate button is disabled with an inline warning
 - Generate button (enabled when brief is valid + no banned-word violations)
 - Validation badge on brief (valid / invalid)
-- Daily allocation indicator (e.g. "32 of 50 generations remaining today")
+- Daily allocation indicator — reads `GET /api/cap` on mount and after each `complete` event. Format: "remaining today: **X** (this run will use **~Y**)". `Y` is computed client-side from the brief + Detected Assets state: for each product without a local asset, count `ratios.length` calls in default mode or `1` in cheap mode; sum across products. Projection recomputes on brief edit (debounced) and on detected-assets refresh, so Maya sees whether her run fits before clicking Generate. LocalStorage caches the last server value for instant first paint only — never authoritative.
 
 **Engage — what the user can do:**
 
