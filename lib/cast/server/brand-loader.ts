@@ -66,10 +66,9 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
     if (!(err instanceof BrandIncompleteError)) throw err
   }
 
-  // font.ttf is existence-checked only
+  // font.ttf / font.otf is existence-checked only — either filename is accepted.
   // TODO(symlink-hardening): re-validate fontPath with realpath
-  const fontPath = safeJoin("inputs", "brands", slug, "font.ttf")
-  await assertExists(fontPath, slug, "font.ttf")
+  const fontPath = await resolveFontPath(slug)
 
   const brand = parse(slug, "brand.json", brandJsonSchema, brandJson)
   const voice = parse(slug, "voice.json", voiceJsonSchema, voiceJson)
@@ -169,6 +168,24 @@ async function assertExists(
     }
     throw err
   }
+}
+
+/**
+ * Resolve the brand's display font. Existence-checked only; either
+ * `font.ttf` or `font.otf` is accepted. If neither exists, throw
+ * `BrandIncompleteError` against `font.ttf` (canonical name in the contract).
+ */
+async function resolveFontPath(slug: string): Promise<string> {
+  for (const file of ["font.ttf", "font.otf"] as const) {
+    const candidate = safeJoin("inputs", "brands", slug, file)
+    try {
+      await fs.access(candidate)
+      return candidate
+    } catch (err) {
+      if (!isENOENT(err)) throw err
+    }
+  }
+  throw new BrandIncompleteError(slug, "font.ttf")
 }
 
 function parse<T>(

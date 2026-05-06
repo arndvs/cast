@@ -176,6 +176,7 @@ export type BrandProfile = {
   bannedWords: string[]
   logoVariants: { id: string; displayName: string; path: string }[]
   defaultLogoId: string
+  /** Absolute path to the brand's display font. `font.ttf` or `font.otf`. */
   fontPath: string
 }
 
