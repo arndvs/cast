@@ -86,10 +86,12 @@ export function s1Reducer(state: S1State, action: S1Action): S1State {
   switch (action.type) {
     case "setBrand":
       // Brand swap discards uploads — different products, different slugs.
+      // Normalize `brief.brand` to the selected slug so the JSON mirror and a
+      // submitted brief never disagree with `brandSlug`.
       return {
         ...state,
         brandSlug: action.slug,
-        brief: action.brief,
+        brief: { ...action.brief, brand: action.slug },
         uploads: revokeAll(state.uploads),
         runState: "editing",
       }
