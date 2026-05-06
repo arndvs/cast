@@ -14,7 +14,7 @@ import { Dropzone, type DropzoneFile } from "@/components/cast/dropzone"
 import { MarketsTypeahead } from "@/components/cast/markets-typeahead"
 import type { LogoVariantId, S1Action, S1State } from "@/components/cast/s1-state"
 import { ALL_RATIOS, RATIO_LABELS, type AspectRatio } from "@/lib/cast/ratios"
-import { ALL_MARKETS, activeLanguages, getMarket } from "@/lib/cast/markets"
+import { ALL_MARKETS, activeLanguages } from "@/lib/cast/markets"
 import { containsBannedWord, getDefaultBannedWords } from "@/lib/cast/banned-words"
 import { DEMO_BRANDS, getDemoBrand, type DemoBrand } from "@/lib/cast/demo-brands"
 import { buildPromptPreview } from "@/lib/cast/prompt"
@@ -671,6 +671,3 @@ function ProductRow({
     </div>
   )
 }
-
-// Re-export getMarket for tree-shaking guarantees in test env.
-export { getMarket }

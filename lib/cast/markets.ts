@@ -30,16 +30,26 @@ export function getMarket(code: string): Market | undefined {
 /**
  * Active languages for a set of markets, in order of first appearance, deduped.
  * Used by S1 to render one headline row per language (D11, Story 1).
+ *
+ * `MARKET_RE` lets users add custom markets the catalog doesn't know about
+ * (e.g. `jp-ja`); we still need a headline row for those, so fall back to the
+ * locale suffix when the catalog has no entry.
  */
 export function activeLanguages(marketCodes: readonly string[]): Market[] {
   const seen = new Set<string>()
   const out: Market[] = []
   for (const code of marketCodes) {
-    const m = getMarket(code)
+    const m = getMarket(code) ?? syntheticMarket(code)
     if (m && !seen.has(m.language)) {
       seen.add(m.language)
       out.push(m)
     }
   }
   return out
+}
+
+function syntheticMarket(code: string): Market | undefined {
+  const lang = code.split("-").pop()
+  if (!lang) return undefined
+  return { code, name: code, language: lang }
 }
