@@ -17,6 +17,8 @@ function syntaxHighlightJSON(obj) {
 
 function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
   const { brand, brief, brandSlug, uploadedAssets, logoVariant } = state;
+  const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+  const slugInvalid = !SLUG_RE.test(brief.campaign || "");
 
   // Banned-word inline check
   const bannedHit = useMemo(() => {
@@ -126,7 +128,8 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
                 </div>
                 <div className="field">
                   <label>Slug</label>
-                  <input className="field-input mono" value={brief.campaign} onChange={(e) => dispatch({ type: "setField", field: "campaign", value: e.target.value })} />
+                  <input className={`field-input mono ${slugInvalid ? "warn" : ""}`} value={brief.campaign} onChange={(e) => dispatch({ type: "setField", field: "campaign", value: e.target.value })} />
+                  {slugInvalid && <div className="field-error">slug must match <code>[a-z0-9]+(-[a-z0-9]+)*</code> — lowercase, hyphens only</div>}
                 </div>
                 <div className="field span-2">
                   <label>Headline</label>
@@ -252,15 +255,18 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
 function S1SummaryStrip({ state, dispatch, running }) {
   const { brief } = state;
   const total = brief.products.length * brief.markets.length * brief.ratios.length;
+  const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+  const slugInvalid = !SLUG_RE.test(brief.campaign || "");
   return (
     <div className="summary-strip">
       <div className="calc">
         <strong>{brief.products.length}</strong> products ·{" "}
         <strong>{brief.markets.length}</strong> markets ·{" "}
         <strong>{brief.ratios.length}</strong> ratios = <strong>{total}</strong> creatives
+        {slugInvalid && <span className="warn-inline"> · fix slug to enable</span>}
       </div>
       <div className="grow" />
-      <button className="btn btn-primary" disabled={running || total === 0} onClick={() => dispatch({ type: "generate" })}>▶ Generate</button>
+      <button className="btn btn-primary" disabled={running || total === 0 || slugInvalid} onClick={() => dispatch({ type: "generate" })}>▶ Generate</button>
     </div>
   );
 }
