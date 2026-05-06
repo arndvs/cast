@@ -84,7 +84,7 @@ flowchart TB
 
 ## 3. User-story walkthroughs
 
-The validation step Carl and Dane both stress: read each story aloud, trace the arrows, and look for dead ends or missing screens.
+The validation step: read each story aloud, trace the arrows, and look for dead ends or missing screens.
 
 ### Story 1 — Maya · "ship the campaign in under three minutes"
 
@@ -143,7 +143,7 @@ flowchart LR
 
 ## 4. MVP cut — what ships first
 
-Per Dane's "what's the smallest thing that delivers value" lens. Green = MVP. Grey = nice-to-have / v2.
+The smallest thing that delivers value. Green = MVP. Grey = nice-to-have / v2.
 
 ```mermaid
 flowchart TB
