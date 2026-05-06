@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import { DM_Sans, Geist_Mono, Outfit } from "next/font/google"
 
-import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 
 import "./globals.css"
@@ -35,19 +34,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      suppressHydrationWarning
       className={`${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable}`}
     >
       <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster richColors closeButton position="bottom-right" />
-        </ThemeProvider>
+        {children}
+        <Toaster richColors closeButton position="bottom-right" />
       </body>
     </html>
   )
