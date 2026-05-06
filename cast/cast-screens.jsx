@@ -15,6 +15,57 @@ function syntaxHighlightJSON(obj) {
 
 // ====================== S1: BRIEF EDITOR (FORM-FIRST + JSON TOGGLE) ======================
 
+function Dropzone({ slug, fileName, dataUrl, onUpload }) {
+  const inputRef = useRef(null);
+  const [over, setOver] = useState(false);
+
+  const accept = "image/png,image/jpeg,image/webp";
+  const handleFile = (file) => {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => onUpload({ name: file.name, dataUrl: String(ev.target.result) });
+    reader.readAsDataURL(file);
+  };
+  const onDrop = (e) => {
+    e.preventDefault(); setOver(false);
+    handleFile(e.dataTransfer.files?.[0]);
+  };
+  const hasFile = !!fileName;
+
+  return (
+    <div
+      className={`dropzone ${hasFile ? "has-file" : ""} ${over ? "over" : ""}`}
+      onClick={() => inputRef.current?.click()}
+      onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+      onDragLeave={() => setOver(false)}
+      onDrop={onDrop}
+      title={hasFile ? `replace ${fileName}` : "drop image or click to upload"}
+      style={dataUrl ? { backgroundImage: `url(${dataUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        hidden
+        onChange={(e) => handleFile(e.target.files?.[0])}
+      />
+      {hasFile ? (
+        <span className="dz-label">{fileName}</span>
+      ) : (
+        <span className="dz-label muted">drop hero · or generate</span>
+      )}
+      {hasFile && (
+        <button
+          className="dz-clear"
+          title="remove upload"
+          onClick={(e) => { e.stopPropagation(); onUpload(false); if (inputRef.current) inputRef.current.value = ""; }}
+        >×</button>
+      )}
+    </div>
+  );
+}
+
 function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
   const { brand, brief, brandSlug, uploadedAssets, logoVariant } = state;
   const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -100,10 +151,11 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
         <div className="section-h">Detected input assets</div>
         {brand.products.map((p, i) => {
           const has = uploadedAssets[p.slug] || (i !== 0);
+          const upObj = (uploadedAssets[p.slug] && typeof uploadedAssets[p.slug] === "object") ? uploadedAssets[p.slug] : null;
           return (
             <div key={p.slug} className={`detected-row ${has ? "found" : "missing"}`}>
-              <span className="ico">{has ? "✓" : "→"}</span>
-              <span style={{ flex: 1 }}>{has ? `${p.slug}.png` : `${p.slug} — will generate`}</span>
+              <span className="icon">{has ? "✓" : "→"}</span>
+              <span style={{ flex: 1 }}>{has ? (upObj ? upObj.name : `${p.slug}.png`) : `${p.slug} — will generate`}</span>
             </div>
           );
         })}
@@ -260,7 +312,10 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
                   <div className="inline-note">↑ docs recommend ≥ 2 products per brief</div>
                 )}
                 {briefProducts.map((p, i) => {
-                  const has = uploadedAssets[p.slug] || (i !== 0);
+                  const upload = uploadedAssets[p.slug];
+                  const uploadObj = (upload && typeof upload === "object") ? upload : null;
+                  const has = !!upload || (i !== 0);
+                  const fileName = uploadObj ? uploadObj.name : `${p.slug}.png`;
                   return (
                     <div className="product-row" key={p.sku}>
                       <div className="prod-meta">
@@ -274,11 +329,12 @@ function S1BriefEditor({ state, dispatch, jsonMode, onJsonToggle }) {
                         </div>
                       </div>
                       <div className="prod-asset">
-                        {has ? (
-                          <div className="dropzone has-file">{p.slug}.png</div>
-                        ) : (
-                          <div className="dropzone" onClick={() => dispatch({ type: "upload", slug: p.slug })}>drop hero · or generate</div>
-                        )}
+                        <Dropzone
+                          slug={p.slug}
+                          fileName={has ? fileName : null}
+                          dataUrl={uploadObj?.dataUrl || null}
+                          onUpload={(payload) => dispatch({ type: "upload", slug: p.slug, payload })}
+                        />
                         <span className="src-pill">{has ? "local" : "→ GenAI"}</span>
                       </div>
                       <button className="rm-btn" title="Remove from brief" onClick={() => dispatch({ type: "removeProduct", sku: p.sku })}>✕</button>
@@ -393,15 +449,23 @@ function S2RunView({ state, dispatch }) {
 
 // ====================== S3: OUTPUT GRID ======================
 
-function CreativeTile({ creative, brand, onClick }) {
+function CreativeTile({ creative, brand, uploadedAssets, onClick }) {
   const product = brand.products.find((p) => p.slug === creative.product);
   const ratioClass = creative.ratio === "9:16" ? "creative-9-16" : creative.ratio === "16:9" ? "creative-16-9" : "";
   const isFailed = creative.path === null;
   const klass = isFailed ? "failed" : creative.badge === "WARN" ? "warn" : "";
+  const upload = uploadedAssets && uploadedAssets[creative.product];
+  const uploadDataUrl = (upload && typeof upload === "object") ? upload.dataUrl : null;
+  const showUpload = !isFailed && creative.source === "local" && uploadDataUrl;
+  const artStyle = isFailed
+    ? {}
+    : showUpload
+      ? { backgroundImage: `url(${uploadDataUrl})`, backgroundSize: "cover", backgroundPosition: "center", color: product.hex }
+      : { background: `linear-gradient(135deg, ${product.swatch[0]} 0%, ${product.swatch[1]} 100%)`, color: product.hex };
 
   return (
     <div className={`creative-card ${klass}`} onClick={onClick}>
-      <div className={`creative ${ratioClass} ${isFailed ? "failed" : ""}`} style={isFailed ? {} : { background: `linear-gradient(135deg, ${product.swatch[0]} 0%, ${product.swatch[1]} 100%)`, color: product.hex }}>
+      <div className={`creative ${ratioClass} ${isFailed ? "failed" : ""} ${showUpload ? "with-upload" : ""}`} style={artStyle}>
         {isFailed ? (
           <>
             <span className="stage-label">{creative.stage}</span>
@@ -507,7 +571,7 @@ function S3OutputGrid({ state, dispatch }) {
       </div>
 
       <div className="grid-cards">
-        {filtered.map((c) => <CreativeTile key={c.key} creative={c} brand={brand} onClick={() => dispatch({ type: "open-detail", creative: c })} />)}
+        {filtered.map((c) => <CreativeTile key={c.key} creative={c} brand={brand} uploadedAssets={state.uploadedAssets} onClick={() => dispatch({ type: "open-detail", creative: c })} />)}
       </div>
 
       <div className="reveal-strip">

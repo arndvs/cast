@@ -67,8 +67,9 @@ const DEFAULT_BRIEF = {
 
 // ====================== CREATIVES ======================
 
-function buildCreatives(brand, brief, scenario, genaiMode) {
+function buildCreatives(brand, brief, scenario, genaiMode, uploadedAssets) {
   const sc = scenario === "stream-idle" ? "mixed" : scenario;
+  const uploads = uploadedAssets || {};
   const out = {};
   brief.markets.forEach((mkt) => {
     out[mkt] = {};
@@ -118,7 +119,8 @@ function buildCreatives(brand, brief, scenario, genaiMode) {
           }
         }
 
-        const source = (pi === 0) ? "genai" : "local";
+        const hasUpload = !!uploads[p.slug];
+        const source = hasUpload ? "local" : ((pi === 0) ? "genai" : "local");
         const generatedAt = new Date(Date.now() - (1000 * (60 + ri * 4 + pi * 8))).toISOString();
 
         return {

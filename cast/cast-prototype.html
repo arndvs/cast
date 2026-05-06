@@ -401,17 +401,33 @@
     letter-spacing: 0.06em;
   }
   .dropzone {
+    position: relative;
     border: 1px dashed var(--line-2); border-radius: var(--r-sm);
     padding: 8px 10px; text-align: center;
     font-size: 10px; color: var(--fg-3); background: var(--panel);
     cursor: pointer; font-family: var(--mono);
+    min-height: 28px; min-width: 120px;
+    display: inline-flex; align-items: center; justify-content: center;
   }
   .dropzone:hover { border-color: var(--accent); color: var(--accent); }
+  .dropzone.over { border-color: var(--accent); background: var(--accent-bg, rgba(59,130,246,0.08)); color: var(--accent); }
   .dropzone.has-file {
     border-style: solid; border-color: var(--ok);
     background: var(--ok-bg); color: var(--ok);
   }
-  .dropzone.has-file::before { content: "✓ "; }
+  .dropzone.has-file .dz-label::before { content: "✓ "; }
+  .dropzone.has-file[style*="url("] { color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.6); border-color: var(--ok); }
+  .dropzone.has-file[style*="url("] .dz-label { background: rgba(0,0,0,0.55); padding: 1px 6px; border-radius: 3px; }
+  .dz-clear {
+    position: absolute; top: 2px; right: 2px;
+    width: 16px; height: 16px; padding: 0;
+    border-radius: 50%; background: rgba(0,0,0,0.5); color: white;
+    font-size: 11px; line-height: 1; cursor: pointer;
+  }
+  .dz-clear:hover { background: var(--bad); }
+  .creative.with-upload .product-name,
+  .creative.with-upload .message,
+  .creative.with-upload .sub-message { text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
   .rm-btn {
     width: 24px; height: 24px;
     color: var(--fg-3); border-radius: 4px;

@@ -36,7 +36,7 @@ function makeInitialState(tweaks) {
 
 function rebuild(state, scenario) {
   const sc = scenario || state.scenario || "mixed";
-  const creatives = CAST.buildCreatives(state.brand, state.brief, sc, state.genaiMode);
+  const creatives = CAST.buildCreatives(state.brand, state.brief, sc, state.genaiMode, state.uploadedAssets);
   return {
     ...state,
     scenario: sc,
@@ -69,11 +69,12 @@ function reducer(state, action) {
     }
     case "setLogo":
       return { ...state, logoVariant: action.id };
-    case "upload":
-      return {
-        ...state,
-        uploadedAssets: { ...state.uploadedAssets, [action.slug]: true },
-      };
+    case "upload": {
+      const next = { ...state.uploadedAssets };
+      if (action.payload === false) delete next[action.slug];
+      else next[action.slug] = action.payload || true;
+      return rebuild({ ...state, uploadedAssets: next });
+    }
     case "setField":
       return rebuild(
         { ...state, brief: { ...state.brief, [action.field]: action.value } },
