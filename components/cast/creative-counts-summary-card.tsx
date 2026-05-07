@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 
 interface CreativeCountsSummaryCardProps {
   label: string
-  value: number
+  value: number | string
   tone?: "ok" | "warn" | "bad"
 }
 

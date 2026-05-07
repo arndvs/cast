@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { Check, Download, ExternalLink } from "lucide-react"
 
 import { ComplianceBadgePill } from "@/components/cast/compliance-badge-pill"
 import { CreativeSourcePill } from "@/components/cast/creative-source-pill"
@@ -13,6 +14,8 @@ interface CreativeTileProps {
   creative: Creative
   campaign: string
   onClick: () => void
+  selected?: boolean
+  onSelect?: () => void
 }
 
 /**
@@ -28,7 +31,7 @@ interface CreativeTileProps {
  * (which whitelists `.png` and reads from `outputs/` outside the static
  * tree). `loading="lazy"` keeps the initial paint cheap for large grids.
  */
-export function CreativeTile({ creative, campaign, onClick }: CreativeTileProps) {
+export function CreativeTile({ creative, campaign, onClick, selected, onSelect }: CreativeTileProps) {
   const aspectClass = aspectClassForRatio(creative.ratio)
 
   const failed = creative.path === null
@@ -40,52 +43,106 @@ export function CreativeTile({ creative, campaign, onClick }: CreativeTileProps)
     : buildCreativeProxyUrl(campaign, creative.market, creative.product, creative.ratio)
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex flex-col gap-2 rounded-xl border border-border bg-card p-2 text-left transition hover:border-fg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      aria-label={`${creative.product} · ${creative.market} · ${creative.ratio}`}
-    >
-      <div
+    <div className="relative">
+      {/* Selection checkbox */}
+      {onSelect && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onSelect()
+          }}
+          className={cn(
+            "absolute left-3 top-3 z-10 flex h-5 w-5 items-center justify-center rounded border transition-all",
+            selected
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-white/70 bg-black/30 opacity-0 group-hover:opacity-100",
+          )}
+        >
+          {selected && <Check className="h-3 w-3" />}
+        </button>
+      )}
+
+      <button
+        type="button"
+        onClick={onClick}
         className={cn(
-          "relative w-full overflow-hidden rounded-lg bg-muted",
-          aspectClass,
+          "group flex w-full flex-col gap-2 rounded-xl border bg-card p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          selected ? "border-primary" : "border-border hover:border-fg-3",
         )}
+        aria-label={`${creative.product} · ${creative.market} · ${creative.ratio}`}
       >
-        {src ? (
-          // eslint-disable-next-line @next/next/no-img-element -- proxy serves dynamic per-run PNGs; next/image static analysis isn't useful here
-          <img
-            src={src}
-            alt={`${creative.product} ${creative.market} ${creative.ratio}`}
-            loading="lazy"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div
-            className="flex h-full w-full items-center justify-center"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(45deg, var(--bad) 0 8px, transparent 8px 16px)",
-              backgroundColor: "color-mix(in oklab, var(--bad) 8%, transparent)",
-            }}
-          >
-            <span className="rounded bg-card/90 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-bad">
-              failed
-            </span>
+        <div
+          className={cn(
+            "relative w-full overflow-hidden rounded-lg bg-muted",
+            aspectClass,
+          )}
+        >
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element -- proxy serves dynamic per-run PNGs; next/image static analysis isn't useful here
+            <img
+              src={src}
+              alt={`${creative.product} ${creative.market} ${creative.ratio}`}
+              loading="lazy"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div
+              className="flex h-full w-full items-center justify-center"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(45deg, var(--bad) 0 8px, transparent 8px 16px)",
+                backgroundColor: "color-mix(in oklab, var(--bad) 8%, transparent)",
+              }}
+            >
+              <span className="rounded bg-card/90 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-bad">
+                failed
+              </span>
+            </div>
+          )}
+          <div className="absolute right-1 top-1">
+            <ComplianceBadgePill badge={badge} />
           </div>
-        )}
-        <div className="absolute right-1 top-1">
-          <ComplianceBadgePill badge={badge} />
+
+          {/* Hover overlay with actions */}
+          {src && (
+            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+              <a
+                href={src}
+                download
+                onClick={(e) => e.stopPropagation()}
+                className="rounded-full bg-white/90 p-2 text-black transition hover:bg-white dark:bg-white/80"
+                aria-label="Download"
+              >
+                <Download className="h-4 w-4" />
+              </a>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClick()
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") onClick()
+                }}
+                className="rounded-full bg-white/90 p-2 text-black transition hover:bg-white dark:bg-white/80"
+                aria-label="Open detail"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </span>
+            </div>
+          )}
         </div>
-      </div>
-      <div className="flex items-center gap-2 px-1 text-xs">
-        <span className="truncate font-medium text-fg-1">{creative.product}</span>
-        <CreativeSourcePill source={creative.source} />
-        <span className="grow" />
-        <span className="font-mono text-[10px] text-fg-3">
-          {creative.market} · {creative.ratio}
-        </span>
-      </div>
-    </button>
+        <div className="flex items-center gap-2 px-1 text-xs">
+          <span className="truncate font-medium text-fg-1">{creative.product}</span>
+          <CreativeSourcePill source={creative.source} />
+          <span className="grow" />
+          <span className="font-mono text-[10px] text-fg-3">
+            {creative.market} · {creative.ratio}
+          </span>
+        </div>
+      </button>
+    </div>
   )
 }
