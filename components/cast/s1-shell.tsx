@@ -92,10 +92,23 @@ export function S1Shell({
     // Fetch on every brandSlug change (including mount). The brand loader has
     // a 90 s in-memory cache, so the initial mount fetch is cheap. Async
     // callbacks avoid the react-hooks/set-state-in-effect lint rule.
-    let cancelled = false
-    fetch(`/api/brands/${encodeURIComponent(state.brandSlug)}`)
+    // AbortController terminates the in-flight request on rapid slug changes so
+    // stale responses never overwrite a newer slug's result.
+    const controller = new AbortController()
+    const slug = state.brandSlug
+    fetch(`/api/brands/${encodeURIComponent(slug)}`, { signal: controller.signal })
       .then(async (res) => {
-        if (!res.ok) throw new Error(`Brand not found: ${state.brandSlug}`)
+        if (!res.ok) {
+          // All non-2xx responses render the brand as unavailable on the
+          // client. We don't distinguish incomplete/invalid here because the
+          // API error body doesn't carry the extra fields those kinds require;
+          // the banner's "notFound" copy is accurate enough for the operator.
+          const body = await res.json().catch(() => ({})) as { errors?: { message: string }[] }
+          const message = body.errors?.[0]?.message ?? `Failed to load brand "${slug}" (HTTP ${res.status})`
+          setActiveBrand(null)
+          setActiveBrandLoadError({ kind: "notFound", slug, message })
+          return
+        }
         const data = await res.json() as {
           bannedWords: readonly string[]
           logos: {
@@ -103,7 +116,6 @@ export function S1Shell({
             variants: Array<{ id: string; displayName: string; theme?: "light" | "dark" }>
           }
         }
-        if (cancelled) return
         setActiveBrand({
           defaultLogoId: data.logos.default,
           logoVariants: data.logos.variants.map(({ id, displayName, theme }) => ({
@@ -115,17 +127,18 @@ export function S1Shell({
         })
         setActiveBrandLoadError(null)
       })
-      .catch(() => {
-        if (cancelled) return
+      .catch((err: unknown) => {
+        // Ignore aborts (superseded by a newer slug change).
+        if (err instanceof DOMException && err.name === "AbortError") return
         setActiveBrand(null)
         setActiveBrandLoadError({
           kind: "notFound",
-          slug: state.brandSlug,
-          message: `Brand fixture "${state.brandSlug}" could not be loaded.`,
+          slug,
+          message: err instanceof Error ? err.message : `Network error loading brand "${slug}"`,
         })
       })
     return () => {
-      cancelled = true
+      controller.abort()
     }
   }, [state.brandSlug])
 
