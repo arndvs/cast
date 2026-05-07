@@ -64,7 +64,10 @@ function slotKey(product: string, market: string, ratio: string): string {
  * computed from the first `step` to `creative_ready` receive-time delta
  * stored in the accumulator.
  */
-export function deriveCreativeStatuses(events: readonly PipelineEvent[], brief: Brief): Map<string, CreativeSlotInfo> {
+/** Events stored in state carry a `receivedAt` timestamp from the reducer. */
+type StampedEvent = PipelineEvent & { receivedAt?: number }
+
+export function deriveCreativeStatuses(events: readonly StampedEvent[], brief: Brief): Map<string, CreativeSlotInfo> {
   const map = new Map<string, CreativeSlotInfo>()
 
   // Seed every slot from the brief's cartesian product.
@@ -94,6 +97,7 @@ export function deriveCreativeStatuses(events: readonly PipelineEvent[], brief: 
 
   // Walk events in order, updating the slot map.
   for (const event of events) {
+    const ts = (event as StampedEvent).receivedAt ?? null
     switch (event.type) {
       case "step": {
         const key = slotKey(event.slot.product, event.slot.market, event.slot.ratio)
@@ -101,7 +105,7 @@ export function deriveCreativeStatuses(events: readonly PipelineEvent[], brief: 
         if (!slot) break
         if (slot.status === "queued") {
           slot.status = "generating"
-          slot.startedAt = Date.now()
+          slot.startedAt = ts
         }
         break
       }
@@ -111,8 +115,8 @@ export function deriveCreativeStatuses(events: readonly PipelineEvent[], brief: 
         if (!slot) break
         slot.status = "complete"
         slot.source = event.source
-        slot.completedAt = Date.now()
-        if (slot.startedAt !== null) {
+        slot.completedAt = ts
+        if (slot.startedAt !== null && slot.completedAt !== null) {
           slot.duration = (slot.completedAt - slot.startedAt) / 1000
         }
         break

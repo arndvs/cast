@@ -261,7 +261,8 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
     case "close-detail":
       return { ...state, detailOpen: null }
     case "pipeline-event": {
-      const events = [...state.events, action.event]
+      const stamped = { ...action.event, receivedAt: Date.now() }
+      const events = [...state.events, stamped]
       if (action.event.type === "complete") {
         return {
           ...state,
