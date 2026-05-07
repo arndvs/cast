@@ -64,7 +64,7 @@ export function BriefEditorSidebar({
                 key={slug}
                 type="button"
                 onClick={() =>
-                  dispatch({ type: "setBrand", slug, brief: state.brief })
+                  dispatch({ type: "setBrand", slug })
                 }
                 className={cn(
                   "flex items-center gap-3 rounded-md border border-border bg-card p-3 text-left transition-colors",
