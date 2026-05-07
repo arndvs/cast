@@ -104,10 +104,13 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
       // Brand swap discards uploads — different products, different slugs.
       // Normalize `brief.brand` to the selected slug so the JSON mirror and a
       // submitted brief never disagree with `brandSlug`.
+      // Reset logo selection so a variant from the previous brand cannot
+      // survive the swap and fail server-side validation.
       return {
         ...state,
         brandSlug: action.slug,
-        brief: { ...action.brief, brand: action.slug },
+        logoVariant: "",
+        brief: { ...action.brief, brand: action.slug, logoVariant: undefined },
         uploads: revokeAll(state.uploads),
         runState: "editing",
       }

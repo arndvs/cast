@@ -12,6 +12,7 @@ export function BriefPickChip({ on, onClick, children, title }: BriefPickChipPro
   return (
     <button
       type="button"
+      aria-pressed={on}
       onClick={onClick}
       title={title}
       className={cn(
