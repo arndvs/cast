@@ -27,6 +27,8 @@ export function buildManifest(
   brief: Brief,
   creatives: Creative[],
   errors: ManifestError[],
+  startedAt?: string,
+  completedAt?: string,
 ): Manifest {
   const succeededList = creatives.filter((c) => c.path !== null)
   const succeeded = succeededList.length
@@ -46,6 +48,8 @@ export function buildManifest(
     counts: { requested, succeeded, failed, generated, reused, flagged },
     creatives,
     errors,
+    ...(startedAt ? { startedAt } : {}),
+    ...(completedAt ? { completedAt } : {}),
   }
 }
 

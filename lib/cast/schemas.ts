@@ -233,6 +233,7 @@ export const creativeSchema = z.object({
   source: z.enum(["local", "genai"]),
   path: z.string().nullable(), // null on failure (write stage skips compliance)
   compliance: complianceSchema.optional(),
+  duration: z.number().nonnegative().optional(),
 })
 
 export const manifestErrorSchema = z.object({
@@ -259,6 +260,8 @@ export const manifestSchema = z.object({
   counts: countsSchema,
   creatives: z.array(creativeSchema),
   errors: z.array(manifestErrorSchema),
+  startedAt: z.string().optional(),
+  completedAt: z.string().optional(),
 })
 
 export type Manifest = z.infer<typeof manifestSchema>

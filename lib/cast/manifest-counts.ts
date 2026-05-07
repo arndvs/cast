@@ -40,12 +40,16 @@ export interface DerivedCounts {
    * `manifest.counts.flagged` directly when the canonical invariant matters.
    */
   flagged: number
+  /** Mean duration (seconds) across succeeded creatives with `duration` set. `null` when none have timing. */
+  averageDuration: number | null
 }
 
 export function deriveCounts(manifest: Manifest): DerivedCounts {
   let ok = 0
   let warn = 0
   let fail = 0
+  let durationSum = 0
+  let durationCount = 0
 
   for (const c of manifest.creatives) {
     if (c.path === null) {
@@ -59,6 +63,11 @@ export function deriveCounts(manifest: Manifest): DerivedCounts {
     if (badge === "FAIL") fail += 1
     else if (badge === "WARN") warn += 1
     else ok += 1
+
+    if (c.duration != null) {
+      durationSum += c.duration
+      durationCount += 1
+    }
   }
 
   return {
@@ -70,5 +79,6 @@ export function deriveCounts(manifest: Manifest): DerivedCounts {
     warn,
     fail,
     flagged: warn + fail,
+    averageDuration: durationCount > 0 ? durationSum / durationCount : null,
   }
 }

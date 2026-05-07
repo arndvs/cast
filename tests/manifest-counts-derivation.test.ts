@@ -158,4 +158,27 @@ describe("deriveCounts", () => {
     expect(d).toMatchObject({ ok: 2, warn: 1, fail: 1 })
     expect(d.ok + d.warn + d.fail).toBe(m.counts.requested)
   })
+
+  it("averageDuration: computes mean of succeeded creatives with duration", () => {
+    const a: Creative = { ...ok("a"), duration: 2.0 }
+    const b: Creative = { ...ok("b"), duration: 4.0 }
+    const c: Creative = { ...ok("c"), duration: 3.0 }
+    const m = mkManifest([a, b, c])
+    const d = deriveCounts(m)
+    expect(d.averageDuration).toBe(3.0)
+  })
+
+  it("averageDuration: null when no creatives have duration", () => {
+    const m = mkManifest([ok("a"), ok("b")])
+    const d = deriveCounts(m)
+    expect(d.averageDuration).toBeNull()
+  })
+
+  it("averageDuration: excludes failed creatives (path === null)", () => {
+    const a: Creative = { ...ok("a"), duration: 2.0 }
+    const b: Creative = { ...hardFail("b"), duration: 10.0 }
+    const m = mkManifest([a, b])
+    const d = deriveCounts(m)
+    expect(d.averageDuration).toBe(2.0)
+  })
 })
