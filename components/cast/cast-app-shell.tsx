@@ -9,7 +9,6 @@ import { PipelineRunView } from "@/components/cast/pipeline-run-view"
 import { CreativeOutputGrid } from "@/components/cast/creative-output-grid"
 import { CreativeDetailDialog } from "@/components/cast/creative-detail-dialog"
 import { MissingBrandBanner } from "@/components/cast/missing-brand-banner"
-import { Topbar } from "@/components/cast/topbar"
 import {
   castAppReducer,
   type CastAppAction,
@@ -48,8 +47,6 @@ interface CastAppShellProps {
   brandLoadError?: BrandLoadErrorInfo | null
   /** Slugs of brands present on disk — surfaced to the operator in the banner. */
   brandsAvailable?: readonly string[]
-  /** Topbar crumb — forwarded from the server component. */
-  crumb?: string
 }
 
 /**
@@ -68,7 +65,6 @@ export function CastAppShell({
   brand,
   brandLoadError = null,
   brandsAvailable = [],
-  crumb,
 }: CastAppShellProps) {
   const [state, dispatch] = React.useReducer(
     castAppReducer,
@@ -105,7 +101,6 @@ export function CastAppShell({
 
   return (
     <>
-      <Topbar crumb={crumb} generating={state.runState === "running"} />
       <main className="flex-1 py-8">
         <div className="mx-auto max-w-7xl">
           {state.screen === "brief-editor" && (

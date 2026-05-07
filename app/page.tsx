@@ -1,3 +1,4 @@
+import { Topbar } from "@/components/cast/topbar"
 import { CastAppShell } from "@/components/cast/cast-app-shell"
 import { loadSeedBrief } from "@/lib/cast/server/brief-loader"
 import {
@@ -25,9 +26,9 @@ export default async function Page() {
 
   return (
     <div className="flex min-h-svh flex-col">
+      <Topbar crumb={`${brief.brand} · ${brief.campaign}`} />
       <CastAppShell
         initialBrief={brief}
-        crumb={`${brief.brand} · ${brief.campaign}`}
         brand={
           brand.ok
             ? {
