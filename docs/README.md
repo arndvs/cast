@@ -13,7 +13,7 @@ This folder is the design record for the POC. Read top-to-bottom — each doc bu
 | 2   | [system-map.md](system-map.md)                                         | **What the system is**: components, filesystem layout, contracts, end-to-end sequence. The canonical architecture reference.                                                 |
 | 3   | [flow-diagrams.md](flow-diagrams.md)                                   | **How requests move through it**: per-screen flows (brief editor, run view, output grid, creative detail), error paths, retry semantics, schemas.                                                                           |
 | 4   | [attributes-screen-requirements.md](attributes-screen-requirements.md) | **What each screen must show**: per-screen attributes, inform-vs-act surfaces.                                                                                 |
-| 5   | [mockups.html](mockups.html)                                           | **What it looks like**: rough static HTML mockups of each screen.                                                                                                          |
+| 5   | [mockup.html](mockup.html)                                             | **What it looks like**: rough static HTML mockups of each screen.                                                                                                          |
 | 6   | [prototype/](prototype/)                                               | **What it feels like**: clickable vanilla-React prototype driving brief editor / run view / stream-idle / output grid / creative detail from in-memory fixtures. See [prototype/README.md](prototype/README.md) to run it. |
 
 ## Reference docs
