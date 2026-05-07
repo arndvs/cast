@@ -33,7 +33,6 @@ import {
   type AspectRatio,
   type Brief,
   type BrandProfile,
-  type ComplianceBadge,
   type Creative,
   type ErrorStage,
   type Manifest,
@@ -49,6 +48,12 @@ import {
 import { resizeForRatio } from "@/lib/cast/server/pipeline/resize"
 import { composeCreative } from "@/lib/cast/server/pipeline/compose"
 import { runCompliance } from "@/lib/cast/server/pipeline/compliance"
+import {
+  buildManifest,
+  byCreative,
+  byError,
+  toComplianceField,
+} from "@/lib/cast/server/pipeline/manifest-builder"
 import { writeCreativeOutput } from "@/lib/cast/server/pipeline/write"
 import {
   clearCampaignOutput,
@@ -486,53 +491,4 @@ async function runStage<T>(stage: ErrorStage, fn: () => Promise<T>): Promise<T> 
 function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
-
-function toComplianceField(c: ReturnType<typeof runCompliance>): {
-  badge: ComplianceBadge
-  checks: { logoPresent: boolean; colorsOk: boolean; bannedWords: string[] }
-} {
-  return { badge: c.badge, checks: c.checks }
-}
-
-function buildManifest(
-  brief: Brief,
-  creatives: Creative[],
-  errors: ManifestError[],
-): Manifest {
-  const succeededList = creatives.filter((c) => c.path !== null)
-  const succeeded = succeededList.length
-  const failed = errors.length
-  const requested = brief.products.length * brief.markets.length * brief.ratios.length
-  const generated = succeededList.filter((c) => c.source === "genai").length
-  const reused = succeededList.filter((c) => c.source === "local").length
-  const flagged = succeededList.filter(
-    (c) => c.compliance?.badge === "WARN" || c.compliance?.badge === "FAIL",
-  ).length
-
-  return {
-    campaign: brief.campaign,
-    brand: brief.brand,
-    outputDir: `outputs/${brief.campaign}`,
-    counts: { requested, succeeded, failed, generated, reused, flagged },
-    creatives,
-    errors,
-  }
-}
-
-const RATIO_ORDER: Record<AspectRatio, number> = { "1x1": 0, "9x16": 1, "16x9": 2 }
-function byCreative(a: Creative, b: Creative): number {
-  return (
-    a.market.localeCompare(b.market) ||
-    a.product.localeCompare(b.product) ||
-    RATIO_ORDER[a.ratio] - RATIO_ORDER[b.ratio]
-  )
-}
-function byError(a: ManifestError, b: ManifestError): number {
-  return (
-    a.market.localeCompare(b.market) ||
-    a.product.localeCompare(b.product) ||
-    RATIO_ORDER[a.ratio] - RATIO_ORDER[b.ratio]
-  )
-}
-
 
