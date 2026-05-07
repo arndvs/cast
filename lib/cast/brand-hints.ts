@@ -28,8 +28,9 @@ export const BRAND_HINTS = {
 } as const
 
 /**
- * Map a thrown brand error to its canonical hint. Returns `null` for any
- * other error so callers can `?? defaultHint` or skip appending.
+ * Map a `BrandLoadError` to its canonical operator-facing hint. Always
+ * returns one of the three `BRAND_HINTS` strings — the input type is a
+ * closed union, so the exhaustiveness check guarantees coverage.
  */
 export function brandHintFor(error: BrandLoadError): string {
   if (error instanceof BrandNotFoundError) return BRAND_HINTS.notFound

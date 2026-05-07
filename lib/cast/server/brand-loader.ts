@@ -168,7 +168,7 @@ export async function listBrandSlugs(): Promise<string[]> {
   } catch (err) {
     // Missing inputs/brands/ is allowed; permission/IO errors must surface.
     if (isENOENT(err)) {
-      maybeWarnNoBrands()
+      maybeWarnNoBrands("missing")
       return []
     }
     throw err
@@ -177,16 +177,19 @@ export async function listBrandSlugs(): Promise<string[]> {
     .filter((e) => e.isDirectory() && SLUG_RE.test(e.name))
     .map((e) => e.name)
     .sort()
-  if (slugs.length === 0) maybeWarnNoBrands()
+  if (slugs.length === 0) maybeWarnNoBrands("empty")
   return slugs
 }
 
-function maybeWarnNoBrands(): void {
+function maybeWarnNoBrands(reason: "missing" | "empty"): void {
   if (warnedNoBrands) return
   warnedNoBrands = true
+  const lead =
+    reason === "missing"
+      ? "inputs/brands/ does not exist."
+      : "inputs/brands/ contains no valid brand fixtures (directory names must match /^[a-z0-9]+(?:-[a-z0-9]+)*$/)."
   console.warn(
-    "[cast] No brand fixtures found under inputs/brands/. " +
-      "Drop a brand directory there (see docs/brand-extraction.md) so the editor can render logo variants.",
+    `[cast] ${lead} Drop a brand directory there (see docs/brand-extraction.md) so the editor can render logo variants.`,
   )
 }
 

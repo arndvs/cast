@@ -221,7 +221,7 @@ describe("listBrandSlugs warn-once", () => {
     await listBrandSlugs()
     await listBrandSlugs()
     expect(warn).toHaveBeenCalledTimes(1)
-    expect(warn.mock.calls[0]?.[0]).toContain("No brand fixtures found")
+    expect(warn.mock.calls[0]?.[0]).toContain("does not exist")
     warn.mockRestore()
   })
 
@@ -233,6 +233,7 @@ describe("listBrandSlugs warn-once", () => {
     await listBrandSlugs()
     await listBrandSlugs()
     expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0]?.[0]).toContain("no valid brand fixtures")
     warn.mockRestore()
   })
 

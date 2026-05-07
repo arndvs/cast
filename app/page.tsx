@@ -13,10 +13,16 @@ export default async function Page() {
   // Parallel: brand-load and the available-slugs list run independently.
   // `tryLoadBrand` returns a discriminated value instead of throwing so the
   // editor can render with a `MissingBrandBanner` when the fixture is bad.
-  const [brandResult, brandsAvailable] = await Promise.all([
+  // The slug list is UX-only (powers the banner's "available brands" hint),
+  // so we degrade to `[]` if it fails rather than tanking the whole page.
+  const [brandResult, slugsResult] = await Promise.allSettled([
     tryLoadBrand(brief.brand),
     listBrandSlugs(),
   ])
+  if (brandResult.status === "rejected") throw brandResult.reason
+  const brand = brandResult.value
+  const brandsAvailable =
+    slugsResult.status === "fulfilled" ? slugsResult.value : []
 
   return (
     <div className="flex min-h-svh flex-col">
@@ -24,14 +30,14 @@ export default async function Page() {
       <S1Shell
         initialBrief={brief}
         brand={
-          brandResult.ok
+          brand.ok
             ? {
-                defaultLogoId: brandResult.profile.defaultLogoId,
+                defaultLogoId: brand.profile.defaultLogoId,
                 // Strip server-only fields (`path` is an absolute fs path
                 // resolved via `safeJoin`) before crossing the
                 // server→client boundary. The editor only needs the
                 // identifying triple to render variant tiles.
-                logoVariants: brandResult.profile.logoVariants.map((v) => ({
+                logoVariants: brand.profile.logoVariants.map((v) => ({
                   id: v.id,
                   displayName: v.displayName,
                   theme: v.theme,
@@ -39,9 +45,7 @@ export default async function Page() {
               }
             : null
         }
-        brandLoadError={
-          brandResult.ok ? null : toBrandLoadErrorInfo(brandResult.error)
-        }
+        brandLoadError={brand.ok ? null : toBrandLoadErrorInfo(brand.error)}
         brandsAvailable={brandsAvailable}
       />
     </div>
