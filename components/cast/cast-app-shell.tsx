@@ -154,12 +154,13 @@ function makeInitial({
   brief: Brief
   defaultLogoId: string
 }): CastAppState {
+  const logoVariant = brief.logoVariant ?? defaultLogoId
   return {
     brandSlug: brief.brand,
-    brief,
+    brief: { ...brief, logoVariant },
     runState: "editing",
     uploads: {},
-    logoVariant: defaultLogoId,
+    logoVariant,
     events: [],
     manifest: null,
     runError: null,
