@@ -151,4 +151,103 @@ describe("creativeMatchesFilters", () => {
       ).toBe(false)
     })
   })
+
+  describe("query filter", () => {
+    it("matches product substring", () => {
+      expect(
+        creativeMatchesFilters(makeCreative({ product: "sunscreen" }), {
+          status: "ALL",
+          ratio: "ALL",
+          market: "ALL",
+          query: "sun",
+        }),
+      ).toBe(true)
+    })
+
+    it("matches market substring", () => {
+      expect(
+        creativeMatchesFilters(makeCreative({ market: "de-de" }), {
+          status: "ALL",
+          ratio: "ALL",
+          market: "ALL",
+          query: "de-de",
+        }),
+      ).toBe(true)
+    })
+
+    it("matches ratio", () => {
+      expect(
+        creativeMatchesFilters(makeCreative({ ratio: "9x16" }), {
+          status: "ALL",
+          ratio: "ALL",
+          market: "ALL",
+          query: "9x16",
+        }),
+      ).toBe(true)
+    })
+
+    it("matches source", () => {
+      expect(
+        creativeMatchesFilters(makeCreative({ source: "genai" }), {
+          status: "ALL",
+          ratio: "ALL",
+          market: "ALL",
+          query: "genai",
+        }),
+      ).toBe(true)
+    })
+
+    it("is case-insensitive", () => {
+      expect(
+        creativeMatchesFilters(makeCreative({ product: "sunscreen" }), {
+          status: "ALL",
+          ratio: "ALL",
+          market: "ALL",
+          query: "SUNSCREEN",
+        }),
+      ).toBe(true)
+    })
+
+    it("rejects when query matches nothing", () => {
+      expect(
+        creativeMatchesFilters(makeCreative(), {
+          status: "ALL",
+          ratio: "ALL",
+          market: "ALL",
+          query: "nonexistent",
+        }),
+      ).toBe(false)
+    })
+
+    it("passes all when query is empty", () => {
+      expect(
+        creativeMatchesFilters(makeCreative(), {
+          status: "ALL",
+          ratio: "ALL",
+          market: "ALL",
+          query: "",
+        }),
+      ).toBe(true)
+    })
+
+    it("combines with other filters", () => {
+      expect(
+        creativeMatchesFilters(makeCreative({ product: "sunscreen", ratio: "9x16" }), {
+          status: "OK",
+          ratio: "9x16",
+          market: "ALL",
+          query: "sun",
+        }),
+      ).toBe(true)
+
+      expect(
+        creativeMatchesFilters(makeCreative({ product: "sunscreen", ratio: "9x16" }), {
+          status: "OK",
+          ratio: "1x1",
+          market: "ALL",
+          query: "sun",
+        }),
+      ).toBe(false)
+    })
+  })
 })
