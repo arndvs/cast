@@ -12,7 +12,6 @@ import {
   deriveCreativeStatuses,
   groupByProduct,
   countTerminal,
-  type CreativeSlotInfo,
 } from "@/lib/cast/derive-creative-statuses"
 import type { PipelineEvent } from "@/lib/cast/events"
 import type { Brief } from "@/lib/cast/schemas"

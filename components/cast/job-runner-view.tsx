@@ -35,6 +35,8 @@ export function JobRunnerView({ state, dispatch, cancelRef }: JobRunnerViewProps
   const [completedAt, setCompletedAt] = React.useState<Date | null>(null)
   React.useEffect(() => {
     if (runState === "complete" || runState === "failed") {
+      // Functional updater (prev ?? new Date()) is idempotent — only captures once.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCompletedAt((prev) => prev ?? new Date())
     } else {
       setCompletedAt(null)
@@ -45,6 +47,8 @@ export function JobRunnerView({ state, dispatch, cancelRef }: JobRunnerViewProps
   const [elapsed, setElapsed] = React.useState(0)
   React.useEffect(() => {
     if (runState !== "running") return
+    // Resets counter when a new run starts; the interval then ticks upward.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setElapsed(0)
     const id = setInterval(() => {
       setElapsed(Math.floor((Date.now() - runStartedAt.getTime()) / 1000))
