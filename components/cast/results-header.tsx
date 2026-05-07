@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useEffect, useState } from \"react\"
 import {
   Check,
   Clock,
@@ -38,6 +39,20 @@ export function ResultsHeader({
   totalCount,
   dispatch,
 }: ResultsHeaderProps) {
+  const [dropboxReady, setDropboxReady] = useState(typeof Dropbox !== "undefined")
+
+  useEffect(() => {
+    if (dropboxReady) return
+    // Poll briefly for lazy-loaded Dropbox script
+    const id = setInterval(() => {
+      if (typeof Dropbox !== "undefined") {
+        setDropboxReady(true)
+        clearInterval(id)
+      }
+    }, 500)
+    return () => clearInterval(id)
+  }, [dropboxReady])
+
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex flex-wrap items-center gap-3 px-6 py-3">
@@ -140,7 +155,7 @@ export function ResultsHeader({
           type="button"
           variant="ghost"
           size="sm"
-          disabled={typeof Dropbox === "undefined"}
+          disabled={!dropboxReady}
           onClick={() => {
             if (typeof Dropbox === "undefined") {
               toast.error(
@@ -179,7 +194,7 @@ export function ResultsHeader({
       <div className="h-1 w-full bg-muted">
         <div
           className={`h-full transition-all ${failCount > 0 ? "bg-amber-500 dark:bg-amber-400" : "bg-ok"}`}
-          style={{ width: `${totalCount > 0 ? (successCount / totalCount) * 100 : 0}%` }}
+          style={{ width: `${totalCount > 0 ? ((successCount + failCount) / totalCount) * 100 : 0}%` }}
         />
       </div>
     </header>

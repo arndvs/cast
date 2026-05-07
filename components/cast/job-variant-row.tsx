@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Check, ChevronDown, ChevronRight, Loader2 } from "lucide-react"
+import { Check, ChevronDown, ChevronRight, Loader2, X } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { JobCreativeBadge } from "@/components/cast/job-creative-badge"
@@ -69,6 +69,8 @@ export function JobVariantRow({ group }: JobVariantRowProps) {
                   >
                     {marketComplete ? (
                       <Check className="h-2.5 w-2.5" />
+                    ) : marketFailed ? (
+                      <X className="h-2.5 w-2.5" />
                     ) : (
                       <Loader2 className="h-2.5 w-2.5 animate-spin" />
                     )}
