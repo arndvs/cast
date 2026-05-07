@@ -9,6 +9,7 @@ import { JobRunnerView } from "@/components/cast/job-runner-view"
 import { CreativeOutputGrid } from "@/components/cast/creative-output-grid"
 import { CreativeDetailDialog } from "@/components/cast/creative-detail-dialog"
 import { MissingBrandBanner } from "@/components/cast/missing-brand-banner"
+import { ScreenTabs } from "@/components/cast/screen-tabs"
 import { Topbar } from "@/components/cast/topbar"
 import {
   castAppReducer,
@@ -109,6 +110,12 @@ export function CastAppShell({
   return (
     <>
       <Topbar crumb={`${state.brandSlug} · ${state.brief.campaign}`} generating={state.runState === "running"} />
+      <ScreenTabs
+        screen={state.screen}
+        runState={state.runState}
+        outputCount={state.manifest?.counts.requested}
+        dispatch={dispatch}
+      />
       <main className="flex-1 py-8">
         <div className="mx-auto max-w-7xl">
           {state.screen === "brief-editor" && (

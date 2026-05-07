@@ -91,6 +91,7 @@ export type CastAppAction =
   | { type: "goto-run" }
   | { type: "goto-grid" }
   | { type: "goto-edit" }
+  | { type: "set-screen"; screen: AppScreen }
   | { type: "replaceBrief"; brief: Brief }
   | { type: "open-detail"; creative: Creative }
   | { type: "close-detail" }
@@ -252,6 +253,12 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
       // otherwise so a stray dispatch can't strand the user on an empty grid.
       if (state.runState !== "complete") return state
       return { ...state, screen: "output-grid" }
+    case "set-screen":
+      // Non-destructive screen switch — only changes which screen is mounted.
+      // Guards prevent navigating to screens that aren't valid yet.
+      if (action.screen === "output-grid" && state.runState !== "complete") return state
+      if (action.screen === "pipeline-run" && state.runState === "editing") return state
+      return { ...state, screen: action.screen }
     case "goto-edit":
       // Discard the prior run's artifacts and return the editor to the
       // initial `editing` state. Brief, brand, uploads stay intact.
