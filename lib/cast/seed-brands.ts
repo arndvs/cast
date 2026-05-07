@@ -55,7 +55,7 @@ export interface SeedBrand {
   defaultBrief: SeedDefaultBrief
 }
 
-export const SEED_BRANDS: readonly SeedBrand[] = [
+export const SEED_BRANDS: readonly SeedBrand[] = Object.freeze<readonly SeedBrand[]>([
   {
     slug: "brisa",
     displayName: "Brisa",
@@ -129,7 +129,7 @@ export const SEED_BRANDS: readonly SeedBrand[] = [
       ratios: ["1x1", "9x16", "16x9"],
     },
   } satisfies SeedBrand,
-]
+])
 
 export function getSeedBrand(slug: string): SeedBrand | undefined {
   return SEED_BRANDS.find((b) => b.slug === slug)

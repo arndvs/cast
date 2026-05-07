@@ -25,10 +25,6 @@ export function Topbar({ crumb, generating, className, ...props }: TopbarProps) 
     >
       <div className="flex min-w-0 items-center gap-6">
         <Wordmark generating={generating} />
-
-        {/* <span className="truncate font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
-          Creative Automation Studio Toolchain
-        </span> */}
       </div>
       <div className="flex items-center gap-3">
         {crumb ? (

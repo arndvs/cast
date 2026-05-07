@@ -41,6 +41,8 @@ export function ResultsListView({
             <th className="w-10 p-3">
               <button
                 type="button"
+                role="checkbox"
+                aria-checked={isAllSelected}
                 onClick={onSelectAll}
                 aria-label={isAllSelected ? "Deselect all" : "Select all"}
                 className={cn(

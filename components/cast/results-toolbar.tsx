@@ -57,6 +57,8 @@ export function ResultsToolbar({
         {/* Select all checkbox */}
         <button
           type="button"
+          role="checkbox"
+          aria-checked={isAllSelected}
           onClick={onSelectAll}
           className={cn(
             "flex h-5 w-5 items-center justify-center rounded border transition-colors",
