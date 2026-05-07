@@ -21,13 +21,13 @@ import type { ComplianceBadge, ErrorStage, Manifest } from "@/lib/cast/schemas"
 
 const encoder = new TextEncoder()
 
-function encode(event: PipelineEvent): Uint8Array {
+function serializeEvent(event: PipelineEvent): Uint8Array {
   return encoder.encode(JSON.stringify(event) + "\n")
 }
 
 export function emitStep(stage: ErrorStage, slot: Slot, message?: string): Uint8Array {
   const event: StepEvent = { type: "step", stage, slot, ...(message ? { message } : {}) }
-  return encode(event)
+  return serializeEvent(event)
 }
 
 export function emitAssetResolved(
@@ -41,7 +41,7 @@ export function emitAssetResolved(
     source,
     ...(file ? { file } : {}),
   }
-  return encode(event)
+  return serializeEvent(event)
 }
 
 export function emitCreativeReady(
@@ -50,7 +50,7 @@ export function emitCreativeReady(
   source: "local" | "genai",
 ): Uint8Array {
   const event: CreativeReadyEvent = { type: "creative_ready", slot, path, source }
-  return encode(event)
+  return serializeEvent(event)
 }
 
 export function emitComplianceResult(
@@ -64,7 +64,7 @@ export function emitComplianceResult(
     badge,
     bannedWords,
   }
-  return encode(event)
+  return serializeEvent(event)
 }
 
 export function emitError(
@@ -73,10 +73,10 @@ export function emitError(
   slot?: Slot,
 ): Uint8Array {
   const event: ErrorEvent = { type: "error", stage, message, ...(slot ? { slot } : {}) }
-  return encode(event)
+  return serializeEvent(event)
 }
 
 export function emitComplete(manifest: Manifest): Uint8Array {
   const event: CompleteEvent = { type: "complete", manifest }
-  return encode(event)
+  return serializeEvent(event)
 }

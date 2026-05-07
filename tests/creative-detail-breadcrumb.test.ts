@@ -11,8 +11,7 @@
 
 import { describe, it, expect } from "vitest"
 
-import { PIPELINE_STAGES } from "@/components/cast/creative-detail-dialog"
-import { errorStageSchema } from "@/lib/cast/schemas"
+import { PIPELINE_STAGES, errorStageSchema } from "@/lib/cast/schemas"
 
 describe("Pipeline breadcrumb stays in sync with errorStageSchema", () => {
   it("has the same length as errorStageSchema.options", () => {

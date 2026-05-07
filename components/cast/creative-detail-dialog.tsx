@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { resolveCreativeAbsolutePath } from "@/app/actions/reveal"
 import { getMarket } from "@/lib/cast/markets"
-import { type Creative, type ErrorStage } from "@/lib/cast/schemas"
+import { type Creative, type ErrorStage, PIPELINE_STAGES } from "@/lib/cast/schemas"
 import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 import { cn } from "@/lib/utils"
 
@@ -23,23 +23,6 @@ interface CreativeDetailDialogProps {
   state: CastAppState
   dispatch: React.Dispatch<CastAppAction>
 }
-
-/**
- * Pipeline stages, in canonical order — used by the error breadcrumb.
- *
- * The literal must stay in lockstep with `errorStageSchema.options`
- * (enforced by `tests/creative-detail-breadcrumb.test.ts`). The `satisfies`
- * clause below catches a stage being *removed* at compile-time; the test
- * catches a stage being *added* at run-time.
- */
-export const PIPELINE_STAGES = [
-  "resolve",
-  "genai",
-  "resize",
-  "compose",
-  "compliance",
-  "write",
-] as const satisfies readonly ErrorStage[]
 
 /**
  * Creative detail dialog.

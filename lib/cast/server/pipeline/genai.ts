@@ -20,14 +20,14 @@ export function getGenAIMode(): GenAIMode {
   return process.env.CAST_GENAI_MODE === "cheap" ? "cheap" : "default"
 }
 
-let _client: OpenAI | null = null
+let openaiClient: OpenAI | null = null
 function getClient(): OpenAI {
-  if (_client) return _client
+  if (openaiClient) return openaiClient
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not set")
   }
-  _client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  return _client
+  openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  return openaiClient
 }
 
 export interface GenerateImageArgs {
@@ -69,14 +69,14 @@ export async function generateImage(args: GenerateImageArgs): Promise<Buffer> {
     } catch (err) {
       throw normalizeOpenAIError(err)
     }
-    const datum = response.data?.[0]
-    const b64 = datum?.b64_json
-    if (!b64) {
+    const imageData = response.data?.[0]
+    const base64Image = imageData?.b64_json
+    if (!base64Image) {
       throw normalizeOpenAIError(
         new Error(`OpenAI images response missing b64_json (model=${model})`),
       )
     }
-    return Buffer.from(b64, "base64")
+    return Buffer.from(base64Image, "base64")
   }, args.retryDeps)
 }
 

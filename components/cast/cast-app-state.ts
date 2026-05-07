@@ -48,7 +48,6 @@ export type AppScreen = "brief-editor" | "pipeline-run" | "output-grid"
  * variant ids; the type is intentionally `string` (validated against
  * `SLUG_RE` at boundaries) so manifests with N variants are accepted.
  */
-export type LogoVariantId = string
 
 /**
  * Client-safe logo variant. The server's `BrandProfile.logoVariants[*]`
@@ -57,7 +56,7 @@ export type LogoVariantId = string
  * component projects to this shape before passing to `CastAppShell`.
  */
 export interface ClientLogoVariant {
-  id: LogoVariantId
+  id: string
   displayName: string
   theme?: "light" | "dark"
 }
@@ -89,7 +88,7 @@ export interface CastAppState {
   /** Per-product slug → preview. Slug is derived via `slugify(product.name)`. */
   uploads: Record<string, UploadPreview>
   /** Sidebar logo-variant picker — surfaces as `brief.logoVariant` on submit. */
-  logoVariant: LogoVariantId
+  logoVariant: string
   /** NDJSON event tape from `/api/generate`. The pipeline run view renders this. */
   events: PipelineEvent[]
   /** Final run manifest — set when the terminal `complete` event arrives. */
@@ -119,7 +118,7 @@ export type CastAppAction =
   | { type: "toggleRatio"; value: AspectRatio }
   | { type: "addProduct"; product: { name: string; sku: string } }
   | { type: "removeProduct"; sku: string }
-  | { type: "setLogoVariant"; id: LogoVariantId }
+  | { type: "setLogoVariant"; id: string }
   | { type: "upload"; productSlug: string; preview: UploadPreview }
   | { type: "removeUpload"; productSlug: string }
   | { type: "replaceBrief"; brief: Brief }

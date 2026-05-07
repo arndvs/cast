@@ -36,15 +36,15 @@ export function getMarket(code: string): Market | undefined {
  */
 export function activeLanguages(marketCodes: readonly string[]): Market[] {
   const seen = new Set<string>()
-  const out: Market[] = []
+  const languages: Market[] = []
   for (const code of marketCodes) {
-    const m = getMarket(code) ?? syntheticMarket(code)
-    if (m && !seen.has(m.language)) {
-      seen.add(m.language)
-      out.push(m)
+    const market = getMarket(code) ?? syntheticMarket(code)
+    if (market && !seen.has(market.language)) {
+      seen.add(market.language)
+      languages.push(market)
     }
   }
-  return out
+  return languages
 }
 
 function syntheticMarket(code: string): Market | undefined {

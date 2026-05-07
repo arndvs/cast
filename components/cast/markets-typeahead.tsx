@@ -25,46 +25,46 @@ interface MarketsTypeaheadProps {
  * - Free text that doesn't match shows an inline error.
  */
 export function MarketsTypeahead({ selected, onAdd }: MarketsTypeaheadProps) {
-  const [q, setQ] = React.useState("")
+  const [query, setQuery] = React.useState("")
   const [err, setErr] = React.useState("")
-  const ql = q.trim().toLowerCase()
+  const queryLower = query.trim().toLowerCase()
 
   const suggestions = React.useMemo(() => {
-    if (!ql) return []
+    if (!queryLower) return []
     return ALL_MARKETS.filter((m) => {
       if (selected.includes(m.code)) return false
       return (
-        m.code.includes(ql) ||
-        m.name.toLowerCase().includes(ql) ||
-        m.language.toLowerCase().includes(ql)
+        m.code.includes(queryLower) ||
+        m.name.toLowerCase().includes(queryLower) ||
+        m.language.toLowerCase().includes(queryLower)
       )
     }).slice(0, 6)
-  }, [ql, selected])
+  }, [queryLower, selected])
 
-  const commit = (code: string) => {
+  const selectMarket = (code: string) => {
     onAdd(code)
-    setQ("")
+    setQuery("")
     setErr("")
   }
 
-  const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter") return
     e.preventDefault()
-    if (suggestions[0]) return commit(suggestions[0].code)
-    if (MARKET_RE.test(ql)) return commit(ql)
-    setErr(`expected lowercase "xx-yy" (e.g. de-de), got "${q}"`)
+    if (suggestions[0]) return selectMarket(suggestions[0].code)
+    if (MARKET_RE.test(queryLower)) return selectMarket(queryLower)
+    setErr(`expected lowercase "xx-yy" (e.g. de-de), got "${query}"`)
   }
 
   return (
     <div className="relative">
       <Command shouldFilter={false} className="overflow-visible">
         <CommandInput
-          value={q}
+          value={query}
           onValueChange={(v) => {
-            setQ(v)
+            setQuery(v)
             setErr("")
           }}
-          onKeyDown={onKey}
+          onKeyDown={handleKeyDown}
           placeholder="add market — type code or country (e.g. de-de, japan)"
           className={cn(
             "w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
@@ -72,11 +72,11 @@ export function MarketsTypeahead({ selected, onAdd }: MarketsTypeaheadProps) {
             "font-mono",
           )}
         />
-        {ql && (
+        {queryLower && (
           <CommandList className="absolute top-full z-10 mt-1 w-full rounded-md border border-border bg-popover shadow-md">
             <CommandEmpty className="px-3 py-2 text-xs text-muted-foreground">
-              {MARKET_RE.test(ql)
-                ? `press Enter to add "${ql}" as custom`
+              {MARKET_RE.test(queryLower)
+                ? `press Enter to add "${queryLower}" as custom`
                 : "no matches — try a country name or xx-yy code"}
             </CommandEmpty>
             {suggestions.length > 0 && (
@@ -85,7 +85,7 @@ export function MarketsTypeahead({ selected, onAdd }: MarketsTypeaheadProps) {
                   <CommandItem
                     key={m.code}
                     value={m.code}
-                    onSelect={() => commit(m.code)}
+                    onSelect={() => selectMarket(m.code)}
                     className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm aria-selected:bg-accent"
                   >
                     <span className="font-mono text-xs text-fg-3">{m.code}</span>

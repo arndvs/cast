@@ -37,10 +37,10 @@ export default async function Page() {
                 // resolved via `safeJoin`) before crossing the
                 // server→client boundary. The editor only needs the
                 // identifying triple to render variant tiles.
-                logoVariants: brand.profile.logoVariants.map((v) => ({
-                  id: v.id,
-                  displayName: v.displayName,
-                  theme: v.theme,
+                logoVariants: brand.profile.logoVariants.map((variant) => ({
+                  id: variant.id,
+                  displayName: variant.displayName,
+                  theme: variant.theme,
                 })),
                 // The banned-word list the server's compliance pass
                 // will use (default floor ∪ brand fixture, deduped +

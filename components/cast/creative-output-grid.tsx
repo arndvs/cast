@@ -35,8 +35,8 @@ interface CreativeOutputGridProps {
 }
 
 type StatusFilter = "ALL" | "OK" | "WARN" | "FAIL"
-type RatioFilter = "ALL" | string
-type MarketFilter = "ALL" | string
+type RatioFilter = "ALL" | AspectRatio
+type MarketCodeFilter = "ALL" | string
 
 /**
  * Output grid.
@@ -87,10 +87,10 @@ function CreativeOutputGridContent({
 
   const [status, setStatus] = React.useState<StatusFilter>("ALL")
   const [ratio, setRatio] = React.useState<RatioFilter>("ALL")
-  const [market, setMarket] = React.useState<MarketFilter>("ALL")
+  const [market, setMarket] = React.useState<MarketCodeFilter>("ALL")
 
   const filtered = React.useMemo(
-    () => manifest.creatives.filter((c) => matches(c, { status, ratio, market })),
+    () => manifest.creatives.filter((creative) => matches(creative, { status, ratio, market })),
     [manifest.creatives, status, ratio, market],
   )
 
@@ -202,7 +202,7 @@ function CreativeOutputGridContent({
         <FilterSelect
           label="market"
           value={market}
-          onChange={(v) => setMarket(v as MarketFilter)}
+          onChange={(v) => setMarket(v as MarketCodeFilter)}
           options={["ALL", ...brief.markets]}
         />
         <span className="grow" />
@@ -218,19 +218,19 @@ function CreativeOutputGridContent({
         </Card>
       ) : (
         <div className="flex flex-col gap-6">
-          {grouped.map(([mkt, tiles]) => (
-            <section key={mkt} className="flex flex-col gap-2">
+          {grouped.map(([marketCode, tiles]) => (
+            <section key={marketCode} className="flex flex-col gap-2">
               <h2 className="font-mono text-xs uppercase tracking-wider text-fg-3">
-                {mkt}{" "}
+                {marketCode}{" "}
                 <span className="text-fg-4">· {tiles.length} creatives</span>
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                {tiles.map((c) => (
+                {tiles.map((creative) => (
                   <CreativeTile
-                    key={`${c.product}/${c.market}/${c.ratio}`}
-                    creative={c}
+                    key={`${creative.product}/${creative.market}/${creative.ratio}`}
+                    creative={creative}
                     campaign={brief.campaign}
-                    onClick={() => dispatch({ type: "open-detail", creative: c })}
+                    onClick={() => dispatch({ type: "open-detail", creative })}
                   />
                 ))}
               </div>
@@ -325,7 +325,7 @@ function FilterSelect({
 
 function matches(
   c: Creative,
-  filters: { status: StatusFilter; ratio: RatioFilter; market: MarketFilter },
+  filters: { status: StatusFilter; ratio: RatioFilter; market: MarketCodeFilter },
 ): boolean {
   if (filters.ratio !== "ALL" && c.ratio !== filters.ratio) return false
   if (filters.market !== "ALL" && c.market !== filters.market) return false
@@ -350,8 +350,8 @@ function groupByMarket(creatives: readonly Creative[]): [string, Creative[]][] {
   const ratioOrder = new Map<AspectRatio, number>(
     ALL_RATIOS.map((r, i) => [r, i]),
   )
-  return [...byMarket.entries()].map(([mkt, list]) => [
-    mkt,
+  return [...byMarket.entries()].map(([marketCode, list]) => [
+    marketCode,
     [...list].sort((a, b) => {
       if (a.product !== b.product) return a.product.localeCompare(b.product)
       return (

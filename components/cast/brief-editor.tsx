@@ -29,13 +29,12 @@ import { cn } from "@/lib/utils"
  * variants. When no brand profile is available (e.g. fixture missing on
  * disk), the grid is hidden entirely.
  */
-type EditorLogoVariant = ClientLogoVariant
 
 interface BriefEditorProps {
   state: CastAppState
   dispatch: React.Dispatch<CastAppAction>
   /** Logo variants from the loaded brand profile. Empty when no brand on disk. */
-  logoVariants: readonly EditorLogoVariant[]
+  logoVariants: readonly ClientLogoVariant[]
   /**
    * Banned-word list to match against. Supplied by the shell so the
    * inline ⚠ badge and the Generate gate read from the same merged source
@@ -136,7 +135,7 @@ function Sidebar({
   dispatch: React.Dispatch<CastAppAction>
   /** Seed-brand data for visual display; absent for non-seed fixtures. */
   brand?: SeedBrand
-  logoVariants: readonly EditorLogoVariant[]
+  logoVariants: readonly ClientLogoVariant[]
   /** Slug list from the on-disk registry — drives the brand picker. */
   availableBrands: readonly string[]
 }) {

@@ -201,6 +201,19 @@ export const errorStageSchema = z.enum([
 ])
 export type ErrorStage = z.infer<typeof errorStageSchema>
 
+/**
+ * Ordered pipeline stages — used in the creative detail dialog breadcrumb
+ * and for error attribution in the manifest.
+ */
+export const PIPELINE_STAGES = [
+  "resolve",
+  "genai",
+  "resize",
+  "compose",
+  "compliance",
+  "write",
+] as const satisfies readonly ErrorStage[]
+
 export const complianceBadgeSchema = z.enum(["OK", "WARN", "FAIL"])
 export type ComplianceBadge = z.infer<typeof complianceBadgeSchema>
 

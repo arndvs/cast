@@ -212,15 +212,15 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
   const errors: ManifestError[] = []
 
   for (const market of brief.markets) {
-    const lang = market.split("-").pop()!
-    const headline = brief.message[lang] ?? ""
+    const locale = market.split("-").pop()!
+    const headline = brief.message[locale] ?? ""
 
     // Per-MARKET master cache. The genai prompt embeds the market
     // (`buildPromptPreview` writes "Locale: us-en (en)"), so a master
     // generated for one market is NOT reusable across markets. Default mode
     // also keys by ratio because dall-e-3 native sizes differ per ratio.
     // Cheap mode keys by productSlug only (single 1024² master per product).
-    const masterCache = new Map<string, Buffer>()
+    const baseImageCache = new Map<string, Buffer>()
 
     for (const product of brief.products) {
       const productSlug = slugify(product.name)
@@ -260,11 +260,11 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
       // here — done OUTSIDE the per-ratio Promise.all so the prompt is
       // deterministic (ratio "1x1" stands in for the canonical square master).
       // Default-mode genai is per-ratio and stays inside the ratio loop.
-      let localMaster: Buffer | undefined
-      let cheapMasterErr: { stage: ErrorStage; message: string } | undefined
+      let localBaseImage: Buffer | undefined
+      let baseImageGenerationError: { stage: ErrorStage; message: string } | undefined
       if (resolved.source === "local") {
         try {
-          localMaster = await readAsset(resolved.file)
+          localBaseImage = await readAsset(resolved.file)
         } catch (err) {
           const message = errMessage(err)
           for (const ratio of brief.ratios) {
@@ -287,11 +287,11 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
             prompt: buildPrompt(brief, brand, product, market, "1x1"),
             mode: "cheap",
           })
-          masterCache.set(productSlug, master)
+          baseImageCache.set(productSlug, master)
         } catch (err) {
           // Defer attribution to the per-ratio loop so each (market × ratio)
           // gets its own error event + manifest entry.
-          cheapMasterErr = { stage: "genai", message: errMessage(err) }
+          baseImageGenerationError = { stage: "genai", message: errMessage(err) }
         }
       }
 
@@ -306,9 +306,9 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
 
           // Cheap-mode master generation already failed for this product;
           // every ratio fails the same way without spending more API calls.
-          if (cheapMasterErr) {
-            emit(emitError(cheapMasterErr.stage, cheapMasterErr.message, slot))
-            errors.push({ ...slot, ...cheapMasterErr })
+          if (baseImageGenerationError) {
+            emit(emitError(baseImageGenerationError.stage, baseImageGenerationError.message, slot))
+            errors.push({ ...slot, ...baseImageGenerationError })
             creatives.push({
               product: productSlug,
               market,
@@ -327,14 +327,14 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
             // ---- genai (only if missing) ----
             let master: Buffer
             if (resolved.source === "local") {
-              master = localMaster!
+              master = localBaseImage!
             } else if (mode === "cheap") {
               // Already in cache (generated outside the ratio loop above).
-              master = masterCache.get(productSlug)!
+              master = baseImageCache.get(productSlug)!
             } else {
               currentStage = "genai"
               const cacheKey = `${productSlug}|${ratio}`
-              const cached = masterCache.get(cacheKey)
+              const cached = baseImageCache.get(cacheKey)
               if (cached) {
                 master = cached
               } else {
@@ -346,7 +346,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
                     mode: "default",
                   }),
                 )
-                masterCache.set(cacheKey, master)
+                baseImageCache.set(cacheKey, master)
               }
             }
 
