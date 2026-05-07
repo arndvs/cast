@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Download, FolderOpen, Pencil } from "lucide-react"
+import { CloudUpload, Download, FolderOpen, Pencil } from "lucide-react"
 import { toast } from "sonner"
 
 import { revealOutputFolder } from "@/app/actions/reveal"
@@ -153,6 +153,37 @@ function CreativeOutputGridContent({
           >
             <FolderOpen className="mr-1 h-3 w-3" />
             Reveal in folder
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={typeof Dropbox === "undefined"}
+            onClick={() => {
+              if (typeof Dropbox === "undefined") {
+                toast.error("Dropbox Saver not loaded — set NEXT_PUBLIC_DROPBOX_APP_KEY")
+                return
+              }
+              const files = manifest.creatives
+                .filter((c) => c.path)
+                .map((c) => ({
+                  url: `${window.location.origin}/api/outputs/${c.path}`,
+                  filename: c.path!,
+                }))
+              if (files.length === 0) {
+                toast.error("No output files to export")
+                return
+              }
+              Dropbox.save({
+                files,
+                success: () => toast.success(`${files.length} files saved to Dropbox`),
+                cancel: () => toast.info("Dropbox export cancelled"),
+                error: (msg) => toast.error(`Dropbox error: ${msg}`),
+              })
+            }}
+          >
+            <CloudUpload className="mr-1 h-3 w-3" />
+            Export to Dropbox
           </Button>
         </div>
       </Card>

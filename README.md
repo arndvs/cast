@@ -114,7 +114,7 @@ File path shape: `outputs/[campaign]/[market]/[product]/[ratio].png`. The locale
 | Decision              | Choice                                                                      | Rationale                                                                                                                                                                                                                                                 |
 | --------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Brief format**      | JSON only                                                                   | Brief permits JSON or YAML. JSON gives a dependency-light editor (`<textarea>` + `JSON.parse`) and matches `Content-Type: application/json` end-to-end. YAML import deferred to v2 — Zod schema is the contract; swapping the parser is a 30-line change. |
-| **Storage backend**   | Local filesystem                                                            | Brief permits Azure / AWS / Dropbox. Local FS is the only option that runs from a clean checkout in under three minutes (Story 1's success metric). Cloud storage is a v2 conversation.                                                                   |
+| **Storage backend**   | Local filesystem                                                            | Brief permits Azure / AWS / Dropbox. Local FS is the only option that runs from a clean checkout in under three minutes (Story 1's success metric). Export is handled via client-side ZIP download (zero config, works localhost). Cloud-native export (Dropbox Saver, API v2) is deferred to v2 — see [V2 Upgrade Paths](#v2-upgrade-paths) below. |
 | **Framework**         | Next.js (local web app)                                                     | Brief permits CLI or simple local app. The web app surfaces the live pipeline log and output grid in-browser — the centerpiece of Story 1 (Maya) and Story 3 (Aaron's demo). A CLI hides the pipeline from the audience.                                  |
 | **Image processing**  | Sharp                                                                       | Battle-tested, fast, no native binary surprises in CI.                                                                                                                                                                                                    |
 | **API style**         | NDJSON streaming for `/api/generate`                                        | One request, terminal `complete` event carries the manifest. UI hydrates from the manifest — no second filesystem read, no race with disk writes.                                                                                                         |
@@ -138,11 +138,78 @@ See [docs/](docs/) for the full design trail: [user stories](docs/user-stories.m
 - **Compliance checks are heuristic, not a legal review.** Logo presence is detected by template match in a configurable corner; brand-color check samples dominant colors; banned-word check is a flat list scan against the resolved overlay string per `(market, ratio)` (the exact string the compositor draws — not an OCR pass on the PNG). The editor pre-flights the same matcher against the same merged list — `BrandProfile.bannedWords` (default floor ∪ `inputs/brands/[slug]/banned-words.json`, built once on the server in `loadBrandProfile` and forwarded to the client) — across the audience + every locale message, and disables Generate when a banned-list term is present, so the spend is gated before the GenAI call rather than after compliance fails post-hoc.
 - **Banned-word floor is intentionally narrow for the POC.** `getDefaultBannedWords()` covers a small universal floor (violence, hate, NSFW, weapons, drugs, self-harm) plus per-brand additions from `inputs/brands/[brand]/banned-words.json`. A production list would expand to common slurs, the strong-profanity family, and leetspeak/punctuation-obfuscation variants of items already on the floor (`n@zi`, `b0mb`, `m3th`, etc.) to defeat trivial bypass. False-positive review against shipping brand fixtures is the gating cost — out of POC scope.
 - **No run history.** Each Generate run is independent. No multi-run comparison view in the POC.
+- **Cloud export requires a tunnel or public deployment.** The Dropbox Saver (v2 path) requires Dropbox's servers to fetch files from your URLs — `localhost` is unreachable from the internet. See [V2 Upgrade Paths](#v2-upgrade-paths).
 - **Generate and Retry are destructive at the campaign root (clears `outputs/[campaign]/` recursively at run start).** Both clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products, not preserved artifacts — the recursive clear ensures a failed run cannot leave a stale `report.json` claiming success on disk. End state of any successful run is invariant under retry.
 - **Symlinks under `inputs/` and `outputs/` are not followed safely.** `safeJoin` validates that a path is a lexical child of a known root, but does not call `realpath` to re-validate after symlink resolution. Production hardening would add `fs.realpath` re-validation at every boundary that interpolates user-influenced strings (`/api/upload`, `/api/detected-assets`, the `revealOutputFolder` server action, Sharp reads). Implementers touching those routes should add a `TODO(symlink-hardening)` comment alongside each `safeJoin` call so the gap stays visible. Out of POC scope.
 - **Brand-profile cache is time-based, not file-watched.** `loadBrandProfile` caches parsed brand state (`brand.json`, `voice.json`, `banned-words.json`, `logos.json`) for 90 s in-process. Edits to `inputs/brands/[brand]/*` mid-session may not take effect until the cache expires; restart `next dev` to force-refresh. Accepted POC behavior — production would invalidate on file mtime.
 - **Localized message support is provided-not-translated.** The brief carries a locale → string map; the pipeline composites the right one. It does not call a translation API.
 - **`manifest.outputDir` is an absolute filesystem path exposed to the client by design.** S5 (Reveal in file explorer) needs an absolute path to hand to the OS shell command. Acceptable in a localhost-only POC; for any networked deployment, the manifest would expose only the repo-relative `creatives[].path` and the reveal action would resolve absolutes server-side.
+
+---
+
+## V2 Upgrade Paths
+
+### Cloud Export — Dropbox (optional)
+
+The output grid includes an **Export to Dropbox** button that uses the [Dropbox Saver](https://www.dropbox.com/developers/saver) drop-in. It is fully wired but **disabled by default** — it only activates when a Dropbox App key is configured. The button is not required for the POC workflow; all core export needs are met by **Reveal in folder** and the JSON downloads.
+
+> **Why is this optional?** The POC's core contract is "runs from a clean checkout in under three minutes." Enabling Saver requires a Dropbox developer account, a tunnel to expose localhost, and domain allowlist configuration — that exceeds the 3-minute bar. It's included as working code to demonstrate the cloud export surface, not as a reviewer requirement.
+
+#### Prerequisites
+
+- A [Dropbox account](https://www.dropbox.com/) (free tier is fine)
+- [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) (`cloudflared`) — to make localhost reachable from the internet
+
+> **Why a tunnel?** Dropbox Saver works by having *Dropbox's servers* fetch files from URLs you provide. On `localhost:3000` those URLs are unreachable from the internet. A tunnel gives you a public `https://` URL that proxies to your local dev server. Cloudflare Tunnel is recommended over ngrok because ngrok's free tier injects an interstitial page that blocks Dropbox's server-side fetch.
+
+#### Setup steps (~5 minutes, one-time)
+
+**1. Create a Dropbox App**
+
+1. Go to [dropbox.com/developers/apps/create](https://www.dropbox.com/developers/apps/create)
+2. Choose **Scoped access** → **Full Dropbox**
+3. Name it (e.g. `CAST Export`) → **Create app**
+4. On the Settings page, copy the **App key** (alphanumeric string at the top)
+
+**2. Configure the env var**
+
+Add to `.env.local`:
+
+```env
+NEXT_PUBLIC_DROPBOX_APP_KEY=<your-app-key>
+```
+
+Restart the dev server (`pnpm dev`) to pick up the new variable.
+
+**3. Start a Cloudflare Tunnel**
+
+```bash
+# Install (one-time)
+# Windows: curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -o ~/bin/cloudflared.exe
+# macOS:   brew install cloudflared
+
+# Start tunnel (no Cloudflare account needed)
+cloudflared tunnel --url http://localhost:3000
+# → Your quick Tunnel has been created! Visit it at:
+# → https://<random-words>.trycloudflare.com
+```
+
+**4. Add the tunnel domain to Dropbox**
+
+In your Dropbox app's Settings → **Chooser/Saver/Embedder domains** → add the tunnel domain (e.g. `random-words.trycloudflare.com`, without `https://`).
+
+**5. Test it**
+
+1. Open Cast via the tunnel URL (e.g. `https://random-words.trycloudflare.com`)
+2. Run a generate (or navigate to the output grid if outputs exist)
+3. Click **Export to Dropbox** → authenticate in the popup → choose a folder → Save
+4. Verify files appear in your Dropbox
+
+> **Note:** Cloudflare quick tunnels generate a new random subdomain each time you restart. You'll need to update the Dropbox domain allowlist when the subdomain changes. For a stable subdomain, create a [named tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps) with a Cloudflare account.
+
+#### V2b — Dropbox API v2 (future)
+
+For batch/headless workflows where a popup is impractical, the next tier is [Dropbox API v2](https://www.dropbox.com/developers/documentation/http/documentation#files-upload) with OAuth2 PKCE (`files.content.write` scope). This pushes files server-side via `content.dropboxapi.com/2/files/upload` (≤150 MB per file) — no tunnel needed since the server initiates the upload. This is a significantly larger integration (OAuth flow, token refresh, upload chunking) and is deferred beyond the POC.
 
 ---
 
