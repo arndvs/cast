@@ -98,6 +98,8 @@ export interface S1State {
   manifest: Manifest | null
   /** Last terminal failure (network, validation, idle abort). */
   runError: { stage: RunErrorStage; message: string } | null
+  /** Wall-clock timestamp of the most recent run start — set when `generate` dispatches. */
+  runStartedAt: Date
   /** Which screen is mounted. Default `"S1"`. */
   screen: Screen
   /**
@@ -252,6 +254,7 @@ export function s1Reducer(state: S1State, action: S1Action): S1State {
       return {
         ...state,
         runState: "running",
+        runStartedAt: new Date(),
         events: [],
         manifest: null,
         runError: null,

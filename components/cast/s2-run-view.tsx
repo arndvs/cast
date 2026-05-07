@@ -32,15 +32,7 @@ interface S2RunViewProps {
  * watch while dall-e-3 takes its time.
  */
 export function S2RunView({ state, dispatch, cancelRef }: S2RunViewProps) {
-  const { brief, brandSlug, runState, events, runError } = state
-
-  // Snapshot the wall-clock at the start of each run. The view stays mounted
-  // across Retry (which re-dispatches `generate`), so we reset on every
-  // editing→running / failed→running / complete→running transition.
-  const [startedAt, setStartedAt] = React.useState(() => new Date())
-  React.useEffect(() => {
-    if (runState === "running") setStartedAt(new Date())
-  }, [runState])
+  const { brief, brandSlug, runState, events, runError, runStartedAt } = state
 
   const total = brief.products.length * brief.markets.length * brief.ratios.length
   const expected = Math.max(1, total * 6)
@@ -79,7 +71,7 @@ export function S2RunView({ state, dispatch, cancelRef }: S2RunViewProps) {
           <RunStateBadge runState={runState} />
           <div className="grow" />
           <span className="font-mono text-xs text-fg-3">
-            started {formatTime(startedAt)}
+            started {formatTime(runStartedAt)}
           </span>
         </div>
         <div className="flex items-center gap-3">

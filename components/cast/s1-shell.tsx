@@ -78,6 +78,57 @@ export function S1Shell({
   const cancelRef = React.useRef<(() => void) | null>(null)
   useRunController(state, dispatch, cancelRef)
 
+  // Re-fetch the brand profile whenever the user switches brands client-side.
+  // The server-provided `brand` prop is a snapshot of the initial slug only —
+  // switching brands dispatches setBrand which changes state.brandSlug, but the
+  // prop never updates. Without this effect bannedList and logoVariants stay
+  // bound to the initial brand and the compliance gate silently uses the wrong
+  // word list (D29 desync).
+  const [activeBrand, setActiveBrand] = React.useState(brand)
+  const [activeBrandLoadError, setActiveBrandLoadError] =
+    React.useState<BrandLoadErrorInfo | null>(brandLoadError ?? null)
+
+  React.useEffect(() => {
+    // Fetch on every brandSlug change (including mount). The brand loader has
+    // a 90 s in-memory cache, so the initial mount fetch is cheap. Async
+    // callbacks avoid the react-hooks/set-state-in-effect lint rule.
+    let cancelled = false
+    fetch(`/api/brands/${encodeURIComponent(state.brandSlug)}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Brand not found: ${state.brandSlug}`)
+        const data = await res.json() as {
+          bannedWords: readonly string[]
+          logos: {
+            default: string
+            variants: Array<{ id: string; displayName: string; theme?: "light" | "dark" }>
+          }
+        }
+        if (cancelled) return
+        setActiveBrand({
+          defaultLogoId: data.logos.default,
+          logoVariants: data.logos.variants.map(({ id, displayName, theme }) => ({
+            id,
+            displayName,
+            theme,
+          })),
+          bannedWords: data.bannedWords,
+        })
+        setActiveBrandLoadError(null)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setActiveBrand(null)
+        setActiveBrandLoadError({
+          kind: "notFound",
+          slug: state.brandSlug,
+          message: `Brand fixture "${state.brandSlug}" could not be loaded.`,
+        })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [state.brandSlug])
+
   // One toast per `run-error` transition. The reducer assigns a fresh
   // `runError` object each time, so identity-keyed effect deps fire exactly
   // once per failure. Surviving a screen switch is intentional — the toast
@@ -88,18 +139,19 @@ export function S1Shell({
     toast.error(state.runError.message, { description: state.runError.stage })
   }, [state.runError])
 
-  const brandLoadable = brandLoadError == null
+  const brandLoadable = activeBrandLoadError == null
 
   // D29 — single source of truth for the banned-word list. The server
   // already merges `getDefaultBannedWords()` with the brand fixture at
   // `inputs/brands/[slug]/banned-words.json` inside `loadBrandProfile`,
-  // so we just forward `brand.bannedWords` here. When the brand fixture
+  // so we just forward `activeBrand.bannedWords` here. When the brand fixture
   // failed to load, fall back to the universal floor so the gate still
   // catches obvious hits even though Generate is already blocked by
-  // `brandLoadable`.
+  // `brandLoadable`. `activeBrand` is kept in sync with `state.brandSlug`
+  // via the useEffect above, so brand switches update both lists together.
   const bannedList = React.useMemo<readonly string[]>(
-    () => brand?.bannedWords ?? getDefaultBannedWords(),
-    [brand?.bannedWords]
+    () => activeBrand?.bannedWords ?? getDefaultBannedWords(),
+    [activeBrand?.bannedWords]
   )
   // The editor and the summary strip both read from the same list above:
   // the strip via `bannedHits`, the editor via the `bannedList` prop. This
@@ -119,16 +171,16 @@ export function S1Shell({
         <div className="mx-auto max-w-7xl">
           {state.screen === "S1" && (
             <>
-              {brandLoadError && (
+              {activeBrandLoadError && (
                 <MissingBrandBanner
-                  error={brandLoadError}
+                  error={activeBrandLoadError}
                   brandsAvailable={brandsAvailable}
                 />
               )}
               <S1BriefEditor
                 state={state}
                 dispatch={dispatch}
-                logoVariants={brand?.logoVariants ?? []}
+                logoVariants={activeBrand?.logoVariants ?? []}
                 bannedList={bannedList}
               />
             </>
@@ -176,6 +228,7 @@ function makeInitial({
     events: [],
     manifest: null,
     runError: null,
+    runStartedAt: new Date(),
     screen: "S1",
     detailOpen: null,
   }

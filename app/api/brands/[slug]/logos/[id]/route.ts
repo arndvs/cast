@@ -57,6 +57,7 @@ export async function GET(
     headers: {
       "Content-Type": "image/png",
       "Cache-Control": "public, max-age=3600",
+      "X-Content-Type-Options": "nosniff",
     },
   })
 }
