@@ -14,7 +14,7 @@ import {
   type CastAppAction,
   type CastAppState,
 } from "@/components/cast/cast-app-state"
-import { useRunController } from "@/components/cast/use-run-controller"
+import { useRunController } from "@/hooks/use-run-controller"
 import type { Brief } from "@/lib/cast/schemas"
 import type { ClientLogoVariant } from "@/components/cast/cast-app-state"
 import type { BrandLoadErrorInfo } from "@/lib/cast/brand-hints"
