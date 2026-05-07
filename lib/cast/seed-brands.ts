@@ -55,7 +55,7 @@ export interface SeedBrand {
   defaultBrief: SeedDefaultBrief
 }
 
-export const SEED_BRANDS: readonly SeedBrand[] = Object.freeze([
+export const SEED_BRANDS: readonly SeedBrand[] = [
   {
     slug: "brisa",
     displayName: "Brisa",
@@ -90,10 +90,10 @@ export const SEED_BRANDS: readonly SeedBrand[] = Object.freeze([
       message: {
         en: "Crack open something brighter.",
         es: "Abre algo más brillante.",
-      } as Record<string, string>,
+      },
       ratios: ["1x1", "9x16", "16x9"],
     },
-  },
+  } satisfies SeedBrand,
   {
     slug: "volt",
     displayName: "Volt",
@@ -125,11 +125,11 @@ export const SEED_BRANDS: readonly SeedBrand[] = Object.freeze([
       markets: ["us-en"],
       audience:
         "18-34, urban, performance-driven; high-intensity lifestyle, convenience-store shoppers",
-      message: { en: "Fuel what's next." } as Record<string, string>,
+      message: { en: "Fuel what's next." },
       ratios: ["1x1", "9x16", "16x9"],
     },
-  },
-])
+  } satisfies SeedBrand,
+]
 
 export function getSeedBrand(slug: string): SeedBrand | undefined {
   return SEED_BRANDS.find((b) => b.slug === slug)
@@ -140,5 +140,6 @@ export function getSeedBrand(slug: string): SeedBrand | undefined {
  * spread into state. Returns `undefined` for unknown brands.
  */
 export function getDefaultBrief(slug: string): SeedDefaultBrief | undefined {
-  return getSeedBrand(slug)?.defaultBrief
+  const seed = getSeedBrand(slug)?.defaultBrief
+  return seed ? structuredClone(seed) : undefined
 }

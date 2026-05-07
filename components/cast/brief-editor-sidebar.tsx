@@ -152,9 +152,12 @@ export function BriefEditorSidebar({
                     }}
                   >
                     {variant.url ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
                       <img
                         src={variant.url}
                         alt={variant.displayName}
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-contain p-1"
                       />
                     ) : (

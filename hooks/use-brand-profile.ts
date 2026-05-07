@@ -62,6 +62,13 @@ export function useBrandProfile({
   message,
   onBrandLoaded,
 }: UseBrandProfileArgs): UseBrandProfileResult {
+  // Store callback in a ref so the fetch effect only re-runs on brandSlug
+  // changes, not when the caller passes a new function identity.
+  const onBrandLoadedRef = React.useRef(onBrandLoaded)
+  React.useEffect(() => {
+    onBrandLoadedRef.current = onBrandLoaded
+  })
+
   const [activeBrand, setActiveBrand] = React.useState(initialBrand)
   const [activeBrandLoadError, setActiveBrandLoadError] =
     React.useState<BrandLoadErrorInfo | null>(initialBrandLoadError)
@@ -145,7 +152,7 @@ export function useBrandProfile({
         setActiveBrand(snapshot)
         setActiveBrandLoadError(null)
         setLoadedSlug(brandSlug)
-        onBrandLoaded?.(snapshot)
+        onBrandLoadedRef.current?.(snapshot)
       })
       .catch((err: unknown) => {
         if ((err as { name?: string })?.name === "AbortError") return
@@ -165,7 +172,7 @@ export function useBrandProfile({
       cancelled = true
       controller.abort()
     }
-  }, [brandSlug, onBrandLoaded])
+  }, [brandSlug])
 
   const brandLoadable =
     loadedSlug === brandSlug && activeBrandLoadError == null

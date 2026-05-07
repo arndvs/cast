@@ -101,6 +101,10 @@ export type CastAppAction =
 export function castAppReducer(state: CastAppState, action: CastAppAction): CastAppState {
   switch (action.type) {
     case "setBrand": {
+      // No-op when re-clicking the already-active brand — avoids accidental
+      // data loss on a misclick.
+      if (action.slug === state.brandSlug) return state
+
       // Brand swap replaces the entire brief with brand-appropriate defaults.
       // Products, audience, headlines, markets all reset — only ratios carry
       // over (format choice is brand-agnostic).
