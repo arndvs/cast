@@ -145,3 +145,24 @@ html.dark {
     font-family: var(--font-sans);
   }
 }
+
+/* Wordmark "Casting..." typing indicator */
+@keyframes dot-pulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+@utility animate-dot-pulse {
+  animation: dot-pulse 1.4s ease-in-out infinite both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: 1;
+  }
+}
