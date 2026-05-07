@@ -214,7 +214,7 @@ export function S1Shell({
     <>
       <main className="flex-1 py-8">
         <div className="mx-auto max-w-7xl">
-          {state.screen === "S1" && (
+          {state.screen === "brief-editor" && (
             <>
               {activeBrandLoadError && (
                 <MissingBrandBanner
@@ -231,14 +231,14 @@ export function S1Shell({
               />
             </>
           )}
-          {state.screen === "S2" && (
+          {state.screen === "pipeline-run" && (
             <S2RunView
               state={state}
               dispatch={dispatch}
               cancelRef={cancelRef}
             />
           )}
-          {state.screen === "S3" && (
+          {state.screen === "output-grid" && (
             <S3OutputGrid state={state} dispatch={dispatch} />
           )}
         </div>
@@ -246,7 +246,7 @@ export function S1Shell({
           <S4CreativeDetail state={state} dispatch={dispatch} />
         )}
       </main>
-      {state.screen === "S1" && (
+      {state.screen === "brief-editor" && (
         <S1SummaryStrip
           state={state}
           dispatch={dispatch}
@@ -275,7 +275,7 @@ function makeInitial({
     manifest: null,
     runError: null,
     runStartedAt: new Date(),
-    screen: "S1",
+    screen: "brief-editor",
     detailOpen: null,
   }
 }

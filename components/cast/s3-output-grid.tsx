@@ -39,9 +39,9 @@ type RatioFilter = "ALL" | string
 type MarketFilter = "ALL" | string
 
 /**
- * S3 — output grid.
+ * Output grid.
  *
- * Mounts when `state.screen === "S3"`. Reads `state.manifest` (the run
+ * Mounts when `state.screen === "output-grid"`. Reads `state.manifest` (the run
  * manifest === report.json === the `complete` event payload) and renders:
  *
  *   - a header with brand/campaign crumbs + brief.json/report.json downloads
@@ -59,7 +59,7 @@ type MarketFilter = "ALL" | string
 export function S3OutputGrid({ state, dispatch }: S3OutputGridProps) {
   const { manifest } = state
 
-  // Defensive: the shell only mounts S3 when `screen === "S3"`, which the
+  // Defensive: the shell only mounts this view when `screen === "output-grid"`, which the
   // reducer only transitions to from the terminal `complete` event (which
   // sets `manifest`). This guard keeps the component honest if those
   // invariants ever drift.

@@ -40,10 +40,10 @@ export type RunState = "editing" | "running" | "complete" | "failed"
 
 /**
  * Which screen is mounted. Independent of `runState` — the terminal
- * `complete` event leaves `screen: "S2"` until the user clicks
+ * `complete` event leaves `screen: "pipeline-run"` until the user clicks
  * "view output grid →" (matches prototype). `goto-edit` resets both.
  */
-export type Screen = "S1" | "S2" | "S3"
+export type AppScreen = "brief-editor" | "pipeline-run" | "output-grid"
 
 /**
  * Logo variant id. Each brand's `logos.json` manifest declares its own
@@ -100,8 +100,8 @@ export interface CastAppState {
   runError: { stage: RunErrorStage; message: string } | null
   /** Wall-clock timestamp of the most recent run start — set when `generate` dispatches. */
   runStartedAt: Date
-  /** Which screen is mounted. Default `"S1"`. */
-  screen: Screen
+  /** Which screen is mounted. Default `"brief-editor"`. */
+  screen: AppScreen
   /**
    * S3 detail dialog target. `null` when closed. The reducer owns the
    * open/close transitions; the dialog itself lands in V5e.
@@ -247,10 +247,10 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
       return { ...state, brief: action.brief }
     case "generate":
     case "goto-run":
-      // V4: flip to running and clear any previous run's artifacts. The
+      // Flip to running and clear any previous run's artifacts. The
       // shell's run-effect picks up the transition and opens the NDJSON
-      // stream against `/api/generate`. V5c: also flip the screen to S2 so
-      // the run view mounts as the network call starts.
+      // stream against `/api/generate`. Also flip the screen to pipeline-run
+      // so the run view mounts as the network call starts.
       return {
         ...state,
         runState: "running",
@@ -258,20 +258,20 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
         events: [],
         manifest: null,
         runError: null,
-        screen: "S2",
+        screen: "pipeline-run",
       }
     case "goto-grid":
       // Only meaningful once the run has terminally completed. Ignored
       // otherwise so a stray dispatch can't strand the user on an empty grid.
       if (state.runState !== "complete") return state
-      return { ...state, screen: "S3" }
+      return { ...state, screen: "output-grid" }
     case "goto-edit":
       // Discard the prior run's artifacts and return the editor to the
       // initial `editing` state. Brief, brand, uploads stay intact.
       // Also close any open detail dialog so it doesn't reappear on re-run.
       return {
         ...state,
-        screen: "S1",
+        screen: "brief-editor",
         runState: "editing",
         events: [],
         manifest: null,

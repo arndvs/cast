@@ -20,9 +20,9 @@ interface S2RunViewProps {
 }
 
 /**
- * S2 — pipeline run view.
+ * Pipeline run view.
  *
- * Mounts when `state.screen === "S2"`. Renders the live NDJSON tape from
+ * Mounts when `state.screen === "pipeline-run"`. Renders the live NDJSON tape from
  * `state.events`, a progress bar driven by event count, and run-state-driven
  * action rows ("Cancel run" while running, "Edit brief"/"Retry" on failure,
  * "Edit brief"/"View output grid →" on completion).
