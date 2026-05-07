@@ -2,9 +2,9 @@
 
 JSON contents are extracted from [`docs/design/volt-brand-guidelines.html`](../../../docs/design/volt-brand-guidelines.html) per the recipe in [`docs/brand-extraction.md`](../../../docs/brand-extraction.md).
 
-## Binary assets still required
+## Binary assets (already committed)
 
-These two are **existence-checked by `loadBrandProfile`** but cannot be auto-generated. The brand profile will fail to load until they are added.
+These two are **existence-checked by `loadBrandProfile`** and are already committed to the repo. The validation command below should return `200`.
 
 ### `font.ttf`
 
