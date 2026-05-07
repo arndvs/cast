@@ -23,6 +23,7 @@ interface BriefProductRowProps {
 export function BriefProductRow({ product, brand, brief, upload, dispatch }: BriefProductRowProps) {
   const slug = slugify(product.name)
   const swatch = brand?.products.find((p) => p.sku === product.sku)
+  const belongsToBrand = !brand || brand.products.some((p) => p.sku === product.sku)
   const previewMarket = brief.markets[0] || "us-en"
   const previewRatio: AspectRatio = brief.ratios[0] ?? "1x1"
   const promptPreview = brand
@@ -70,6 +71,11 @@ export function BriefProductRow({ product, brand, brief, upload, dispatch }: Bri
           <div className="truncate font-mono text-[0.6875rem] text-muted-foreground">
             slug: {slug}
           </div>
+          {!belongsToBrand && (
+            <div className="mt-0.5 text-[0.6875rem] text-warn">
+              ⚠ not in {brand?.displayName ?? "this brand"}&apos;s catalog
+            </div>
+          )}
         </div>
       </div>
       <div className="flex flex-col gap-2">
