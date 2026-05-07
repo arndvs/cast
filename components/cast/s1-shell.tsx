@@ -7,6 +7,7 @@ import { S1BriefEditor } from "@/components/cast/s1-brief-editor"
 import { S1SummaryStrip } from "@/components/cast/s1-summary-strip"
 import { S2RunView } from "@/components/cast/s2-run-view"
 import { S3OutputGrid } from "@/components/cast/s3-output-grid"
+import { S4CreativeDetail } from "@/components/cast/s4-creative-detail"
 import { MissingBrandBanner } from "@/components/cast/missing-brand-banner"
 import { s1Reducer, type S1Action, type S1State } from "@/components/cast/s1-state"
 import { useRunController } from "@/components/cast/use-run-controller"
@@ -98,6 +99,9 @@ export function S1Shell({
             <S3OutputGrid state={state} dispatch={dispatch} />
           )}
         </div>
+        {state.detailOpen !== null && (
+          <S4CreativeDetail state={state} dispatch={dispatch} />
+        )}
       </main>
       {state.screen === "S1" && (
         <S1SummaryStrip

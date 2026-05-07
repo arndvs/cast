@@ -2,7 +2,9 @@
 
 import * as React from "react"
 import { Download, FolderOpen, Pencil } from "lucide-react"
+import { toast } from "sonner"
 
+import { revealOutputFolder } from "@/app/actions/reveal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -138,10 +140,26 @@ function S3OutputGridInner({
             <Download className="mr-1 h-3 w-3" />
             report.json
           </Button>
-          {/* TODO(V5e): wire to `revealInFolder` server action. Stubbed
-              here so the layout matches and operators don't see the button
-              jump in once the action lands. */}
-          <Button type="button" variant="outline" size="sm" disabled>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              try {
+                const res = await revealOutputFolder({ campaign: brief.campaign })
+                if (res.ok) {
+                  toast.success("Folder revealed")
+                } else {
+                  toast.error(res.error)
+                }
+              } catch (err) {
+                // The server action's contract is to never throw, but a
+                // network or runtime failure on the action transport itself
+                // would surface here — surface it instead of swallowing.
+                toast.error(err instanceof Error ? err.message : "Failed to reveal folder")
+              }
+            }}
+          >
             <FolderOpen className="mr-1 h-3 w-3" />
             Reveal in folder
           </Button>
