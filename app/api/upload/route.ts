@@ -3,7 +3,7 @@ import fs from "node:fs/promises"
 import { safeJoin } from "@/lib/cast/server/safe-join"
 import { isENOENT, jsonError } from "@/lib/cast/server/api-helpers"
 import { magicBytesMatch } from "@/lib/cast/server/magic-bytes"
-import { UPLOAD_MAX_BYTES } from "@/lib/cast/upload-constraints"
+import { UPLOAD_MAX_BYTES, UPLOAD_MAX_DISPLAY } from "@/lib/cast/upload-constraints"
 import { SLUG_RE } from "@/lib/cast/schemas"
 
 export const runtime = "nodejs"
@@ -54,7 +54,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     ])
   }
   if (declaredBytes > UPLOAD_MAX_BYTES) {
-    return jsonError(413, [{ path: ["file"], message: "file exceeds 5 MB limit" }])
+    return jsonError(413, [{ path: ["file"], message: `file exceeds ${UPLOAD_MAX_DISPLAY} limit` }])
   }
 
   let form: FormData
@@ -76,7 +76,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     return jsonError(400, [{ path: ["file"], message: "file is required" }])
   }
   if (file.size > UPLOAD_MAX_BYTES) {
-    return jsonError(413, [{ path: ["file"], message: "file exceeds 5 MB limit" }])
+    return jsonError(413, [{ path: ["file"], message: `file exceeds ${UPLOAD_MAX_DISPLAY} limit` }])
   }
 
   const mime = (file.type || "").toLowerCase()
@@ -92,7 +92,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   const bytes = new Uint8Array(await file.arrayBuffer())
   if (bytes.byteLength > UPLOAD_MAX_BYTES) {
-    return jsonError(413, [{ path: ["file"], message: "file exceeds 5 MB limit" }])
+    return jsonError(413, [{ path: ["file"], message: `file exceeds ${UPLOAD_MAX_DISPLAY} limit` }])
   }
 
   // Defense-in-depth: file.type comes from the user-supplied multipart header

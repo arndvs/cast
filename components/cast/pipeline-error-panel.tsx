@@ -9,6 +9,8 @@ interface PipelineErrorPanelProps {
 }
 
 export function PipelineErrorPanel({ stage, message }: PipelineErrorPanelProps) {
+  const failedIndex = stage !== null ? PIPELINE_STAGES.indexOf(stage) : -1
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -21,7 +23,7 @@ export function PipelineErrorPanel({ stage, message }: PipelineErrorPanelProps) 
       <ol className="flex flex-wrap items-center gap-1 font-mono text-[11px]">
         {PIPELINE_STAGES.map((s, i) => {
           const isFailed = s === stage
-          const isPast = stage !== null && PIPELINE_STAGES.indexOf(stage) > i
+          const isPast = failedIndex > i
           return (
             <React.Fragment key={s}>
               <li
