@@ -2,6 +2,8 @@
 
 > From brief to broadcast. A creative automation studio toolchain that turns one campaign brief into on-brand, localized social ad creatives at three aspect ratios.
 
+**POC · Aaron Davis · 2026**
+
 ---
 
 ## Quick Start
