@@ -9,23 +9,20 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { CreativeCountsSummaryCard } from "@/components/cast/creative-counts-summary-card"
+import { CreativeFilterSelect } from "@/components/cast/creative-filter-select"
 import { CreativeTile } from "@/components/cast/creative-tile"
 import { Wordmark } from "@/components/cast/wordmark"
 import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
+import { downloadJson } from "@/lib/cast/download-json"
+import { type StatusFilter, type RatioFilter, type MarketCodeFilter, creativeMatchesFilters } from "@/lib/cast/filter-creatives"
+import { groupCreativesByMarket } from "@/lib/cast/group-creatives-by-market"
 import { deriveCounts } from "@/lib/cast/manifest-counts"
-import { ALL_RATIOS, type AspectRatio } from "@/lib/cast/ratios"
 import type { Creative, Manifest } from "@/lib/cast/schemas"
 import { cn } from "@/lib/utils"
 
@@ -33,10 +30,6 @@ interface CreativeOutputGridProps {
   state: CastAppState
   dispatch: React.Dispatch<CastAppAction>
 }
-
-type StatusFilter = "ALL" | "OK" | "WARN" | "FAIL"
-type RatioFilter = "ALL" | AspectRatio
-type MarketCodeFilter = "ALL" | string
 
 /**
  * Output grid.
@@ -90,11 +83,11 @@ function CreativeOutputGridContent({
   const [market, setMarket] = React.useState<MarketCodeFilter>("ALL")
 
   const filtered = React.useMemo(
-    () => manifest.creatives.filter((creative) => matches(creative, { status, ratio, market })),
+    () => manifest.creatives.filter((creative) => creativeMatchesFilters(creative, { status, ratio, market })),
     [manifest.creatives, status, ratio, market],
   )
 
-  const grouped = React.useMemo(() => groupByMarket(filtered), [filtered])
+  const grouped = React.useMemo(() => groupCreativesByMarket(filtered), [filtered])
 
   return (
     <div className="flex flex-col gap-4">
@@ -167,39 +160,39 @@ function CreativeOutputGridContent({
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-        <SummaryCard label="requested" value={counts.requested} />
-        <SummaryCard label="succeeded" value={counts.succeeded} tone="ok" />
-        <SummaryCard label="reused" value={counts.reused} />
-        <SummaryCard label="generated" value={counts.generated} />
+        <CreativeCountsSummaryCard label="requested" value={counts.requested} />
+        <CreativeCountsSummaryCard label="succeeded" value={counts.succeeded} tone="ok" />
+        <CreativeCountsSummaryCard label="reused" value={counts.reused} />
+        <CreativeCountsSummaryCard label="generated" value={counts.generated} />
         <Tooltip>
           <TooltipTrigger asChild>
             <div>
-              <SummaryCard label="WARN" value={counts.warn} tone="warn" />
+              <CreativeCountsSummaryCard label="WARN" value={counts.warn} tone="warn" />
             </div>
           </TooltipTrigger>
           <TooltipContent>
             WARN + FAIL on succeeded = {manifest.counts.flagged} flagged
           </TooltipContent>
         </Tooltip>
-        <SummaryCard label="FAIL" value={counts.fail} tone="bad" />
+        <CreativeCountsSummaryCard label="FAIL" value={counts.fail} tone="bad" />
       </div>
 
       {/* Filter bar */}
       <Card className="flex flex-wrap items-center gap-3 p-3">
         <span className="text-xs uppercase tracking-wider text-fg-3">filter</span>
-        <FilterSelect
+        <CreativeFilterSelect
           label="status"
           value={status}
           onChange={(v) => setStatus(v as StatusFilter)}
           options={["ALL", "OK", "WARN", "FAIL"]}
         />
-        <FilterSelect
+        <CreativeFilterSelect
           label="ratio"
           value={ratio}
           onChange={(v) => setRatio(v as RatioFilter)}
           options={["ALL", ...brief.ratios]}
         />
-        <FilterSelect
+        <CreativeFilterSelect
           label="market"
           value={market}
           onChange={(v) => setMarket(v as MarketCodeFilter)}
@@ -247,131 +240,4 @@ function CreativeOutputGridContent({
       </div>
     </div>
   )
-}
-
-// ---------------------------------------------------------------------------
-// Pieces
-// ---------------------------------------------------------------------------
-
-function SummaryCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string
-  value: number
-  tone?: "ok" | "warn" | "bad"
-}) {
-  return (
-    <Card
-      className={cn(
-        "flex flex-col gap-1 p-3",
-        tone === "ok" && "border-ok/30",
-        tone === "warn" && "border-warn/40",
-        tone === "bad" && "border-bad/40",
-      )}
-    >
-      <span className="font-mono text-[10px] uppercase tracking-wider text-fg-3">
-        {label}
-      </span>
-      <span
-        className={cn(
-          "font-display text-2xl",
-          tone === "ok" && "text-ok",
-          tone === "warn" && "text-warn",
-          tone === "bad" && "text-bad",
-          !tone && "text-fg-1",
-        )}
-      >
-        {value}
-      </span>
-    </Card>
-  )
-}
-
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string
-  value: string
-  onChange: (next: string) => void
-  options: readonly string[]
-}) {
-  return (
-    <label className="flex items-center gap-2 text-xs">
-      <span className="text-fg-3">{label}</span>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger size="sm" className="min-w-24">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((opt) => (
-            <SelectItem key={opt} value={opt}>
-              {opt}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </label>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function matches(
-  c: Creative,
-  filters: { status: StatusFilter; ratio: RatioFilter; market: MarketCodeFilter },
-): boolean {
-  if (filters.ratio !== "ALL" && c.ratio !== filters.ratio) return false
-  if (filters.market !== "ALL" && c.market !== filters.market) return false
-  if (filters.status !== "ALL") {
-    const badge: "OK" | "WARN" | "FAIL" =
-      c.path === null ? "FAIL" : (c.compliance?.badge ?? "OK")
-    if (badge !== filters.status) return false
-  }
-  return true
-}
-
-function groupByMarket(creatives: readonly Creative[]): [string, Creative[]][] {
-  const byMarket = new Map<string, Creative[]>()
-  for (const c of creatives) {
-    const list = byMarket.get(c.market) ?? []
-    list.push(c)
-    byMarket.set(c.market, list)
-  }
-  // Stable order — markets in first-seen order, then by product+ratio inside.
-  // Ratios sort by canonical pipeline order (1x1 → 9x16 → 16x9), not
-  // lexicographic, so tiles match the operator's mental model.
-  const ratioOrder = new Map<AspectRatio, number>(
-    ALL_RATIOS.map((r, i) => [r, i]),
-  )
-  return [...byMarket.entries()].map(([marketCode, list]) => [
-    marketCode,
-    [...list].sort((a, b) => {
-      if (a.product !== b.product) return a.product.localeCompare(b.product)
-      return (
-        (ratioOrder.get(a.ratio) ?? 0) - (ratioOrder.get(b.ratio) ?? 0)
-      )
-    }),
-  ])
-}
-
-function downloadJson(filename: string, data: unknown): void {
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
-    type: "application/json",
-  })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  // Defer revoke so Safari has time to start the download.
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
