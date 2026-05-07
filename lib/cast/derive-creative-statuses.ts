@@ -48,6 +48,14 @@ function slotKey(product: string, market: string, ratio: string): string {
   return `${product}/${market}/${ratio}`
 }
 
+/** Inline slugify to avoid importing zod-heavy schemas into client bundle. */
+function slugifyProduct(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
 // ---------------------------------------------------------------------------
 // Main derivation
 // ---------------------------------------------------------------------------
@@ -59,10 +67,10 @@ function slotKey(product: string, market: string, ratio: string): string {
  * is initialised as `"queued"`. Events are scanned in order to promote
  * each slot through `generating → complete` (or `→ failed`).
  *
- * Timestamps use `Date.now()` at call time as a proxy — the events don't
- * carry server-side timestamps. For completed creatives the `duration` is
- * computed from the first `step` to `creative_ready` receive-time delta
- * stored in the accumulator.
+ * Timestamp fields are populated from reducer-stamped `receivedAt` values
+ * carried on events when available; otherwise they remain `null`. For
+ * completed creatives the `duration` is computed from the first `step` to
+ * `creative_ready` `receivedAt` delta stored in the accumulator.
  */
 /** Events stored in state carry a `receivedAt` timestamp from the reducer. */
 type StampedEvent = PipelineEvent & { receivedAt?: number }
@@ -72,10 +80,7 @@ export function deriveCreativeStatuses(events: readonly StampedEvent[], brief: B
 
   // Seed every slot from the brief's cartesian product.
   for (const product of brief.products) {
-    const slug = product.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
+    const slug = slugifyProduct(product.name)
 
     for (const market of brief.markets) {
       for (const ratio of brief.ratios) {
@@ -152,10 +157,7 @@ export function groupByProduct(statusMap: Map<string, CreativeSlotInfo>, brief: 
   const groups: ProductGroup[] = []
 
   for (const product of brief.products) {
-    const slug = product.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
+    const slug = slugifyProduct(product.name)
 
     const slots: CreativeSlotInfo[] = []
     for (const market of brief.markets) {

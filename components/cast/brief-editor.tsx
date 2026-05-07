@@ -135,7 +135,7 @@ export function BriefEditor({ state, dispatch, logoVariants, bannedList, availab
           <Card>
             <CardContent className="p-4">
               <textarea
-                className="min-h-100 w-full resize-y rounded bg-muted/50 p-4 font-mono text-xs leading-relaxed text-fg-2 focus:outline-none focus:ring-1 focus:ring-ring"
+                className="min-h-96 w-full resize-y rounded bg-muted/50 p-4 font-mono text-xs leading-relaxed text-fg-2 focus:outline-none focus:ring-1 focus:ring-ring"
                 value={jsonText}
                 onChange={(e) => {
                   setJsonText(e.target.value)
@@ -151,10 +151,10 @@ export function BriefEditor({ state, dispatch, logoVariants, bannedList, availab
                 </div>
               )}
               <div className="mt-3 flex gap-2">
-                <Button size="sm" onClick={handleJsonApply} disabled={!jsonDirty}>
+                <Button type="button" size="sm" onClick={handleJsonApply} disabled={!jsonDirty}>
                   Apply
                 </Button>
-                <Button size="sm" variant="ghost" onClick={handleJsonReset} disabled={!jsonDirty}>
+                <Button type="button" size="sm" variant="ghost" onClick={handleJsonReset} disabled={!jsonDirty}>
                   Reset
                 </Button>
               </div>

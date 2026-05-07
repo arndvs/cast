@@ -37,6 +37,7 @@ export function JobVariantRow({ group }: JobVariantRowProps) {
     <div className="border-b border-border last:border-b-0">
       <button
         type="button"
+        aria-expanded={expanded}
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/50"
       >

@@ -182,6 +182,7 @@ export function JobRunnerView({ state, dispatch, cancelRef }: JobRunnerViewProps
       <Card className="overflow-hidden p-0">
         <button
           type="button"
+          aria-expanded={logOpen}
           onClick={() => setLogOpen(!logOpen)}
           className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-muted/50"
         >

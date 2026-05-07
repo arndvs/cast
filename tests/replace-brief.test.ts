@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { castAppReducer, type CastAppState } from "@/components/cast/cast-app-state"
 import type { Brief } from "@/lib/cast/schemas"
@@ -42,6 +42,8 @@ function makeState(overrides?: Partial<CastAppState>): CastAppState {
 // ---------------------------------------------------------------------------
 
 describe("replaceBrief", () => {
+  afterEach(() => vi.unstubAllGlobals())
+
   it("replaces the entire brief in state", () => {
     const state = makeState()
     const next: Brief = {
@@ -97,7 +99,5 @@ describe("replaceBrief", () => {
     expect(result.uploads).toEqual({})
     expect(revokeUrl).toHaveBeenCalledWith("blob:a")
     expect(revokeUrl).toHaveBeenCalledWith("blob:b")
-
-    vi.unstubAllGlobals()
   })
 })
