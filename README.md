@@ -33,7 +33,7 @@ outputs/[campaign]/report.json   # compliance + legal check results
 
 See [docs/system-map.md](docs/system-map.md) for the canonical filesystem layout.
 
-> **Dropbox export is optional.** The output grid includes an Export to Dropbox button, but it requires a Dropbox App key and a public tunnel — s takes ~5 minutes and is not needed for the core POC workflow. See [Cloud Export — Dropbox (optional)](#cloud-export--dropbox-optional).
+> **Dropbox export is optional.** The output grid includes an Export to Dropbox button, but it requires a Dropbox App key and a public tunnel; setup takes ~5 minutes and is not needed for the core POC workflow. See [Cloud Export — Dropbox (optional)](#cloud-export--dropbox-optional).
 
 ### Scripts
 
@@ -122,7 +122,7 @@ File path shape: `outputs/[campaign]/[market]/[product]/[ratio].png`. The locale
 | **API style**         | NDJSON streaming for `/api/generate`                                        | One request, terminal `complete` event carries the manifest. UI hydrates from the manifest — no second filesystem read, no race with disk writes.                                                                                                                                                 |
 | **Path I/O safety**   | `safeJoin` helper + `SLUG_RE` validation at every boundary                  | `revealOutputFolder`, `/api/upload`, `/api/detected-assets`, and Sharp file reads all interpolate user-influenced strings. Validating every path is a child of a known root prevents traversal. `execFile` with explicit argv prevents shell injection.   |
 | **Upload limits**     | 5 MB max, MIME-allowlisted (PNG / JPEG / WebP), canonical extension mapping | Sharp can OOM on very large files. Canonical extension mapping (`jpeg → .jpg`) prevents stale-shadow files when re-uploading.                                                                                                                             |
-| **Compliance checks** | Heuristic — logo presence, brand-color sampling, banned-word list         | Demonstrates the surface; not a substitute for legal review.                                                                                                                                                                                              |
+| **Compliance checks** | Heuristic — logo presence, banned-word list                                 | Demonstrates the surface; not a substitute for legal review. Color compliance deferred to v2 — see [docs/flow-diagrams.md](docs/flow-diagrams.md) for rationale.                                                                                         |
 | **Per-brand profile** | Required `brand` slug → `inputs/brands/[brand]/` directory                  | Cast serves arbitrary clients. Brand identity (colors, voice, logo, font, banned words) lives per-brand on disk; a new brand is a directory drop, not a code change. The demo ships two profiles — `brisa` (sparkling water) and `volt` (energy) — sub-brands of the fictional Onda Beverages parent. One brief targets one brand; portfolio runs are sequential briefs.                                       |
 | **GenAI provider**    | OpenAI — `dall-e-3` default (3 native ratios), `gpt-image-1` when `CAST_GENAI_MODE=cheap` | `dall-e-3` natively renders 1024×1024 / 1792×1024 / 1024×1792, so the three ratios are three API calls with no center-crop loss. `cheap` mode collapses to one `gpt-image-1` call + Sharp center-crop for budget-constrained demos.                       |
 

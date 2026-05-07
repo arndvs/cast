@@ -388,7 +388,7 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
       "path": "outputs/summer-refresh-2026/us-en/brisa-citrus/1x1.png",
       "compliance": {
         "badge": "OK",
-        "checks": { "logoPresent": true, "colorsOk": true, "bannedWords": [] }
+        "checks": { "logoPresent": true, "bannedWords": [] }
       }
     },
     {

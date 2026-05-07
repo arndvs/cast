@@ -85,13 +85,24 @@ describe("toggleMarket", () => {
       expect(result.brief.markets).not.toContain("mx-es")
     })
 
-    it("drops the message key when the last market for that language is removed", () => {
-      // mx-es is the only Spanish market; removing it should delete message.es
-      const state = makeState()
+    it("drops the auto-seeded empty message key when the last market for that language is removed", () => {
+      // mx-es is the only Spanish market; value is still the auto-seeded "" → key is deleted
+      const state = makeState({
+        brief: { ...baseBrief, message: { en: "Crack open something brighter.", es: "" } },
+      })
 
       const result = castAppReducer(state, { type: "toggleMarket", code: "mx-es" })
 
       expect(result.brief.message).not.toHaveProperty("es")
+    })
+
+    it("retains a non-empty message key even when the last market for that language is removed", () => {
+      // User typed a headline for es; toggling mx-es off should preserve their content
+      const state = makeState()
+
+      const result = castAppReducer(state, { type: "toggleMarket", code: "mx-es" })
+
+      expect(result.brief.message).toHaveProperty("es", "Abre algo más brillante.")
     })
 
     it("retains the message key when another market still uses that language", () => {
