@@ -52,7 +52,19 @@ export async function GET(
 
   // TODO(symlink-hardening): variant.path was safeJoin-validated by the loader;
   // re-validate with realpath when production hardening lands.
-  const buf = await fs.readFile(variant.path)
+  let buf: Buffer
+  try {
+    buf = await fs.readFile(variant.path)
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code
+    if (code === "ENOENT" || code === "EACCES" || code === "EPERM") {
+      return NextResponse.json(
+        { errors: [{ path: ["logo", id], message: `logo file unavailable for variant: ${id}` }] },
+        { status: 404 },
+      )
+    }
+    throw err
+  }
   return new Response(new Uint8Array(buf), {
     headers: {
       "Content-Type": "image/png",
