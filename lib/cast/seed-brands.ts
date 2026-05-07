@@ -6,7 +6,7 @@
  * The brand-loader/route response supplements this with on-disk profiles.
  */
 
-export interface DemoBrandProduct {
+export interface SeedBrandProduct {
   name: string
   sku: string
   /** 2-stop swatch gradient — matches the prototype's product chip. */
@@ -15,11 +15,11 @@ export interface DemoBrandProduct {
   hex: string
 }
 
-export interface DemoBrand {
+export interface SeedBrand {
   slug: string
   displayName: string
   /** Tagline — purely visual, sub-line of the sidebar card. */
-  sub: string
+  tagline: string
   colors: {
     primary: string
     secondary: string
@@ -27,14 +27,14 @@ export interface DemoBrand {
   }
   voice: readonly string[]
   bannedWords: readonly string[]
-  products: readonly DemoBrandProduct[]
+  products: readonly SeedBrandProduct[]
 }
 
-export const DEMO_BRANDS: readonly DemoBrand[] = Object.freeze([
+export const SEED_BRANDS: readonly SeedBrand[] = Object.freeze([
   {
     slug: "brisa",
     displayName: "Brisa",
-    sub: "sparkling water",
+    tagline: "sparkling water",
     colors: { primary: "#0F6E56", secondary: "#9FE1CB", accent: "#F4C0D1" },
     voice: ["soft natural lighting", "citrus tones", "condensation on glass"],
     bannedWords: ["healthy", "cure", "energy", "guarantee", "miracle", "instant"],
@@ -56,7 +56,7 @@ export const DEMO_BRANDS: readonly DemoBrand[] = Object.freeze([
   {
     slug: "volt",
     displayName: "Volt",
-    sub: "energy drink",
+    tagline: "energy drink",
     colors: { primary: "#1A1A18", secondary: "#FAC775", accent: "#7DD3FC" },
     voice: ["dramatic lighting", "high contrast", "kinetic energy"],
     bannedWords: ["bro", "hustle", "grind", "pumped", "free", "guarantee"],
@@ -77,6 +77,6 @@ export const DEMO_BRANDS: readonly DemoBrand[] = Object.freeze([
   },
 ])
 
-export function getDemoBrand(slug: string): DemoBrand | undefined {
-  return DEMO_BRANDS.find((b) => b.slug === slug)
+export function getSeedBrand(slug: string): SeedBrand | undefined {
+  return SEED_BRANDS.find((b) => b.slug === slug)
 }

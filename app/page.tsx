@@ -1,6 +1,6 @@
 import { Topbar } from "@/components/cast/topbar"
 import { CastAppShell } from "@/components/cast/cast-app-shell"
-import { loadDemoBrief } from "@/lib/cast/server/brief-loader"
+import { loadSeedBrief } from "@/lib/cast/server/brief-loader"
 import {
   listBrandSlugs,
   tryLoadBrand,
@@ -8,7 +8,7 @@ import {
 import { toBrandLoadErrorInfo } from "@/lib/cast/brand-hints"
 
 export default async function Page() {
-  const brief = await loadDemoBrief()
+  const brief = await loadSeedBrief()
 
   // Parallel: brand-load and the available-slugs list run independently.
   // `tryLoadBrand` returns a discriminated value instead of throwing so the

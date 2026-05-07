@@ -16,7 +16,7 @@ import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-sta
 import { ALL_RATIOS, RATIO_LABELS, type AspectRatio } from "@/lib/cast/ratios"
 import { ALL_MARKETS, activeLanguages } from "@/lib/cast/markets"
 import { containsBannedWord, getDefaultBannedWords } from "@/lib/cast/banned-words"
-import { DEMO_BRANDS, getDemoBrand, type DemoBrand, type DemoBrandProduct } from "@/lib/cast/demo-brands"
+import { SEED_BRANDS, getSeedBrand, type SeedBrand, type SeedBrandProduct } from "@/lib/cast/seed-brands"
 import { buildPromptPreview } from "@/lib/cast/prompt"
 import { SLUG_RE, slugify } from "@/lib/cast/schemas"
 import type { ClientLogoVariant } from "@/components/cast/cast-app-state"
@@ -53,9 +53,9 @@ interface BriefEditorProps {
 
 export function BriefEditor({ state, dispatch, logoVariants, bannedList, availableBrands }: BriefEditorProps) {
   const [jsonMode, setJsonMode] = React.useState(false)
-  // Demo-brand data provides rich visual display (colors, products, voice).
-  // Non-demo slugs (or newly added on-disk fixtures) render without it.
-  const demoBrand = getDemoBrand(state.brandSlug) ?? undefined
+  // Seed-brand data provides rich visual display (colors, products, voice).
+  // Non-seed slugs (or newly added on-disk fixtures) render without it.
+  const seedBrand = getSeedBrand(state.brandSlug) ?? undefined
 
   // Banned-word check across the audience field + every locale message.
   // Prefer the shell-supplied `bannedList` (default floor ∪ brand fixture
@@ -73,12 +73,12 @@ export function BriefEditor({ state, dispatch, logoVariants, bannedList, availab
   const bannedHits = containsBannedWord(haystack, effectiveBannedList)
   const slugInvalid = !SLUG_RE.test(state.brief.campaign || "")
 
-  // Fallback: if no availableBrands list supplied, use the demo-brand slugs.
-  const brandList = availableBrands ?? DEMO_BRANDS.map((b) => b.slug)
+  // Fallback: if no availableBrands list supplied, use the seed-brand slugs.
+  const brandList = availableBrands ?? SEED_BRANDS.map((b) => b.slug)
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-      <Sidebar state={state} dispatch={dispatch} brand={demoBrand} logoVariants={logoVariants} availableBrands={brandList} />
+      <Sidebar state={state} dispatch={dispatch} brand={seedBrand} logoVariants={logoVariants} availableBrands={brandList} />
 
       <div className="flex min-w-0 flex-col gap-4">
         <div className="flex items-center gap-3">
@@ -111,7 +111,7 @@ export function BriefEditor({ state, dispatch, logoVariants, bannedList, availab
           <FormView
             state={state}
             dispatch={dispatch}
-            brand={demoBrand}
+            brand={seedBrand}
             bannedList={effectiveBannedList}
             slugInvalid={slugInvalid}
           />
@@ -134,8 +134,8 @@ function Sidebar({
 }: {
   state: CastAppState
   dispatch: React.Dispatch<CastAppAction>
-  /** Demo-brand data for visual display; absent for non-demo fixtures. */
-  brand?: DemoBrand
+  /** Seed-brand data for visual display; absent for non-seed fixtures. */
+  brand?: SeedBrand
   logoVariants: readonly EditorLogoVariant[]
   /** Slug list from the on-disk registry — drives the brand picker. */
   availableBrands: readonly string[]
@@ -145,7 +145,7 @@ function Sidebar({
       <Section title="Brand">
         <div className="flex flex-col gap-2">
           {availableBrands.map((slug) => {
-            const b = getDemoBrand(slug)
+            const b = getSeedBrand(slug)
             const active = state.brandSlug === slug
             return (
               <button
@@ -172,8 +172,8 @@ function Sidebar({
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{b?.displayName ?? slug}</div>
-                  {b?.sub && (
-                    <div className="truncate text-xs text-muted-foreground">{b.sub}</div>
+                  {b?.tagline && (
+                    <div className="truncate text-xs text-muted-foreground">{b.tagline}</div>
                   )}
                 </div>
                 {active && <span className="text-brand-cyan">✓</span>}
@@ -303,8 +303,8 @@ function FormView({
 }: {
   state: CastAppState
   dispatch: React.Dispatch<CastAppAction>
-  /** Demo-brand data; absent for non-demo fixtures. */
-  brand?: DemoBrand
+  /** Seed-brand data; absent for non-seed fixtures. */
+  brand?: SeedBrand
   bannedList: readonly string[]
   slugInvalid: boolean
 }) {
@@ -548,8 +548,8 @@ function CatalogAdd({
   available,
   onAdd,
 }: {
-  available: readonly DemoBrandProduct[]
-  onAdd: (p: DemoBrandProduct) => void
+  available: readonly SeedBrandProduct[]
+  onAdd: (p: SeedBrandProduct) => void
 }) {
   const [open, setOpen] = React.useState(false)
   if (available.length === 0) {
@@ -609,8 +609,8 @@ function ProductRow({
   dispatch,
 }: {
   product: { name: string; sku: string }
-  /** Demo-brand data; absent for non-demo fixtures. */
-  brand?: DemoBrand
+  /** Seed-brand data; absent for non-seed fixtures. */
+  brand?: SeedBrand
   brief: CastAppState["brief"]
   upload: CastAppState["uploads"][string] | null
   dispatch: React.Dispatch<CastAppAction>
