@@ -4,22 +4,55 @@
 
 **POC · Aaron Davis · 2026**
 
-> **Status: spec-locked, app coming next.** This branch ships the full architectural spec (briefSchema, output tree, manifest, GenAI primitives, streaming contract). Runtime scaffolding (`package.json`, `inputs/`, route handlers) lands in a follow-up implementation PR. The Quick Start below describes the **target** developer experience the spec resolves to.
-
 ---
 
 ## Quick Start
 
+### Prerequisites
+
+- **Node.js ≥ 20 LTS** (`node --version`)
+- **pnpm** (`npm install -g pnpm` or `corepack enable`)
+- An **`OPENAI_API_KEY`** with access to `dall-e-3` (default) or `gpt-image-1` (`CAST_GENAI_MODE=cheap`)
+
+### Install & run
+
 ```bash
 git clone https://github.com/arndvs/cast.git
 cd cast
-cp .env.example .env          # add your OPENAI_API_KEY
-npm install
-npm run dev
+cp .env.example .env.local          # paste your OPENAI_API_KEY
+pnpm install
+pnpm dev
 # → open http://localhost:3000
 ```
 
-The app starts with `inputs/brief.json` pre-loaded. Click **Generate** to run the pipeline. Outputs land in `outputs/[campaign]/[market]/[product]/[ratio].png`. See [docs/system-map.md](docs/system-map.md) for the canonical filesystem layout.
+The app boots with the demo brief at [`inputs/brief.json`](inputs/brief.json) pre-loaded. Click **Generate** to run the pipeline. Outputs land at:
+
+```
+outputs/[campaign]/[market]/[product]/[ratio].png
+outputs/[campaign]/brief.json    # snapshot of the brief that produced this run
+outputs/[campaign]/report.json   # compliance + legal check results
+```
+
+See [docs/system-map.md](docs/system-map.md) for the canonical filesystem layout.
+
+### Scripts
+
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Next dev server (Turbopack) on `http://localhost:3000` |
+| `pnpm build` | Production build |
+| `pnpm start` | Run the production build |
+| `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm lint` | ESLint |
+| `pnpm test` | Vitest (one-shot) |
+| `pnpm test:watch` | Vitest in watch mode |
+
+### Troubleshooting
+
+- **`OPENAI_API_KEY missing` / 401 on Generate.** Confirm `.env.local` exists at the repo root and contains `OPENAI_API_KEY=sk-...`. Restart `pnpm dev` after editing — Next reads env files at process start.
+- **`Brand fixture not found` / S1 brand selector is empty.** S1 lists directories under `inputs/brands/`. The repo ships `brisa/` and `volt/`. If you removed them or your brief references a slug with no matching directory, S1 shows the missing-brand banner and gates Generate. Restore the directory or pick a brand that exists.
+- **Port 3000 already in use.** `pnpm dev` defaults to `http://localhost:3000`; if 3000 is busy, Next/Turbopack will pick the next free port and log it to the terminal — open that URL instead. To pin a port explicitly, run `pnpm dev -- -p 3001` (or kill the process on 3000).
+- **Local-mode skipping the GenAI call.** The pipeline prefers a pre-placed asset at `inputs/assets/[product-slug].{png,jpg,jpeg,webp}` over a GenAI call. If that directory is missing or the file extension does not match the allowlist, the resolver falls back to GenAI — create `inputs/assets/` and drop the file with one of the four supported extensions.
 
 ---
 
@@ -136,9 +169,3 @@ inputs/brands/[brand-slug]/
 Reference it from a brief: `"brand": "[brand-slug]"`. No code change. The repo ships two demo profiles — `inputs/brands/brisa/` (sparkling water) and `inputs/brands/volt/` (energy) — representing two sub-brands of the fictional Onda Beverages portfolio. Use them as templates. The recipe for reducing a brand book (HTML, PDF, Figma) into the JSON files above is in [docs/brand-extraction.md](docs/brand-extraction.md).
 
 S1's brand selector lists every directory found under `inputs/brands/`, so adding a new profile makes it available in the UI on the next page load.
-
----
-
-## Project status
-
-This branch contains **design documentation only**. Application code lands in subsequent PRs. See pull request #1 for the design review trail.
