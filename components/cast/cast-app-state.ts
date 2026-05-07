@@ -56,7 +56,7 @@ export type LogoVariantId = string
  * Client-safe logo variant. The server's `BrandProfile.logoVariants[*]`
  * carries an absolute filesystem `path` resolved via `safeJoin` — that
  * field must NOT cross the server→client boundary. The page-level server
- * component projects to this shape before passing to `S1Shell`.
+ * component projects to this shape before passing to `CastAppShell`.
  */
 export interface ClientLogoVariant {
   id: LogoVariantId

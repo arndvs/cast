@@ -1,5 +1,5 @@
 /**
- * Compile-time + run-time guard for the S4 error breadcrumb.
+ * Compile-time + run-time guard for the creative detail error breadcrumb.
  *
  * `PIPELINE_STAGES` is a hard-coded literal (so React keys, transitions,
  * and the `cn(...)` styling can stay typed against a tuple). The
@@ -11,10 +11,10 @@
 
 import { describe, it, expect } from "vitest"
 
-import { PIPELINE_STAGES } from "@/components/cast/s4-creative-detail"
+import { PIPELINE_STAGES } from "@/components/cast/creative-detail-dialog"
 import { errorStageSchema } from "@/lib/cast/schemas"
 
-describe("S4 pipeline breadcrumb stays in sync with errorStageSchema", () => {
+describe("Pipeline breadcrumb stays in sync with errorStageSchema", () => {
   it("has the same length as errorStageSchema.options", () => {
     expect(PIPELINE_STAGES.length).toBe(errorStageSchema.options.length)
   })

@@ -8,7 +8,7 @@
  * The `complete` event payload is the run manifest (== `report.json` on disk).
  *
  * Server emitters: `lib/cast/server/ndjson-emit.ts`.
- * Client decoder: `S1Shell` (V4 wiring).
+ * Client decoder: `CastAppShell` (run controller wiring).
  */
 
 import { z } from "zod"

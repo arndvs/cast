@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils"
  */
 type EditorLogoVariant = ClientLogoVariant
 
-interface S1BriefEditorProps {
+interface BriefEditorProps {
   state: CastAppState
   dispatch: React.Dispatch<CastAppAction>
   /** Logo variants from the loaded brand profile. Empty when no brand on disk. */
@@ -51,7 +51,7 @@ interface S1BriefEditorProps {
   availableBrands?: readonly string[]
 }
 
-export function S1BriefEditor({ state, dispatch, logoVariants, bannedList, availableBrands }: S1BriefEditorProps) {
+export function BriefEditor({ state, dispatch, logoVariants, bannedList, availableBrands }: BriefEditorProps) {
   const [jsonMode, setJsonMode] = React.useState(false)
   // Demo-brand data provides rich visual display (colors, products, voice).
   // Non-demo slugs (or newly added on-disk fixtures) render without it.

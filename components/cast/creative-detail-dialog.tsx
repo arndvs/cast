@@ -19,7 +19,7 @@ import { type Creative, type ErrorStage } from "@/lib/cast/schemas"
 import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 import { cn } from "@/lib/utils"
 
-interface S4CreativeDetailProps {
+interface CreativeDetailDialogProps {
   state: CastAppState
   dispatch: React.Dispatch<CastAppAction>
 }
@@ -28,7 +28,7 @@ interface S4CreativeDetailProps {
  * Pipeline stages, in canonical order — used by the error breadcrumb.
  *
  * The literal must stay in lockstep with `errorStageSchema.options`
- * (enforced by `tests/s4-stage-breadcrumb.test.ts`). The `satisfies`
+ * (enforced by `tests/creative-detail-breadcrumb.test.ts`). The `satisfies`
  * clause below catches a stage being *removed* at compile-time; the test
  * catches a stage being *added* at run-time.
  */
@@ -42,19 +42,19 @@ export const PIPELINE_STAGES = [
 ] as const satisfies readonly ErrorStage[]
 
 /**
- * S4 — creative detail dialog.
+ * Creative detail dialog.
  *
- * Mounts above S3 whenever `state.detailOpen !== null` (the reducer owns
- * the open/close transitions; see `s1-state.ts`). Two render modes:
+ * Mounts above the output grid whenever `state.detailOpen !== null` (the reducer owns
+ * the open/close transitions). Two render modes:
  *
  *   - **Compliance** (`creative.path !== null`): preview via the outputs
  *     proxy, meta grid, the four compliance checks, copy-path + download.
  *   - **Error** (`creative.path === null`): placeholder + a
  *     pipeline-stage breadcrumb sourced from `manifest.errors`.
  */
-export function S4CreativeDetail({ state, dispatch }: S4CreativeDetailProps) {
+export function CreativeDetailDialog({ state, dispatch }: CreativeDetailDialogProps) {
   const creative = state.detailOpen
-  // Belt-and-braces — the shell only mounts S4 when detailOpen is non-null,
+  // Belt-and-braces — the shell only mounts this dialog when detailOpen is non-null,
   // but unmounting on close is handled by Radix so we keep the guard local.
   const open = creative !== null
 
@@ -66,13 +66,13 @@ export function S4CreativeDetail({ state, dispatch }: S4CreativeDetailProps) {
       }}
     >
       {creative && (
-        <S4Body creative={creative} state={state} dispatch={dispatch} />
+        <CreativeDetailDialogBody creative={creative} state={state} dispatch={dispatch} />
       )}
     </Dialog>
   )
 }
 
-function S4Body({
+function CreativeDetailDialogBody({
   creative,
   state,
   dispatch,

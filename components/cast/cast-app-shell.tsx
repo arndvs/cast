@@ -3,11 +3,11 @@
 import * as React from "react"
 import { toast } from "sonner"
 
-import { S1BriefEditor } from "@/components/cast/s1-brief-editor"
-import { S1SummaryStrip } from "@/components/cast/s1-summary-strip"
-import { S2RunView } from "@/components/cast/s2-run-view"
-import { S3OutputGrid } from "@/components/cast/s3-output-grid"
-import { S4CreativeDetail } from "@/components/cast/s4-creative-detail"
+import { BriefEditor } from "@/components/cast/brief-editor"
+import { BriefSummaryStrip } from "@/components/cast/brief-summary-strip"
+import { PipelineRunView } from "@/components/cast/pipeline-run-view"
+import { CreativeOutputGrid } from "@/components/cast/creative-output-grid"
+import { CreativeDetailDialog } from "@/components/cast/creative-detail-dialog"
 import { MissingBrandBanner } from "@/components/cast/missing-brand-banner"
 import {
   castAppReducer,
@@ -23,7 +23,7 @@ import {
   getDefaultBannedWords,
 } from "@/lib/cast/banned-words"
 
-interface S1ShellProps {
+interface CastAppShellProps {
   /** Server-loaded, schema-validated brief — feeds the reducer's initial state. */
   initialBrief: Brief
   /**
@@ -53,23 +53,22 @@ interface S1ShellProps {
 }
 
 /**
- * Client shell for S1/S2/S3.
+ * Client shell — mounts the brief editor, pipeline run view, and output grid.
  *
- * Holds the reducer (the contract is the prototype's reducer; see
- * `components/cast/s1-state.ts`) plus the V4 run controller — when the user
+ * Holds the reducer plus the run controller — when the user
  * hits Generate, `useRunController` POSTs the brief to `/api/generate`,
  * decodes the NDJSON stream, and dispatches each event back through the
  * reducer.
  *
- * V5c adds screen routing (`state.screen`), an explicit cancel ref handed
+ * Screen routing (`state.screen`), an explicit cancel ref handed
  * to the controller, and a `runError` toast effect.
  */
-export function S1Shell({
+export function CastAppShell({
   initialBrief,
   brand,
   brandLoadError = null,
   brandsAvailable = [],
-}: S1ShellProps) {
+}: CastAppShellProps) {
   const [state, dispatch] = React.useReducer(
     castAppReducer,
     { brief: initialBrief, defaultLogoId: brand?.defaultLogoId ?? "" },
@@ -222,7 +221,7 @@ export function S1Shell({
                   brandsAvailable={brandsAvailable}
                 />
               )}
-              <S1BriefEditor
+              <BriefEditor
                 state={state}
                 dispatch={dispatch}
                 logoVariants={activeBrand?.logoVariants ?? []}
@@ -232,22 +231,22 @@ export function S1Shell({
             </>
           )}
           {state.screen === "pipeline-run" && (
-            <S2RunView
+            <PipelineRunView
               state={state}
               dispatch={dispatch}
               cancelRef={cancelRef}
             />
           )}
           {state.screen === "output-grid" && (
-            <S3OutputGrid state={state} dispatch={dispatch} />
+            <CreativeOutputGrid state={state} dispatch={dispatch} />
           )}
         </div>
         {state.detailOpen !== null && (
-          <S4CreativeDetail state={state} dispatch={dispatch} />
+          <CreativeDetailDialog state={state} dispatch={dispatch} />
         )}
       </main>
       {state.screen === "brief-editor" && (
-        <S1SummaryStrip
+        <BriefSummaryStrip
           state={state}
           dispatch={dispatch}
           brandLoadable={brandLoadable}

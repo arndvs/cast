@@ -1,5 +1,5 @@
 import { Topbar } from "@/components/cast/topbar"
-import { S1Shell } from "@/components/cast/s1-shell"
+import { CastAppShell } from "@/components/cast/cast-app-shell"
 import { loadDemoBrief } from "@/lib/cast/server/brief-loader"
 import {
   listBrandSlugs,
@@ -27,7 +27,7 @@ export default async function Page() {
   return (
     <div className="flex min-h-svh flex-col">
       <Topbar crumb={`${brief.brand} · ${brief.campaign}`} />
-      <S1Shell
+      <CastAppShell
         initialBrief={brief}
         brand={
           brand.ok

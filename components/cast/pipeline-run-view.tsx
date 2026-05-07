@@ -12,7 +12,7 @@ import { Wordmark } from "@/components/cast/wordmark"
 import type { PipelineEvent } from "@/lib/cast/events"
 import { cn } from "@/lib/utils"
 
-interface S2RunViewProps {
+interface PipelineRunViewProps {
   state: CastAppState
   dispatch: React.Dispatch<CastAppAction>
   /** Set by `useRunController`; calling it aborts the in-flight fetch. */
@@ -31,7 +31,7 @@ interface S2RunViewProps {
  * (one per pipeline stage). It's rough, but it gives the user something to
  * watch while dall-e-3 takes its time.
  */
-export function S2RunView({ state, dispatch, cancelRef }: S2RunViewProps) {
+export function PipelineRunView({ state, dispatch, cancelRef }: PipelineRunViewProps) {
   const { brief, brandSlug, runState, events, runError, runStartedAt } = state
 
   const total = brief.products.length * brief.markets.length * brief.ratios.length

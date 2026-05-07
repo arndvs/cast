@@ -29,7 +29,7 @@ import { ALL_RATIOS, type AspectRatio } from "@/lib/cast/ratios"
 import type { Creative, Manifest } from "@/lib/cast/schemas"
 import { cn } from "@/lib/utils"
 
-interface S3OutputGridProps {
+interface CreativeOutputGridProps {
   state: CastAppState
   dispatch: React.Dispatch<CastAppAction>
 }
@@ -56,7 +56,7 @@ type MarketFilter = "ALL" | string
  * which the reducer stores. V5d ships the dispatch wired up but doesn't
  * mount the dialog.
  */
-export function S3OutputGrid({ state, dispatch }: S3OutputGridProps) {
+export function CreativeOutputGrid({ state, dispatch }: CreativeOutputGridProps) {
   const { manifest } = state
 
   // Defensive: the shell only mounts this view when `screen === "output-grid"`, which the
@@ -73,16 +73,16 @@ export function S3OutputGrid({ state, dispatch }: S3OutputGridProps) {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <S3OutputGridInner state={state} dispatch={dispatch} manifest={manifest} />
+      <CreativeOutputGridContent state={state} dispatch={dispatch} manifest={manifest} />
     </TooltipProvider>
   )
 }
 
-function S3OutputGridInner({
+function CreativeOutputGridContent({
   state,
   dispatch,
   manifest,
-}: S3OutputGridProps & { manifest: Manifest }) {
+}: CreativeOutputGridProps & { manifest: Manifest }) {
   const { brief, brandSlug } = state
   const counts = React.useMemo(() => deriveCounts(manifest), [manifest])
 

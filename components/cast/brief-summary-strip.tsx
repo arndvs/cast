@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 import { SLUG_RE } from "@/lib/cast/schemas"
 
-interface S1SummaryStripProps {
+interface BriefSummaryStripProps {
   state: CastAppState
   dispatch: React.Dispatch<CastAppAction>
   /**
@@ -44,12 +44,12 @@ interface S1SummaryStripProps {
  * The full schema validation runs server-side in V4 — this strip just
  * surfaces the cheap, deterministic gates.
  */
-export function S1SummaryStrip({
+export function BriefSummaryStrip({
   state,
   dispatch,
   brandLoadable = true,
   bannedHits = [],
-}: S1SummaryStripProps) {
+}: BriefSummaryStripProps) {
   const { brief, runState } = state
   const total = brief.products.length * brief.markets.length * brief.ratios.length
   const slugInvalid = !SLUG_RE.test(brief.campaign || "")
