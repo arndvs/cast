@@ -40,6 +40,7 @@ export default async function Page() {
                   id: variant.id,
                   displayName: variant.displayName,
                   theme: variant.theme,
+                  url: `/api/brands/${brief.brand}/logos/${variant.id}`,
                 })),
                 // The banned-word list the server's compliance pass
                 // will use (default floor ∪ brand fixture, deduped +

@@ -91,6 +91,12 @@ export function CastAppShell({
     initialSlug: initialBrief.brand,
     audience: state.brief.audience,
     message: state.brief.message,
+    onBrandLoaded: React.useCallback(
+      (b: { defaultLogoId: string }) => {
+        if (b.defaultLogoId) dispatch({ type: "setLogoVariant", id: b.defaultLogoId })
+      },
+      [],
+    ),
   })
 
   // One toast per `run-error` transition. The reducer assigns a fresh
