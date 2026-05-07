@@ -49,14 +49,13 @@ Fields are defined by the canonical Zod `briefSchema` in [flow-diagrams.md §4.2
 - source: `local` | `genai` (per [flow-diagrams.md §4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview); drives `counts.reused` / `counts.generated`)
 - file path: `string | null` — repo-relative on success, `null` on pipeline failure. Successful path shape: `outputs/[campaign]/[market]/[product]/[ratio].png`
 - badge: `OK` | `WARN` | `FAIL` (compliance axis only — orthogonal to success/failure)
-- compliance checks (logoPresent, colorsOk, bannedWords)
+- compliance checks (logoPresent, bannedWords)
 
 ### Compliance Result
 
 - badge: `OK` | `WARN` | `FAIL`
 - checks:
   - logoPresent: boolean
-  - colorsOk: boolean
   - bannedWords: string[] (flagged terms)
 
 ### Brand Profile

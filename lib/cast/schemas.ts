@@ -221,7 +221,6 @@ export const complianceSchema = z.object({
   badge: complianceBadgeSchema,
   checks: z.object({
     logoPresent: z.boolean(),
-    colorsOk: z.boolean(),
     bannedWords: z.array(z.string()),
   }),
 })

@@ -63,7 +63,7 @@ function ok(product: string, market = "us-en", ratio: "1x1" | "9x16" | "16x9" = 
     path: `outputs/test-campaign/${market}/${product}/${ratio}.png`,
     compliance: {
       badge: "OK",
-      checks: { logoPresent: true, colorsOk: true, bannedWords: [] },
+      checks: { logoPresent: true, bannedWords: [] },
     },
   }
 }
@@ -73,7 +73,7 @@ function warn(product: string): Creative {
     ...ok(product),
     compliance: {
       badge: "WARN",
-      checks: { logoPresent: true, colorsOk: false, bannedWords: [] },
+      checks: { logoPresent: true, bannedWords: [] },
     },
   }
 }
@@ -83,7 +83,7 @@ function failCompliance(product: string): Creative {
     ...ok(product),
     compliance: {
       badge: "FAIL",
-      checks: { logoPresent: false, colorsOk: false, bannedWords: ["bad"] },
+      checks: { logoPresent: false, bannedWords: ["bad"] },
     },
   }
 }
