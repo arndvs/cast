@@ -65,6 +65,9 @@ export function useBrandProfile({
   const [loadedSlug, setLoadedSlug] = React.useState(initialSlug)
 
   React.useEffect(() => {
+    // Skip fetch when initial server data already matches the current slug
+    if (brandSlug === loadedSlug) return
+
     const controller = new AbortController()
     let cancelled = false
     fetch(`/api/brands/${encodeURIComponent(brandSlug)}`, {
