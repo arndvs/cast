@@ -32,7 +32,13 @@ export interface DerivedCounts {
   warn: number
   /** `path === null` (hard fail) OR `compliance.badge === "FAIL"`. */
   fail: number
-  /** `warn + fail` — surfaced in the WARN tooltip as the D3 invariant. */
+  /**
+   * UI-local total of `warn + fail`. Surfaced in S3 summary cards and
+   * WARN tooltip as the operator-visible flagged count. This may differ
+   * from `manifest.counts.flagged`, which counts WARN+FAIL on succeeded
+   * creatives only (D3) and excludes hard pipeline failures. Use
+   * `manifest.counts.flagged` directly when the D3 invariant matters.
+   */
   flagged: number
 }
 

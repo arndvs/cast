@@ -23,6 +23,7 @@ import { CreativeTile } from "@/components/cast/creative-tile"
 import { Wordmark } from "@/components/cast/wordmark"
 import type { S1Action, S1State } from "@/components/cast/s1-state"
 import { deriveCounts } from "@/lib/cast/manifest-counts"
+import { ALL_RATIOS, type AspectRatio } from "@/lib/cast/ratios"
 import type { Creative, Manifest } from "@/lib/cast/schemas"
 import { cn } from "@/lib/utils"
 
@@ -160,7 +161,7 @@ function S3OutputGridInner({
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            WARN + FAIL = {counts.flagged} flagged (D3)
+            WARN + FAIL on succeeded = {manifest.counts.flagged} flagged (D3)
           </TooltipContent>
         </Tooltip>
         <SummaryCard label="FAIL" value={counts.fail} tone="bad" />
@@ -327,11 +328,18 @@ function groupByMarket(creatives: readonly Creative[]): [string, Creative[]][] {
     byMarket.set(c.market, list)
   }
   // Stable order — markets in first-seen order, then by product+ratio inside.
+  // Ratios sort by canonical pipeline order (1x1 → 9x16 → 16x9), not
+  // lexicographic, so tiles match the operator's mental model.
+  const ratioOrder = new Map<AspectRatio, number>(
+    ALL_RATIOS.map((r, i) => [r, i]),
+  )
   return [...byMarket.entries()].map(([mkt, list]) => [
     mkt,
     [...list].sort((a, b) => {
       if (a.product !== b.product) return a.product.localeCompare(b.product)
-      return a.ratio.localeCompare(b.ratio)
+      return (
+        (ratioOrder.get(a.ratio) ?? 0) - (ratioOrder.get(b.ratio) ?? 0)
+      )
     }),
   ])
 }
