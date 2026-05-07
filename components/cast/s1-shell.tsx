@@ -109,12 +109,27 @@ export function S1Shell({
       .then(async (res) => {
         if (cancelled) return
         if (!res.ok) {
-          const body = await res.json().catch(() => ({})) as { errors?: { message: string }[] }
+          const body = await res.json().catch(() => ({})) as {
+            kind?: "notFound" | "incomplete" | "invalid"
+            missing?: string
+            file?: string
+            errors?: { path?: (string | number)[]; message: string }[]
+          }
           if (cancelled) return
           const message = body.errors?.[0]?.message ??
             `Failed to load brand "${slug}" (HTTP ${res.status})`
           setActiveBrand(null)
-          setActiveBrandLoadError({ kind: "notFound", slug, message })
+          if (body.kind === "incomplete" && typeof body.missing === "string") {
+            setActiveBrandLoadError({ kind: "incomplete", slug, message, missing: body.missing })
+          } else if (body.kind === "invalid" && typeof body.file === "string") {
+            const issues = (body.errors ?? []).map((e) => ({
+              path: (e.path ?? []).slice(2),
+              message: e.message,
+            }))
+            setActiveBrandLoadError({ kind: "invalid", slug, message, file: body.file, issues })
+          } else {
+            setActiveBrandLoadError({ kind: "notFound", slug, message })
+          }
           setLoadedSlug(slug)
           return
         }

@@ -55,13 +55,15 @@ export async function GET(
   } catch (err) {
     if (err instanceof BrandNotFoundError) {
       return NextResponse.json(
-        { errors: [{ path: ["brand"], message: err.message }] },
+        { kind: "notFound", errors: [{ path: ["brand"], message: err.message }] },
         { status: 404 },
       )
     }
     if (err instanceof BrandIncompleteError) {
       return NextResponse.json(
         {
+          kind: "incomplete",
+          missing: err.missing,
           errors: [
             { path: ["brand", err.missing], message: err.message },
           ],
@@ -72,6 +74,8 @@ export async function GET(
     if (err instanceof BrandInvalidError) {
       return NextResponse.json(
         {
+          kind: "invalid",
+          file: err.file,
           errors: err.issues.map((i) => ({
             path: ["brand", err.file, ...i.path],
             message: i.message,

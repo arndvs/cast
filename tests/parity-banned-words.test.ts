@@ -1,10 +1,16 @@
 /**
- * D29 parity — referential identity test.
+ * D29 parity — module-reference + behavioral parity test.
  *
- * The brief editor (`components/cast/s1-brief-editor.tsx`) and the server
- * compliance stage (`lib/cast/server/pipeline/compliance.ts`) MUST import
- * `containsBannedWord` from the SAME module instance. If anyone re-exports
- * it through a wrapper or duplicates the implementation, this test fails.
+ * The brief editor (`components/cast/s1-brief-editor.tsx`) imports
+ * `containsBannedWord` directly from the canonical module; this test asserts
+ * that the import IS the same object reference (referential identity).
+ *
+ * The server compliance stage (`lib/cast/server/pipeline/compliance.ts`)
+ * closes over `containsBannedWord` internally and does not expose the
+ * reference. The server assertion here is therefore behavioral parity —
+ * it ensures `runCompliance` produces identical results to the canonical
+ * helper on a known input. It would NOT fail if compliance re-implemented
+ * the same logic in isolation; only a behavioral divergence triggers failure.
  */
 
 import { describe, it, expect } from "vitest"
@@ -16,13 +22,16 @@ import * as serverCompliance from "@/lib/cast/server/pipeline/compliance"
 import { containsBannedWord as clientImport } from "@/lib/cast/banned-words"
 
 describe("D29 banned-words parity", () => {
-  it("server compliance and the canonical module share the same function reference", () => {
-    // Compliance.runCompliance closes over containsBannedWord internally;
-    // re-importing should land us at the same module export.
+  it("client import is the same reference as the canonical module export", () => {
+    // The editor imports containsBannedWord from @/lib/cast/banned-words directly;
+    // this referential check fails if that import is ever aliased or re-wrapped.
     expect(clientImport).toBe(canonical.containsBannedWord)
-    // Sanity: the server compliance module re-uses the canonical helper too.
-    // Read its source-level re-export by calling runCompliance and matching
-    // its behavior against the canonical helper on a known input.
+  })
+
+  it("server compliance produces identical results to the canonical helper (behavioral parity)", () => {
+    // Note: compliance.ts's internal reference cannot be checked from outside —
+    // this assertion validates behavioral equivalence only. A re-implementation
+    // with identical behavior would still pass.
     const canonicalHits = canonical.containsBannedWord("you cannot kill the vibe", [
       "kill",
     ])

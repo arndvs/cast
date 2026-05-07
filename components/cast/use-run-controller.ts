@@ -120,12 +120,17 @@ export function useRunController(
             buffer = buffer.slice(nl + 1)
             if (!line) continue
             const dispatched = parseAndDispatch(line, dispatch)
-            if (!dispatched) return // parse failure already dispatched run-error
+            if (!dispatched) {
+              // parse failure already dispatched run-error; clean up and exit
+              controller.abort()
+              await reader.cancel()
+              return
+            }
           }
         }
         // Tail: a stream that ends without a trailing newline.
         const tail = buffer.trim()
-        if (tail) parseAndDispatch(tail, dispatch)
+        if (tail && !parseAndDispatch(tail, dispatch)) return // parse failure already dispatched run-error
       } catch (err) {
         if (cancelled) return
         const isAbort =
