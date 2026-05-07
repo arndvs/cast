@@ -25,7 +25,11 @@ export async function findLocalAsset(productSlug: string): Promise<string | null
     try {
       await fs.access(abs)
       return path.posix.join("inputs", "assets", `${productSlug}.${ext}`)
-    } catch {
+    } catch (err) {
+      // Only swallow "missing file" — surface real I/O errors (EACCES, EPERM,
+      // EIO, etc.) so the pipeline doesn't silently fall back to GenAI when
+      // the asset exists but is unreadable.
+      if ((err as NodeJS.ErrnoException)?.code !== "ENOENT") throw err
       // try next ext
     }
   }

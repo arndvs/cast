@@ -223,7 +223,29 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
 
     for (const product of brief.products) {
       const productSlug = slugify(product.name)
-      const resolved = await resolveAsset(productSlug)
+      let resolved: Awaited<ReturnType<typeof resolveAsset>>
+      try {
+        resolved = await resolveAsset(productSlug)
+      } catch (err) {
+        // Non-ENOENT fs errors (EACCES, EPERM, EIO, …) bubble up from
+        // findLocalAsset. Attribute them to the resolve stage per slot so
+        // the run continues and the manifest reflects which (product × market
+        // × ratio) failed, instead of aborting the whole pipeline.
+        const message = errMessage(err)
+        for (const ratio of brief.ratios) {
+          const slot: Slot = { product: productSlug, market, ratio }
+          emit(emitError("resolve", message, slot))
+          errors.push({ ...slot, stage: "resolve", message })
+          creatives.push({
+            product: productSlug,
+            market,
+            ratio,
+            source: "local",
+            path: null,
+          })
+        }
+        continue
+      }
       emit(
         emitAssetResolved(
           productSlug,

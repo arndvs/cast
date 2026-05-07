@@ -35,15 +35,12 @@ export function S2RunView({ state, dispatch, cancelRef }: S2RunViewProps) {
   const { brief, brandSlug, runState, events, runError } = state
 
   // Snapshot the wall-clock at the start of each run. The view stays mounted
-  // across Retry (which re-dispatches `generate`), so we reset on the
-  // editing→running / failed→running / complete→running transition using
-  // React's "store info from previous render" pattern.
+  // across Retry (which re-dispatches `generate`), so we reset on every
+  // editing→running / failed→running / complete→running transition.
   const [startedAt, setStartedAt] = React.useState(() => new Date())
-  const [prevRunState, setPrevRunState] = React.useState(runState)
-  if (runState !== prevRunState) {
-    setPrevRunState(runState)
+  React.useEffect(() => {
     if (runState === "running") setStartedAt(new Date())
-  }
+  }, [runState])
 
   const total = brief.products.length * brief.markets.length * brief.ratios.length
   const expected = Math.max(1, total * 6)
