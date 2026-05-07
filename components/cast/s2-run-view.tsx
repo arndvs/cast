@@ -7,14 +7,14 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import type { S1Action, S1State } from "@/components/cast/s1-state"
+import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 import { Wordmark } from "@/components/cast/wordmark"
 import type { PipelineEvent } from "@/lib/cast/events"
 import { cn } from "@/lib/utils"
 
 interface S2RunViewProps {
-  state: S1State
-  dispatch: React.Dispatch<S1Action>
+  state: CastAppState
+  dispatch: React.Dispatch<CastAppAction>
   /** Set by `useRunController`; calling it aborts the in-flight fetch. */
   cancelRef: React.RefObject<(() => void) | null>
 }
@@ -180,7 +180,7 @@ export function S2RunView({ state, dispatch, cancelRef }: S2RunViewProps) {
   )
 }
 
-function RunStateBadge({ runState }: { runState: S1State["runState"] }) {
+function RunStateBadge({ runState }: { runState: CastAppState["runState"] }) {
   if (runState === "running") {
     return (
       <Badge variant="secondary" className="bg-brand-cyan/15 text-fg-1">

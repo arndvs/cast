@@ -4,12 +4,12 @@ import * as React from "react"
 import { Play } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import type { S1Action, S1State } from "@/components/cast/s1-state"
+import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 import { SLUG_RE } from "@/lib/cast/schemas"
 
 interface S1SummaryStripProps {
-  state: S1State
-  dispatch: React.Dispatch<S1Action>
+  state: CastAppState
+  dispatch: React.Dispatch<CastAppAction>
   /**
    * `false` when the brand fixture failed to load. Forces Generate disabled
    * regardless of axis counts — the run can't succeed without the brand

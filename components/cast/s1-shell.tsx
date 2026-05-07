@@ -10,13 +10,13 @@ import { S3OutputGrid } from "@/components/cast/s3-output-grid"
 import { S4CreativeDetail } from "@/components/cast/s4-creative-detail"
 import { MissingBrandBanner } from "@/components/cast/missing-brand-banner"
 import {
-  s1Reducer,
-  type S1Action,
-  type S1State,
-} from "@/components/cast/s1-state"
+  castAppReducer,
+  type CastAppAction,
+  type CastAppState,
+} from "@/components/cast/cast-app-state"
 import { useRunController } from "@/components/cast/use-run-controller"
 import type { Brief } from "@/lib/cast/schemas"
-import type { ClientLogoVariant } from "@/components/cast/s1-state"
+import type { ClientLogoVariant } from "@/components/cast/cast-app-state"
 import type { BrandLoadErrorInfo } from "@/lib/cast/brand-hints"
 import {
   containsBannedWord,
@@ -71,7 +71,7 @@ export function S1Shell({
   brandsAvailable = [],
 }: S1ShellProps) {
   const [state, dispatch] = React.useReducer(
-    s1Reducer,
+    castAppReducer,
     { brief: initialBrief, defaultLogoId: brand?.defaultLogoId ?? "" },
     makeInitial
   )
@@ -264,7 +264,7 @@ function makeInitial({
 }: {
   brief: Brief
   defaultLogoId: string
-}): S1State {
+}): CastAppState {
   return {
     brandSlug: brief.brand,
     brief,
@@ -281,4 +281,4 @@ function makeInitial({
 }
 
 // Re-export for tree-shake-friendly imports from sibling components.
-export type { S1Action, S1State }
+export type { CastAppAction, CastAppState }

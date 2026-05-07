@@ -82,7 +82,7 @@ export interface UploadPreview {
   type: string
 }
 
-export interface S1State {
+export interface CastAppState {
   /** Slug of the active brand (`brisa`, `volt`, …). */
   brandSlug: string
   /** The brief being edited — same shape as `briefSchema`. */
@@ -113,7 +113,7 @@ export interface S1State {
 // Actions
 // ---------------------------------------------------------------------------
 
-export type S1Action =
+export type CastAppAction =
   | { type: "setBrand"; slug: string; brief: Brief }
   | { type: "setField"; field: "campaign" | "audience"; value: string }
   | { type: "setLocaleMessage"; lang: string; value: string }
@@ -139,7 +139,7 @@ export type S1Action =
 // Reducer
 // ---------------------------------------------------------------------------
 
-export function s1Reducer(state: S1State, action: S1Action): S1State {
+export function castAppReducer(state: CastAppState, action: CastAppAction): CastAppState {
   switch (action.type) {
     case "setBrand":
       // Brand swap discards uploads — different products, different slugs.

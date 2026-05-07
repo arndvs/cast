@@ -2,7 +2,7 @@
 
 import * as React from "react"
 
-import type { S1Action, S1State } from "@/components/cast/s1-state"
+import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 import { pipelineEventSchema } from "@/lib/cast/events"
 
 /**
@@ -32,8 +32,8 @@ const IDLE_TIMEOUT_MS = 90_000
  * `stage: "stream"` error.
  */
 export function useRunController(
-  state: S1State,
-  dispatch: React.Dispatch<S1Action>,
+  state: CastAppState,
+  dispatch: React.Dispatch<CastAppAction>,
   cancelRef?: React.RefObject<(() => void) | null>,
 ): void {
   // Track the active controller so a re-run or unmount cancels in-flight work.
@@ -169,7 +169,7 @@ export function useRunController(
 
 function parseAndDispatch(
   line: string,
-  dispatch: React.Dispatch<S1Action>,
+  dispatch: React.Dispatch<CastAppAction>,
 ): boolean {
   let raw: unknown
   try {

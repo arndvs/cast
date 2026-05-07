@@ -16,12 +16,12 @@ import {
 import { resolveCreativeAbsolutePath } from "@/app/actions/reveal"
 import { getMarket } from "@/lib/cast/markets"
 import { type Creative, type ErrorStage } from "@/lib/cast/schemas"
-import type { S1Action, S1State } from "@/components/cast/s1-state"
+import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 import { cn } from "@/lib/utils"
 
 interface S4CreativeDetailProps {
-  state: S1State
-  dispatch: React.Dispatch<S1Action>
+  state: CastAppState
+  dispatch: React.Dispatch<CastAppAction>
 }
 
 /**
@@ -78,8 +78,8 @@ function S4Body({
   dispatch,
 }: {
   creative: Creative
-  state: S1State
-  dispatch: React.Dispatch<S1Action>
+  state: CastAppState
+  dispatch: React.Dispatch<CastAppAction>
 }) {
   const { brief, manifest } = state
   const failed = creative.path === null

@@ -23,15 +23,15 @@ import {
 } from "@/components/ui/tooltip"
 import { CreativeTile } from "@/components/cast/creative-tile"
 import { Wordmark } from "@/components/cast/wordmark"
-import type { S1Action, S1State } from "@/components/cast/s1-state"
+import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 import { deriveCounts } from "@/lib/cast/manifest-counts"
 import { ALL_RATIOS, type AspectRatio } from "@/lib/cast/ratios"
 import type { Creative, Manifest } from "@/lib/cast/schemas"
 import { cn } from "@/lib/utils"
 
 interface S3OutputGridProps {
-  state: S1State
-  dispatch: React.Dispatch<S1Action>
+  state: CastAppState
+  dispatch: React.Dispatch<CastAppAction>
 }
 
 type StatusFilter = "ALL" | "OK" | "WARN" | "FAIL"

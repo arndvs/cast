@@ -12,14 +12,14 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { Dropzone, type DropzoneFile } from "@/components/cast/dropzone"
 import { MarketsTypeahead } from "@/components/cast/markets-typeahead"
-import type { S1Action, S1State } from "@/components/cast/s1-state"
+import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 import { ALL_RATIOS, RATIO_LABELS, type AspectRatio } from "@/lib/cast/ratios"
 import { ALL_MARKETS, activeLanguages } from "@/lib/cast/markets"
 import { containsBannedWord, getDefaultBannedWords } from "@/lib/cast/banned-words"
 import { DEMO_BRANDS, getDemoBrand, type DemoBrand, type DemoBrandProduct } from "@/lib/cast/demo-brands"
 import { buildPromptPreview } from "@/lib/cast/prompt"
 import { SLUG_RE, slugify } from "@/lib/cast/schemas"
-import type { ClientLogoVariant } from "@/components/cast/s1-state"
+import type { ClientLogoVariant } from "@/components/cast/cast-app-state"
 import { cn } from "@/lib/utils"
 
 /**
@@ -32,8 +32,8 @@ import { cn } from "@/lib/utils"
 type EditorLogoVariant = ClientLogoVariant
 
 interface S1BriefEditorProps {
-  state: S1State
-  dispatch: React.Dispatch<S1Action>
+  state: CastAppState
+  dispatch: React.Dispatch<CastAppAction>
   /** Logo variants from the loaded brand profile. Empty when no brand on disk. */
   logoVariants: readonly EditorLogoVariant[]
   /**
@@ -132,8 +132,8 @@ function Sidebar({
   logoVariants,
   availableBrands,
 }: {
-  state: S1State
-  dispatch: React.Dispatch<S1Action>
+  state: CastAppState
+  dispatch: React.Dispatch<CastAppAction>
   /** Demo-brand data for visual display; absent for non-demo fixtures. */
   brand?: DemoBrand
   logoVariants: readonly EditorLogoVariant[]
@@ -301,8 +301,8 @@ function FormView({
   bannedList,
   slugInvalid,
 }: {
-  state: S1State
-  dispatch: React.Dispatch<S1Action>
+  state: CastAppState
+  dispatch: React.Dispatch<CastAppAction>
   /** Demo-brand data; absent for non-demo fixtures. */
   brand?: DemoBrand
   bannedList: readonly string[]
@@ -611,9 +611,9 @@ function ProductRow({
   product: { name: string; sku: string }
   /** Demo-brand data; absent for non-demo fixtures. */
   brand?: DemoBrand
-  brief: S1State["brief"]
-  upload: S1State["uploads"][string] | null
-  dispatch: React.Dispatch<S1Action>
+  brief: CastAppState["brief"]
+  upload: CastAppState["uploads"][string] | null
+  dispatch: React.Dispatch<CastAppAction>
 }) {
   const slug = slugify(product.name)
   const swatch = brand?.products.find((p) => p.sku === product.sku)
