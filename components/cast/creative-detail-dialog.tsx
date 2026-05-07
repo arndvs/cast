@@ -1,11 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Check, Copy, Download, X } from "lucide-react"
-import { toast } from "sonner"
+import { Download, X } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { ComplianceBadgePill } from "@/components/cast/compliance-badge-pill"
+import { ComplianceChecksList } from "@/components/cast/compliance-checks-list"
+import { CopyPathButton } from "@/components/cast/copy-path-button"
+import { CreativeMetaGrid } from "@/components/cast/creative-meta-grid"
+import { PipelineErrorPanel } from "@/components/cast/pipeline-error-panel"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -14,11 +15,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { resolveCreativeAbsolutePath } from "@/app/actions/reveal"
 import { getMarket } from "@/lib/cast/markets"
-import { type Creative, type ErrorStage, PIPELINE_STAGES } from "@/lib/cast/schemas"
+import type { Creative } from "@/lib/cast/schemas"
 import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
-import { cn } from "@/lib/utils"
 
 interface CreativeDetailDialogProps {
   state: CastAppState
@@ -128,7 +127,7 @@ function CreativeDetailDialogBody({
 
         {/* Right column — meta + checks/error */}
         <div className="flex flex-col gap-4">
-          <MetaGrid
+          <CreativeMetaGrid
             rows={[
               ["product", creative.product],
               ["market", creative.market],
@@ -139,12 +138,12 @@ function CreativeDetailDialogBody({
           />
 
           {failed ? (
-            <ErrorPanel
+            <PipelineErrorPanel
               stage={errorEntry?.stage ?? null}
               message={errorEntry?.message ?? "unknown failure"}
             />
           ) : (
-            <ComplianceChecks creative={creative} />
+            <ComplianceChecksList creative={creative} />
           )}
         </div>
       </div>
@@ -178,170 +177,5 @@ function CreativeDetailDialogBody({
         )}
       </div>
     </DialogContent>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Pieces
-// ---------------------------------------------------------------------------
-
-function MetaGrid({ rows }: { rows: readonly (readonly [string, string])[] }) {
-  return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 font-mono text-xs">
-      {rows.map(([k, v]) => (
-        <React.Fragment key={k}>
-          <dt className="uppercase tracking-wider text-fg-3">{k}</dt>
-          <dd className="text-fg-1">{v}</dd>
-        </React.Fragment>
-      ))}
-    </dl>
-  )
-}
-
-function ComplianceChecks({ creative }: { creative: Creative }) {
-  const checks = creative.compliance?.checks
-  const badge = creative.compliance?.badge ?? "OK"
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-wider text-fg-3">
-          compliance
-        </span>
-        <ComplianceBadgePill badge={badge} />
-      </div>
-      {checks ? (
-        <ul className="flex flex-col gap-1 text-sm">
-          <CheckRow ok={checks.logoPresent} label="logo present" />
-          <CheckRow ok={checks.colorsOk} label="brand colors within tolerance" />
-          <CheckRow
-            ok={checks.bannedWords.length === 0}
-            label={
-              checks.bannedWords.length === 0
-                ? "no banned words"
-                : `banned words: ${checks.bannedWords.join(", ")}`
-            }
-          />
-        </ul>
-      ) : (
-        <p className="text-xs text-fg-3">No compliance data on this creative.</p>
-      )}
-    </div>
-  )
-}
-
-function CheckRow({ ok, label }: { ok: boolean; label: string }) {
-  return (
-    <li className="flex items-start gap-2">
-      <span
-        className={cn(
-          "mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
-          ok ? "bg-ok/15 text-ok" : "bg-bad/15 text-bad",
-        )}
-        aria-hidden="true"
-      >
-        {ok ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-      </span>
-      <span className={cn("text-sm", ok ? "text-fg-1" : "text-bad")}>{label}</span>
-    </li>
-  )
-}
-
-function ErrorPanel({
-  stage,
-  message,
-}: {
-  stage: ErrorStage | null
-  message: string
-}) {
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-wider text-fg-3">
-          pipeline stage
-        </span>
-        {stage && <Badge variant="destructive">{stage}</Badge>}
-      </div>
-
-      <ol className="flex flex-wrap items-center gap-1 font-mono text-[11px]">
-        {PIPELINE_STAGES.map((s, i) => {
-          const isFailed = s === stage
-          const isPast = stage !== null && PIPELINE_STAGES.indexOf(stage) > i
-          return (
-            <React.Fragment key={s}>
-              <li
-                className={cn(
-                  "rounded px-1.5 py-0.5",
-                  isFailed && "bg-bad/15 text-bad",
-                  !isFailed && isPast && "bg-ok/10 text-ok",
-                  !isFailed && !isPast && "bg-muted text-fg-3",
-                )}
-              >
-                {s}
-              </li>
-              {i < PIPELINE_STAGES.length - 1 && (
-                <span className="text-fg-4" aria-hidden="true">
-                  →
-                </span>
-              )}
-            </React.Fragment>
-          )
-        })}
-      </ol>
-
-      <div className="rounded-md border border-bad/40 bg-bad/5 p-3">
-        <span className="font-mono text-[10px] uppercase tracking-wider text-fg-3">
-          message
-        </span>
-        <p className="mt-1 wrap-break-word text-sm text-fg-1">{message}</p>
-      </div>
-    </div>
-  )
-}
-
-function CopyPathButton({
-  campaign,
-  market,
-  product,
-  ratio,
-}: {
-  campaign: string
-  market: string
-  product: string
-  ratio: Creative["ratio"]
-}) {
-  const [pending, setPending] = React.useState(false)
-
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      disabled={pending}
-      onClick={async () => {
-        setPending(true)
-        try {
-          const res = await resolveCreativeAbsolutePath({
-            campaign,
-            market,
-            product,
-            ratio,
-          })
-          if (!res.ok) {
-            toast.error(res.error)
-            return
-          }
-          await navigator.clipboard.writeText(res.path)
-          toast.success("Path copied")
-        } catch (err) {
-          toast.error(err instanceof Error ? err.message : String(err))
-        } finally {
-          setPending(false)
-        }
-      }}
-    >
-      <Copy className="mr-1 h-3 w-3" />
-      Copy path
-    </Button>
   )
 }
