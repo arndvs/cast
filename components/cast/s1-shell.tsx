@@ -14,6 +14,8 @@ import { useRunController } from "@/components/cast/use-run-controller"
 import type { Brief } from "@/lib/cast/schemas"
 import type { ClientLogoVariant } from "@/components/cast/s1-state"
 import type { BrandLoadErrorInfo } from "@/lib/cast/brand-hints"
+import { containsBannedWord, getDefaultBannedWords } from "@/lib/cast/banned-words"
+import { getDemoBrand } from "@/lib/cast/demo-brands"
 
 interface S1ShellProps {
   /** Server-loaded, schema-validated brief — feeds the reducer's initial state. */
@@ -73,6 +75,23 @@ export function S1Shell({
 
   const brandLoadable = brandLoadError == null
 
+  // D29 — same matcher + same merged list the server's compliance pass
+  // will use. Computed here so both the editor (for the inline ⚠ badge)
+  // and the summary strip (for the Generate gate) read the same hits.
+  // Failing closed at S1 prevents the "generation succeeded, compliance
+  // FAILED, demo wasted on a banned word" loop.
+  const bannedHits = React.useMemo(() => {
+    const brand = getDemoBrand(state.brandSlug)
+    const merged = new Set<string>()
+    for (const w of getDefaultBannedWords()) merged.add(w.toLowerCase())
+    for (const w of brand?.bannedWords ?? []) merged.add(w.toLowerCase())
+    const haystack = [
+      state.brief.audience,
+      ...Object.values(state.brief.message),
+    ].join(" ")
+    return containsBannedWord(haystack, [...merged])
+  }, [state.brandSlug, state.brief.audience, state.brief.message])
+
   return (
     <>
       <main className="flex-1 px-6 py-8 lg:px-10">
@@ -108,6 +127,7 @@ export function S1Shell({
           state={state}
           dispatch={dispatch}
           brandLoadable={brandLoadable}
+          bannedHits={bannedHits}
         />
       )}
     </>
