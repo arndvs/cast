@@ -9,12 +9,19 @@ import { S2RunView } from "@/components/cast/s2-run-view"
 import { S3OutputGrid } from "@/components/cast/s3-output-grid"
 import { S4CreativeDetail } from "@/components/cast/s4-creative-detail"
 import { MissingBrandBanner } from "@/components/cast/missing-brand-banner"
-import { s1Reducer, type S1Action, type S1State } from "@/components/cast/s1-state"
+import {
+  s1Reducer,
+  type S1Action,
+  type S1State,
+} from "@/components/cast/s1-state"
 import { useRunController } from "@/components/cast/use-run-controller"
 import type { Brief } from "@/lib/cast/schemas"
 import type { ClientLogoVariant } from "@/components/cast/s1-state"
 import type { BrandLoadErrorInfo } from "@/lib/cast/brand-hints"
-import { containsBannedWord, getDefaultBannedWords } from "@/lib/cast/banned-words"
+import {
+  containsBannedWord,
+  getDefaultBannedWords,
+} from "@/lib/cast/banned-words"
 
 interface S1ShellProps {
   /** Server-loaded, schema-validated brief — feeds the reducer's initial state. */
@@ -30,7 +37,11 @@ interface S1ShellProps {
    * exact list `/api/generate`'s compliance pass will run against. The shell
    * uses it to pre-flight the brief and gate Generate before any spend.
    */
-  brand: { defaultLogoId: string; logoVariants: readonly ClientLogoVariant[]; bannedWords: readonly string[] } | null
+  brand: {
+    defaultLogoId: string
+    logoVariants: readonly ClientLogoVariant[]
+    bannedWords: readonly string[]
+  } | null
   /**
    * Serialization-safe descriptor of the brand-load failure (when `brand`
    * is `null`). Drives the banner rendered above the editor and gates the
@@ -62,7 +73,7 @@ export function S1Shell({
   const [state, dispatch] = React.useReducer(
     s1Reducer,
     { brief: initialBrief, defaultLogoId: brand?.defaultLogoId ?? "" },
-    makeInitial,
+    makeInitial
   )
   const cancelRef = React.useRef<(() => void) | null>(null)
   useRunController(state, dispatch, cancelRef)
@@ -88,7 +99,7 @@ export function S1Shell({
   // `brandLoadable`.
   const bannedList = React.useMemo<readonly string[]>(
     () => brand?.bannedWords ?? getDefaultBannedWords(),
-    [brand?.bannedWords],
+    [brand?.bannedWords]
   )
   // The editor and the summary strip both read from the same list above:
   // the strip via `bannedHits`, the editor via the `bannedList` prop. This
@@ -104,8 +115,8 @@ export function S1Shell({
 
   return (
     <>
-      <main className="flex-1 px-6 py-8 lg:px-10">
-        <div className="mx-auto max-w-6xl">
+      <main className="flex-1 py-8">
+        <div className="mx-auto max-w-7xl">
           {state.screen === "S1" && (
             <>
               {brandLoadError && (
@@ -123,7 +134,11 @@ export function S1Shell({
             </>
           )}
           {state.screen === "S2" && (
-            <S2RunView state={state} dispatch={dispatch} cancelRef={cancelRef} />
+            <S2RunView
+              state={state}
+              dispatch={dispatch}
+              cancelRef={cancelRef}
+            />
           )}
           {state.screen === "S3" && (
             <S3OutputGrid state={state} dispatch={dispatch} />
