@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { getMarket } from "@/lib/cast/markets"
+import { buildCreativeProxyUrl } from "@/lib/cast/creative-proxy-url"
 import type { Creative } from "@/lib/cast/schemas"
 import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 
@@ -68,11 +69,7 @@ function CreativeDetailDialogBody({
   const failed = creative.path === null
   const language = getMarket(creative.market)?.language ?? creative.market.split("-").pop() ?? "—"
 
-  // Same URL the tile uses — the proxy whitelists `.png` and reads from
-  // outputs/ outside the static tree.
-  const proxyUrl = `/api/outputs/${encodeURIComponent(brief.campaign)}/${encodeURIComponent(
-    creative.market,
-  )}/${encodeURIComponent(creative.product)}/${creative.ratio}.png`
+  const proxyUrl = buildCreativeProxyUrl(brief.campaign, creative.market, creative.product, creative.ratio)
 
   const downloadName = `${brief.campaign}-${creative.market}-${creative.product}-${creative.ratio}.png`
 

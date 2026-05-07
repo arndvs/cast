@@ -5,6 +5,7 @@ import * as React from "react"
 import { ComplianceBadgePill } from "@/components/cast/compliance-badge-pill"
 import { CreativeSourcePill } from "@/components/cast/creative-source-pill"
 import { aspectClassForRatio } from "@/lib/cast/creative-aspect-class"
+import { buildCreativeProxyUrl } from "@/lib/cast/creative-proxy-url"
 import type { Creative } from "@/lib/cast/schemas"
 import { cn } from "@/lib/utils"
 
@@ -36,9 +37,7 @@ export function CreativeTile({ creative, campaign, onClick }: CreativeTileProps)
 
   const src = failed
     ? null
-    : `/api/outputs/${encodeURIComponent(campaign)}/${encodeURIComponent(
-        creative.market,
-      )}/${encodeURIComponent(creative.product)}/${creative.ratio}.png`
+    : buildCreativeProxyUrl(campaign, creative.market, creative.product, creative.ratio)
 
   return (
     <button
