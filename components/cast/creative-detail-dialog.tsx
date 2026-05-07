@@ -5,6 +5,7 @@ import { Check, Copy, Download, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
+import { ComplianceBadgePill } from "@/components/cast/compliance-badge-pill"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -207,7 +208,7 @@ function ComplianceChecks({ creative }: { creative: Creative }) {
         <span className="font-mono text-[10px] uppercase tracking-wider text-fg-3">
           compliance
         </span>
-        <BadgePill badge={badge} />
+        <ComplianceBadgePill badge={badge} />
       </div>
       {checks ? (
         <ul className="flex flex-col gap-1 text-sm">
@@ -244,16 +245,6 @@ function CheckRow({ ok, label }: { ok: boolean; label: string }) {
       <span className={cn("text-sm", ok ? "text-fg-1" : "text-bad")}>{label}</span>
     </li>
   )
-}
-
-function BadgePill({ badge }: { badge: "OK" | "WARN" | "FAIL" }) {
-  if (badge === "OK") {
-    return <Badge className="bg-ok/15 text-ok hover:bg-ok/15">OK</Badge>
-  }
-  if (badge === "WARN") {
-    return <Badge className="bg-warn/15 text-warn hover:bg-warn/15">WARN</Badge>
-  }
-  return <Badge variant="destructive">FAIL</Badge>
 }
 
 function ErrorPanel({

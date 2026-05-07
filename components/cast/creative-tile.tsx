@@ -3,6 +3,7 @@
 import * as React from "react"
 
 import { Badge } from "@/components/ui/badge"
+import { ComplianceBadgePill } from "@/components/cast/compliance-badge-pill"
 import type { Creative } from "@/lib/cast/schemas"
 import { cn } from "@/lib/utils"
 
@@ -79,7 +80,7 @@ export function CreativeTile({ creative, campaign, onClick }: CreativeTileProps)
           </div>
         )}
         <div className="absolute right-1 top-1">
-          <BadgePill badge={badge} />
+          <ComplianceBadgePill badge={badge} />
         </div>
       </div>
       <div className="flex items-center gap-2 px-1 text-xs">
@@ -92,16 +93,6 @@ export function CreativeTile({ creative, campaign, onClick }: CreativeTileProps)
       </div>
     </button>
   )
-}
-
-function BadgePill({ badge }: { badge: "OK" | "WARN" | "FAIL" }) {
-  if (badge === "OK") {
-    return <Badge className="bg-ok/15 text-ok hover:bg-ok/15">OK</Badge>
-  }
-  if (badge === "WARN") {
-    return <Badge className="bg-warn/15 text-warn hover:bg-warn/15">WARN</Badge>
-  }
-  return <Badge variant="destructive">FAIL</Badge>
 }
 
 function SourcePill({ source }: { source: "local" | "genai" }) {
