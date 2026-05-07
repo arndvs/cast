@@ -91,6 +91,7 @@ export type CastAppAction =
   | { type: "goto-run" }
   | { type: "goto-grid" }
   | { type: "goto-edit" }
+  | { type: "replaceBrief"; brief: Brief }
   | { type: "open-detail"; creative: Creative }
   | { type: "close-detail" }
 
@@ -131,6 +132,14 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
         runState: "editing",
       }
     }
+    case "replaceBrief":
+      return {
+        ...state,
+        brandSlug: action.brief.brand,
+        brief: action.brief,
+        logoVariant: action.brief.logoVariant ?? "",
+        uploads: revokeAll(state.uploads),
+      }
     case "setField":
       return { ...state, brief: { ...state.brief, [action.field]: action.value } }
     case "setLocaleMessage":

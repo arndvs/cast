@@ -4,6 +4,7 @@ import * as React from "react"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { BriefEditorSidebar } from "@/components/cast/brief-editor-sidebar"
@@ -12,7 +13,7 @@ import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-sta
 import type { ClientLogoVariant } from "@/components/cast/cast-app-state"
 import { containsBannedWord, getDefaultBannedWords } from "@/lib/cast/banned-words"
 import { SEED_BRANDS, getSeedBrand } from "@/lib/cast/seed-brands"
-import { SLUG_RE } from "@/lib/cast/schemas"
+import { briefSchema, SLUG_RE } from "@/lib/cast/schemas"
 
 interface BriefEditorProps {
   state: CastAppState
@@ -38,6 +39,61 @@ export function BriefEditor({ state, dispatch, logoVariants, bannedList, availab
   const [jsonMode, setJsonMode] = React.useState(false)
   const seedBrand = getSeedBrand(state.brandSlug) ?? undefined
 
+  // --- JSON editor local state ---
+  const [jsonText, setJsonText] = React.useState(() => JSON.stringify(state.brief, null, 2))
+  const [jsonErrors, setJsonErrors] = React.useState<string[]>([])
+  const [jsonDirty, setJsonDirty] = React.useState(false)
+
+  // Re-sync jsonText from state.brief when entering JSON mode clean,
+  // or when the brief changes externally (e.g. brand switch) while in form mode.
+  const briefRef = React.useRef(state.brief)
+
+  React.useEffect(() => {
+    if (briefRef.current !== state.brief && !jsonDirty) {
+      setJsonText(JSON.stringify(state.brief, null, 2))
+      setJsonErrors([])
+    }
+    briefRef.current = state.brief
+  }, [state.brief, jsonDirty])
+
+  function handleTabSwitch(v: string) {
+    const switchingToJson = v === "json"
+    if (!switchingToJson && jsonDirty) {
+      if (!window.confirm("Discard unsaved JSON changes?")) return
+    }
+    if (switchingToJson) {
+      setJsonText(JSON.stringify(state.brief, null, 2))
+      setJsonErrors([])
+      setJsonDirty(false)
+    }
+    setJsonMode(switchingToJson)
+  }
+
+  function handleJsonApply() {
+    let parsed: unknown
+
+    try {
+      parsed = JSON.parse(jsonText)
+    } catch (e) {
+      setJsonErrors([(e as SyntaxError).message])
+      return
+    }
+    const result = briefSchema.safeParse(parsed)
+    if (!result.success) {
+      setJsonErrors(result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`))
+      return
+    }
+    setJsonErrors([])
+    setJsonDirty(false)
+    dispatch({ type: "replaceBrief", brief: result.data })
+  }
+
+  function handleJsonReset() {
+    setJsonText(JSON.stringify(state.brief, null, 2))
+    setJsonErrors([])
+    setJsonDirty(false)
+  }
+
   const effectiveBannedList = React.useMemo<readonly string[]>(
     () => bannedList ?? getDefaultBannedWords(),
     [bannedList],
@@ -60,7 +116,7 @@ export function BriefEditor({ state, dispatch, logoVariants, bannedList, availab
         <div className="flex items-center gap-3">
           <Tabs
             value={jsonMode ? "json" : "form"}
-            onValueChange={(v) => setJsonMode(v === "json")}
+            onValueChange={handleTabSwitch}
           >
             <TabsList>
               <TabsTrigger value="form">Form</TabsTrigger>
@@ -78,9 +134,30 @@ export function BriefEditor({ state, dispatch, logoVariants, bannedList, availab
         {jsonMode ? (
           <Card>
             <CardContent className="p-4">
-              <pre className="overflow-auto rounded bg-muted/50 p-4 font-mono text-xs leading-relaxed text-fg-2">
-                {JSON.stringify(state.brief, null, 2)}
-              </pre>
+              <textarea
+                className="min-h-100 w-full resize-y rounded bg-muted/50 p-4 font-mono text-xs leading-relaxed text-fg-2 focus:outline-none focus:ring-1 focus:ring-ring"
+                value={jsonText}
+                onChange={(e) => {
+                  setJsonText(e.target.value)
+                  setJsonDirty(true)
+                }}
+                spellCheck={false}
+              />
+              {jsonErrors.length > 0 && (
+                <div className="mt-2 space-y-1 rounded bg-destructive/10 p-3 text-xs text-destructive">
+                  {jsonErrors.map((err, i) => (
+                    <p key={i}>{err}</p>
+                  ))}
+                </div>
+              )}
+              <div className="mt-3 flex gap-2">
+                <Button size="sm" onClick={handleJsonApply} disabled={!jsonDirty}>
+                  Apply
+                </Button>
+                <Button size="sm" variant="ghost" onClick={handleJsonReset} disabled={!jsonDirty}>
+                  Reset
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
