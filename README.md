@@ -51,7 +51,7 @@ See [docs/system-map.md](docs/system-map.md) for the canonical filesystem layout
 
 - **`OPENAI_API_KEY missing` / 401 on Generate.** Confirm `.env.local` exists at the repo root and contains `OPENAI_API_KEY=sk-...`. Restart `pnpm dev` after editing — Next reads env files at process start.
 - **`Brand fixture not found` / S1 brand selector is empty.** S1 lists directories under `inputs/brands/`. The repo ships `brisa/` and `volt/`. If you removed them or your brief references a slug with no matching directory, S1 shows the missing-brand banner and gates Generate. Restore the directory or pick a brand that exists.
-- **Port 3000 already in use.** `PORT=3001 pnpm dev` — or kill the other process. Next does not auto-fall-through to a free port in this repo.
+- **Port 3000 already in use.** `pnpm dev` defaults to `http://localhost:3000`; if 3000 is busy, Next/Turbopack will pick the next free port and log it to the terminal — open that URL instead. To pin a port explicitly, run `pnpm dev -- -p 3001` (or kill the process on 3000).
 - **Local-mode skipping the GenAI call.** The pipeline prefers a pre-placed asset at `inputs/assets/[product-slug].{png,jpg,jpeg,webp}` over a GenAI call. If that directory is missing or the file extension does not match the allowlist, the resolver falls back to GenAI — create `inputs/assets/` and drop the file with one of the four supported extensions.
 
 ---
