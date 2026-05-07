@@ -2,8 +2,9 @@
 
 import * as React from "react"
 
-import { Badge } from "@/components/ui/badge"
 import { ComplianceBadgePill } from "@/components/cast/compliance-badge-pill"
+import { CreativeSourcePill } from "@/components/cast/creative-source-pill"
+import { aspectClassForRatio } from "@/lib/cast/creative-aspect-class"
 import type { Creative } from "@/lib/cast/schemas"
 import { cn } from "@/lib/utils"
 
@@ -27,12 +28,7 @@ interface CreativeTileProps {
  * tree). `loading="lazy"` keeps the initial paint cheap for large grids.
  */
 export function CreativeTile({ creative, campaign, onClick }: CreativeTileProps) {
-  const aspectClass =
-    creative.ratio === "1x1"
-      ? "aspect-square"
-      : creative.ratio === "9x16"
-        ? "aspect-[9/16]"
-        : "aspect-video"
+  const aspectClass = aspectClassForRatio(creative.ratio)
 
   const failed = creative.path === null
   const badge: "OK" | "WARN" | "FAIL" =
@@ -85,27 +81,12 @@ export function CreativeTile({ creative, campaign, onClick }: CreativeTileProps)
       </div>
       <div className="flex items-center gap-2 px-1 text-xs">
         <span className="truncate font-medium text-fg-1">{creative.product}</span>
-        <SourcePill source={creative.source} />
+        <CreativeSourcePill source={creative.source} />
         <span className="grow" />
         <span className="font-mono text-[10px] text-fg-3">
           {creative.market} · {creative.ratio}
         </span>
       </div>
     </button>
-  )
-}
-
-function SourcePill({ source }: { source: "local" | "genai" }) {
-  return (
-    <span
-      className={cn(
-        "rounded px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide",
-        source === "local"
-          ? "bg-brand-cyan/15 text-fg-1"
-          : "bg-brand-lime/20 text-fg-1",
-      )}
-    >
-      {source}
-    </span>
   )
 }
