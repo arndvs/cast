@@ -62,9 +62,9 @@ Press the gear icon (bottom-right) to open. Useful toggles:
 | Markets typeahead (D24) | Text input above market chips; Enter validates against `MARKET_RE = /^[a-z]{2}-[a-z]{2}$/`. |
 | GenAI cheap mode (D9) | `genaiMode: "cheap"` → `counts.generated` = missing-product count (one `gpt-image-1` call per product, Sharp center-crops the rest), not creative count. |
 
-## Production port (target)
+## Production port
 
-The prototype is the visual spec for the production app under [working/b_KLVLM7AEs1k/](../../working/b_KLVLM7AEs1k/) (Next.js + shadcn). Target libraries when porting:
+The production app is at the repo root; this prototype is the throwaway visual + interaction spec it was ported from. Library choices that survived the port:
 
 - **S5 drop zone** → `shadcn-dropzone`
 - **S4 / S13 forms + validation** → `react-hook-form` + `zod`
