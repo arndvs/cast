@@ -172,7 +172,7 @@ export function useBrandProfile({
       cancelled = true
       controller.abort()
     }
-  }, [brandSlug])
+  }, [brandSlug, loadedSlug])
 
   const brandLoadable =
     loadedSlug === brandSlug && activeBrandLoadError == null

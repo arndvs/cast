@@ -54,12 +54,21 @@ export function BriefSummaryStrip({
   const total = brief.products.length * brief.markets.length * brief.ratios.length
   const slugInvalid = !SLUG_RE.test(brief.campaign || "")
   const hasBanned = bannedHits.length > 0
+  const missingMessages =
+    // A required locale is absent or empty.
+    brief.markets.some((m) => {
+      const lang = m.split("-").pop()!
+      return !brief.message[lang]
+    }) ||
+    // A stale key with an empty value would fail server-side z.string().min(1).
+    Object.values(brief.message).some((v) => !v)
   const disabled =
     runState !== "editing" ||
     total === 0 ||
     slugInvalid ||
     !brandLoadable ||
-    hasBanned
+    hasBanned ||
+    missingMessages
 
   return (
     <div className="sticky bottom-0 z-10 flex items-center gap-3 border-t border-border bg-background/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -77,6 +86,9 @@ export function BriefSummaryStrip({
           <span className="ml-2 text-bad">
             · remove banned word{bannedHits.length > 1 ? "s" : ""} to enable
           </span>
+        )}
+        {missingMessages && (
+          <span className="ml-2 text-bad">· fill in all headlines to enable</span>
         )}
       </p>
       <div className="grow" />

@@ -14,7 +14,7 @@ import type { runCompliance } from "@/lib/cast/server/pipeline/compliance"
 
 export function toComplianceField(c: ReturnType<typeof runCompliance>): {
   badge: ComplianceBadge
-  checks: { logoPresent: boolean; colorsOk: boolean; bannedWords: string[] }
+  checks: { logoPresent: boolean; bannedWords: string[] }
 } {
   return { badge: c.badge, checks: c.checks }
 }

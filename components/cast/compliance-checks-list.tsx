@@ -24,7 +24,6 @@ export function ComplianceChecksList({ creative }: ComplianceChecksListProps) {
       {checks ? (
         <ul className="flex flex-col gap-1 text-sm">
           <CheckRow ok={checks.logoPresent} label="logo present" />
-          <CheckRow ok={checks.colorsOk} label="brand colors within tolerance" />
           <CheckRow
             ok={checks.bannedWords.length === 0}
             label={

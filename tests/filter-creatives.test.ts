@@ -82,7 +82,7 @@ describe("creativeMatchesFilters", () => {
     it("passes ALL regardless of badge", () => {
       expect(
         creativeMatchesFilters(
-          makeCreative({ compliance: { badge: "WARN", checks: { logoPresent: true, colorsOk: true, bannedWords: [] } } }),
+          makeCreative({ compliance: { badge: "WARN", checks: { logoPresent: true, bannedWords: [] } } }),
           { status: "ALL", ratio: "ALL", market: "ALL" },
         ),
       ).toBe(true)
@@ -121,7 +121,7 @@ describe("creativeMatchesFilters", () => {
     it("matches WARN badge", () => {
       expect(
         creativeMatchesFilters(
-          makeCreative({ compliance: { badge: "WARN", checks: { logoPresent: true, colorsOk: true, bannedWords: ["free"] } } }),
+          makeCreative({ compliance: { badge: "WARN", checks: { logoPresent: true, bannedWords: ["free"] } } }),
           { status: "WARN", ratio: "ALL", market: "ALL" },
         ),
       ).toBe(true)

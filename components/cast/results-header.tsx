@@ -1,7 +1,6 @@
 "use client"
 
-import * as React from "react"
-import { useEffect, useState } from \"react\"
+import { useEffect, useState, type Dispatch } from "react"
 import {
   Check,
   Clock,
@@ -27,7 +26,7 @@ interface ResultsHeaderProps {
   failCount: number
   successCount: number
   totalCount: number
-  dispatch: React.Dispatch<CastAppAction>
+  dispatch: Dispatch<CastAppAction>
 }
 
 export function ResultsHeader({

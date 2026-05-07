@@ -119,6 +119,7 @@ export function BriefEditorFormView({
               {langs.map((market) => {
                 const value = brief.message[market.language] ?? ""
                 const localBanned = containsBannedWord(value, bannedList)
+                const isEmpty = value.length === 0
                 return (
                   <div key={market.language} className="flex items-center gap-2">
                     <span className="w-10 shrink-0 rounded bg-muted px-2 py-1.5 text-center font-mono text-xs">
@@ -127,7 +128,7 @@ export function BriefEditorFormView({
                     <Input
                       value={value}
                       placeholder="headline for this locale"
-                      className={cn(localBanned.length > 0 && "border-warn")}
+                      className={cn(isEmpty && "border-bad", localBanned.length > 0 && "border-warn")}
                       onChange={(e) =>
                         dispatch({
                           type: "setLocaleMessage",

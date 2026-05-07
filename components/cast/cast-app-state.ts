@@ -163,6 +163,17 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
       if (!has) {
         const lang = getMarket(code)?.language ?? code.split("-").pop()
         if (lang && !(lang in message)) message[lang] = ""
+      } else {
+        // Removing a market — drop its language key only if no remaining market
+        // uses that language AND the value is still the auto-seeded empty string.
+        // Preserves user-entered headline text when toggling markets off/on.
+        const removedLang = getMarket(code)?.language ?? code.split("-").pop()
+        if (removedLang) {
+          const stillNeeded = markets.some(
+            (m) => (getMarket(m)?.language ?? m.split("-").pop()) === removedLang,
+          )
+          if (!stillNeeded && message[removedLang] === "") delete message[removedLang]
+        }
       }
       return { ...state, brief: { ...state.brief, markets, message } }
     }
