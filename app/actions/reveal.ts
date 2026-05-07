@@ -7,7 +7,7 @@ import { MARKET_RE, ratioSchema, SLUG_RE, type AspectRatio } from "@/lib/cast/sc
 
 /**
  * revealOutputFolder — open the per-campaign outputs folder in the OS file
- * manager (D31). Privileged shell call, so every input is validated:
+ * manager. Privileged shell call, so every input is validated:
  *
  *   1. campaign matches SLUG_RE (no shell metacharacters survive this).
  *   2. safeJoin('outputs', campaign) — rejects traversal, absolute paths.
@@ -91,8 +91,8 @@ function errMessage(err: unknown): string {
 }
 
 /**
- * resolveCreativeAbsolutePath — server-only helper for S4's "Copy path"
- * button (V5e). The manifest stores creative paths repo-relative
+ * resolveCreativeAbsolutePath — server-only helper for the creative detail dialog's
+ * "Copy path" button. The manifest stores creative paths repo-relative
  * (POSIX), but operators want the OS-absolute path on the clipboard so
  * pasting it into a terminal or file dialog Just Works.
  *

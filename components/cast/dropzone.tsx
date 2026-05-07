@@ -6,13 +6,13 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+import { UPLOAD_MAX_BYTES } from "@/lib/cast/upload-constraints"
+
 const ACCEPT = {
   "image/png": [".png"],
   "image/jpeg": [".jpg", ".jpeg"],
   "image/webp": [".webp"],
 }
-
-const MAX_BYTES = 5 * 1024 * 1024 // 5 MB — matches the V3 /api/upload contract.
 
 export interface DropzoneFile {
   fileName: string
@@ -30,18 +30,17 @@ interface DropzoneProps {
 }
 
 /**
- * V2 dropzone — local preview only via `URL.createObjectURL`. V3 wires the
- * actual `/api/upload` POST and replaces `objectUrl` with `savedAs`.
+ * Dropzone — local preview via `URL.createObjectURL`, with upload handling
+ * delegated to the parent component.
  *
- * The reducer revokes the object URL when the preview is replaced or removed
- * (see `s1-state.ts::removeUpload`).
+ * The reducer revokes the object URL when the preview is replaced or removed.
  */
 export function Dropzone({ preview, onUpload, onRemove, className }: DropzoneProps) {
   const [error, setError] = React.useState<string | null>(null)
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: ACCEPT,
-    maxSize: MAX_BYTES,
+    maxSize: UPLOAD_MAX_BYTES,
     multiple: false,
     onDrop: (accepted, rejected) => {
       setError(null)

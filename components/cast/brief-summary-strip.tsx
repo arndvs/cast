@@ -4,12 +4,12 @@ import * as React from "react"
 import { Play } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import type { S1Action, S1State } from "@/components/cast/s1-state"
+import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 import { SLUG_RE } from "@/lib/cast/schemas"
 
-interface S1SummaryStripProps {
-  state: S1State
-  dispatch: React.Dispatch<S1Action>
+interface BriefSummaryStripProps {
+  state: CastAppState
+  dispatch: React.Dispatch<CastAppAction>
   /**
    * `false` when the brand fixture failed to load. Forces Generate disabled
    * regardless of axis counts — the run can't succeed without the brand
@@ -22,9 +22,9 @@ interface S1SummaryStripProps {
    * supplied by the shell. The shell builds its list from
    * `BrandProfile.bannedWords` (default floor ∪ brand fixture, dedup +
    * lowercased on the server in `loadBrandProfile`) so this gate uses the
-   * same list `/api/generate`'s compliance pass uses (D29). When non-empty,
-   * Generate is disabled — failing closed at S1 prevents the "generation
-   * succeeded, compliance FAILED, demo wasted" loop where the operator
+   * same list `/api/generate`'s compliance pass uses. When non-empty,
+   * Generate is disabled — failing closed at the brief editor prevents the
+   * "generation succeeded, compliance FAILED, demo wasted" loop where the operator
    * only learns the brief was non-compliant after the API spend has
    * already happened.
    */
@@ -41,15 +41,15 @@ interface S1SummaryStripProps {
  * - the brief contains a banned-list term (`bannedHits.length > 0`), or
  * - the run is already in flight.
  *
- * The full schema validation runs server-side in V4 — this strip just
+ * The full schema validation runs server-side — this strip just
  * surfaces the cheap, deterministic gates.
  */
-export function S1SummaryStrip({
+export function BriefSummaryStrip({
   state,
   dispatch,
   brandLoadable = true,
   bannedHits = [],
-}: S1SummaryStripProps) {
+}: BriefSummaryStripProps) {
   const { brief, runState } = state
   const total = brief.products.length * brief.markets.length * brief.ratios.length
   const slugInvalid = !SLUG_RE.test(brief.campaign || "")

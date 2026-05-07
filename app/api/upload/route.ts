@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server"
 import fs from "node:fs/promises"
 import { safeJoin } from "@/lib/cast/server/safe-join"
+import { isENOENT, jsonError } from "@/lib/cast/server/api-helpers"
+import { magicBytesMatch } from "@/lib/cast/server/magic-bytes"
+import { UPLOAD_MAX_BYTES, UPLOAD_MAX_DISPLAY } from "@/lib/cast/upload-constraints"
 import { SLUG_RE } from "@/lib/cast/schemas"
 
 export const runtime = "nodejs"
 
 /**
- * POST /api/upload — multipart upload of a product photo (D4, D5, D26).
+ * POST /api/upload — multipart upload of a product photo.
  *
  * Constraints (per flow-diagrams §4.2):
  *   - productSlug must match SLUG_RE → 400
@@ -19,7 +22,6 @@ export const runtime = "nodejs"
  *     so one slug owns one file at a time.
  */
 
-const MAX_BYTES = 5 * 1024 * 1024
 const MIME_TO_EXT: Record<string, "png" | "jpg" | "webp"> = {
   "image/png": "png",
   "image/jpeg": "jpg",
@@ -51,8 +53,8 @@ export async function POST(req: Request): Promise<NextResponse> {
       },
     ])
   }
-  if (declaredBytes > MAX_BYTES) {
-    return jsonError(413, [{ path: ["file"], message: "file exceeds 5 MB limit" }])
+  if (declaredBytes > UPLOAD_MAX_BYTES) {
+    return jsonError(413, [{ path: ["file"], message: `file exceeds ${UPLOAD_MAX_DISPLAY} limit` }])
   }
 
   let form: FormData
@@ -73,8 +75,8 @@ export async function POST(req: Request): Promise<NextResponse> {
   if (!(file instanceof File)) {
     return jsonError(400, [{ path: ["file"], message: "file is required" }])
   }
-  if (file.size > MAX_BYTES) {
-    return jsonError(413, [{ path: ["file"], message: "file exceeds 5 MB limit" }])
+  if (file.size > UPLOAD_MAX_BYTES) {
+    return jsonError(413, [{ path: ["file"], message: `file exceeds ${UPLOAD_MAX_DISPLAY} limit` }])
   }
 
   const mime = (file.type || "").toLowerCase()
@@ -89,8 +91,8 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer())
-  if (bytes.byteLength > MAX_BYTES) {
-    return jsonError(413, [{ path: ["file"], message: "file exceeds 5 MB limit" }])
+  if (bytes.byteLength > UPLOAD_MAX_BYTES) {
+    return jsonError(413, [{ path: ["file"], message: `file exceeds ${UPLOAD_MAX_DISPLAY} limit` }])
   }
 
   // Defense-in-depth: file.type comes from the user-supplied multipart header
@@ -131,64 +133,4 @@ export async function POST(req: Request): Promise<NextResponse> {
     },
     { headers: { "Cache-Control": "no-store" } },
   )
-}
-
-function jsonError(
-  status: number,
-  errors: { path: (string | number)[]; message: string }[],
-): NextResponse {
-  return NextResponse.json({ errors }, { status })
-}
-
-function isENOENT(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code: unknown }).code === "ENOENT"
-  )
-}
-
-/**
- * Verify the leading bytes of `bytes` match the declared `mime`.
- * - PNG: 89 50 4E 47 0D 0A 1A 0A
- * - JPEG: FF D8 FF
- * - WebP: "RIFF" .... "WEBP"
- */
-function magicBytesMatch(bytes: Uint8Array, mime: string): boolean {
-  if (mime === "image/png") {
-    return (
-      bytes.length >= 8 &&
-      bytes[0] === 0x89 &&
-      bytes[1] === 0x50 &&
-      bytes[2] === 0x4e &&
-      bytes[3] === 0x47 &&
-      bytes[4] === 0x0d &&
-      bytes[5] === 0x0a &&
-      bytes[6] === 0x1a &&
-      bytes[7] === 0x0a
-    )
-  }
-  if (mime === "image/jpeg") {
-    return (
-      bytes.length >= 3 &&
-      bytes[0] === 0xff &&
-      bytes[1] === 0xd8 &&
-      bytes[2] === 0xff
-    )
-  }
-  if (mime === "image/webp") {
-    return (
-      bytes.length >= 12 &&
-      bytes[0] === 0x52 && // R
-      bytes[1] === 0x49 && // I
-      bytes[2] === 0x46 && // F
-      bytes[3] === 0x46 && // F
-      bytes[8] === 0x57 && // W
-      bytes[9] === 0x45 && // E
-      bytes[10] === 0x42 && // B
-      bytes[11] === 0x50 //   P
-    )
-  }
-  return false
 }

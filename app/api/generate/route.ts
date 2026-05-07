@@ -3,23 +3,23 @@
  * events, and write `outputs/[campaign]/` (brief.json, per-creative PNGs,
  * report.json).
  *
- * Flow (per flow-diagrams §5 + slices doc § V4):
+ * Flow:
  *   1. Validate body against `briefSchema`. 400 on failure.
  *   2. Load brand profile (`BrandNotFoundError` → 404, others → 400).
  *      Loader errors come back as plain JSON, NOT a stream — the client can
  *      branch on `Content-Type` to decide whether to attach the NDJSON reader.
- *   3. Idempotency (D15): `rm -rf outputs/[campaign]/`, then write brief.json.
- *   4. Open the stream. For each market sequentially (D20), for each product,
+ *   3. Wipe `outputs/[campaign]/` for idempotency, then write brief.json.
+ *   4. Open the stream. For each market sequentially (to avoid concurrent filesystem writes), for each product,
  *      for each ratio in parallel: resolve → genai → resize → compose →
  *      compliance → write. Emit step + asset_resolved + creative_ready +
  *      compliance_result events as we go.
  *   5. On per-creative failure: record `errors[]`, omit compliance from the
- *      creative entry **unless** the failure is at the write stage (D19).
+ *      creative entry **unless** the failure is at the write stage (compliance
+ *      had already run in that case).
  *      Continue with remaining work.
  *   6. Write `report.json`. Emit terminal `complete` event with the manifest.
  */
 
-import { NextResponse } from "next/server"
 import {
   BrandIncompleteError,
   BrandInvalidError,
@@ -32,7 +32,6 @@ import {
   type AspectRatio,
   type Brief,
   type BrandProfile,
-  type ComplianceBadge,
   type Creative,
   type ErrorStage,
   type Manifest,
@@ -48,6 +47,12 @@ import {
 import { resizeForRatio } from "@/lib/cast/server/pipeline/resize"
 import { composeCreative } from "@/lib/cast/server/pipeline/compose"
 import { runCompliance } from "@/lib/cast/server/pipeline/compliance"
+import {
+  buildManifest,
+  byCreative,
+  byError,
+  toComplianceField,
+} from "@/lib/cast/server/pipeline/manifest-builder"
 import { writeCreativeOutput } from "@/lib/cast/server/pipeline/write"
 import {
   clearCampaignOutput,
@@ -64,6 +69,7 @@ import {
   emitStep,
 } from "@/lib/cast/server/ndjson-emit"
 import { buildPromptPreview } from "@/lib/cast/prompt"
+import { jsonError } from "@/lib/cast/server/api-helpers"
 import type { Slot } from "@/lib/cast/events"
 
 export const runtime = "nodejs"
@@ -211,15 +217,15 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
   const errors: ManifestError[] = []
 
   for (const market of brief.markets) {
-    const lang = market.split("-").pop()!
-    const headline = brief.message[lang] ?? ""
+    const locale = market.split("-").pop()!
+    const headline = brief.message[locale] ?? ""
 
     // Per-MARKET master cache. The genai prompt embeds the market
     // (`buildPromptPreview` writes "Locale: us-en (en)"), so a master
     // generated for one market is NOT reusable across markets. Default mode
     // also keys by ratio because dall-e-3 native sizes differ per ratio.
     // Cheap mode keys by productSlug only (single 1024² master per product).
-    const masterCache = new Map<string, Buffer>()
+    const baseImageCache = new Map<string, Buffer>()
 
     for (const product of brief.products) {
       const productSlug = slugify(product.name)
@@ -259,11 +265,11 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
       // here — done OUTSIDE the per-ratio Promise.all so the prompt is
       // deterministic (ratio "1x1" stands in for the canonical square master).
       // Default-mode genai is per-ratio and stays inside the ratio loop.
-      let localMaster: Buffer | undefined
-      let cheapMasterErr: { stage: ErrorStage; message: string } | undefined
+      let localBaseImage: Buffer | undefined
+      let baseImageGenerationError: { stage: ErrorStage; message: string } | undefined
       if (resolved.source === "local") {
         try {
-          localMaster = await readAsset(resolved.file)
+          localBaseImage = await readAsset(resolved.file)
         } catch (err) {
           const message = errMessage(err)
           for (const ratio of brief.ratios) {
@@ -286,11 +292,11 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
             prompt: buildPrompt(brief, brand, product, market, "1x1"),
             mode: "cheap",
           })
-          masterCache.set(productSlug, master)
+          baseImageCache.set(productSlug, master)
         } catch (err) {
           // Defer attribution to the per-ratio loop so each (market × ratio)
           // gets its own error event + manifest entry.
-          cheapMasterErr = { stage: "genai", message: errMessage(err) }
+          baseImageGenerationError = { stage: "genai", message: errMessage(err) }
         }
       }
 
@@ -305,9 +311,9 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
 
           // Cheap-mode master generation already failed for this product;
           // every ratio fails the same way without spending more API calls.
-          if (cheapMasterErr) {
-            emit(emitError(cheapMasterErr.stage, cheapMasterErr.message, slot))
-            errors.push({ ...slot, ...cheapMasterErr })
+          if (baseImageGenerationError) {
+            emit(emitError(baseImageGenerationError.stage, baseImageGenerationError.message, slot))
+            errors.push({ ...slot, ...baseImageGenerationError })
             creatives.push({
               product: productSlug,
               market,
@@ -326,14 +332,14 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
             // ---- genai (only if missing) ----
             let master: Buffer
             if (resolved.source === "local") {
-              master = localMaster!
+              master = localBaseImage!
             } else if (mode === "cheap") {
               // Already in cache (generated outside the ratio loop above).
-              master = masterCache.get(productSlug)!
+              master = baseImageCache.get(productSlug)!
             } else {
               currentStage = "genai"
               const cacheKey = `${productSlug}|${ratio}`
-              const cached = masterCache.get(cacheKey)
+              const cached = baseImageCache.get(cacheKey)
               if (cached) {
                 master = cached
               } else {
@@ -345,7 +351,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
                     mode: "default",
                   }),
                 )
-                masterCache.set(cacheKey, master)
+                baseImageCache.set(cacheKey, master)
               }
             }
 
@@ -403,7 +409,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
 
           if (failedAt) {
             errors.push({ ...slot, stage: failedAt.stage, message: failedAt.message })
-            // D19: omit `compliance` from the creative entry unless the
+            // Omit `compliance` from the creative entry unless the
             // failure was at the `write` stage (compliance had already run).
             const entry: Creative = {
               product: productSlug,
@@ -485,57 +491,3 @@ function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
 
-function toComplianceField(c: ReturnType<typeof runCompliance>): {
-  badge: ComplianceBadge
-  checks: { logoPresent: boolean; colorsOk: boolean; bannedWords: string[] }
-} {
-  return { badge: c.badge, checks: c.checks }
-}
-
-function buildManifest(
-  brief: Brief,
-  creatives: Creative[],
-  errors: ManifestError[],
-): Manifest {
-  const succeededList = creatives.filter((c) => c.path !== null)
-  const succeeded = succeededList.length
-  const failed = errors.length
-  const requested = brief.products.length * brief.markets.length * brief.ratios.length
-  const generated = succeededList.filter((c) => c.source === "genai").length
-  const reused = succeededList.filter((c) => c.source === "local").length
-  const flagged = succeededList.filter(
-    (c) => c.compliance?.badge === "WARN" || c.compliance?.badge === "FAIL",
-  ).length
-
-  return {
-    campaign: brief.campaign,
-    brand: brief.brand,
-    outputDir: `outputs/${brief.campaign}`,
-    counts: { requested, succeeded, failed, generated, reused, flagged },
-    creatives,
-    errors,
-  }
-}
-
-const RATIO_ORDER: Record<AspectRatio, number> = { "1x1": 0, "9x16": 1, "16x9": 2 }
-function byCreative(a: Creative, b: Creative): number {
-  return (
-    a.market.localeCompare(b.market) ||
-    a.product.localeCompare(b.product) ||
-    RATIO_ORDER[a.ratio] - RATIO_ORDER[b.ratio]
-  )
-}
-function byError(a: ManifestError, b: ManifestError): number {
-  return (
-    a.market.localeCompare(b.market) ||
-    a.product.localeCompare(b.product) ||
-    RATIO_ORDER[a.ratio] - RATIO_ORDER[b.ratio]
-  )
-}
-
-function jsonError(
-  status: number,
-  errors: { path: (string | number)[]; message: string }[],
-): NextResponse {
-  return NextResponse.json({ errors }, { status })
-}

@@ -1,9 +1,8 @@
 /**
- * Banned-words helpers (D21, D29).
+ * Banned-words helpers — shared between client (inline badge) and server (compliance).
  *
- * D29 — referential identity: client (S1) and server (`/api/generate`,
- * `/api/brands/[slug]`) MUST import `containsBannedWord` from this same
- * module. The V4 parity test asserts referential identity. Do not
+ * Referential identity: client and server MUST import `containsBannedWord` from this same
+ * module. The parity test asserts referential identity. Do not
  * re-implement substring matching, normalization, or list composition
  * anywhere else.
  *

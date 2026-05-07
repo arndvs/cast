@@ -1,6 +1,6 @@
 import { Topbar } from "@/components/cast/topbar"
-import { S1Shell } from "@/components/cast/s1-shell"
-import { loadDemoBrief } from "@/lib/cast/server/brief-loader"
+import { CastAppShell } from "@/components/cast/cast-app-shell"
+import { loadSeedBrief } from "@/lib/cast/server/brief-loader"
 import {
   listBrandSlugs,
   tryLoadBrand,
@@ -8,7 +8,7 @@ import {
 import { toBrandLoadErrorInfo } from "@/lib/cast/brand-hints"
 
 export default async function Page() {
-  const brief = await loadDemoBrief()
+  const brief = await loadSeedBrief()
 
   // Parallel: brand-load and the available-slugs list run independently.
   // `tryLoadBrand` returns a discriminated value instead of throwing so the
@@ -27,7 +27,7 @@ export default async function Page() {
   return (
     <div className="flex min-h-svh flex-col">
       <Topbar crumb={`${brief.brand} · ${brief.campaign}`} />
-      <S1Shell
+      <CastAppShell
         initialBrief={brief}
         brand={
           brand.ok
@@ -37,16 +37,16 @@ export default async function Page() {
                 // resolved via `safeJoin`) before crossing the
                 // server→client boundary. The editor only needs the
                 // identifying triple to render variant tiles.
-                logoVariants: brand.profile.logoVariants.map((v) => ({
-                  id: v.id,
-                  displayName: v.displayName,
-                  theme: v.theme,
+                logoVariants: brand.profile.logoVariants.map((variant) => ({
+                  id: variant.id,
+                  displayName: variant.displayName,
+                  theme: variant.theme,
                 })),
-                // D29 — the banned-word list the server's compliance pass
+                // The banned-word list the server's compliance pass
                 // will use (default floor ∪ brand fixture, deduped +
                 // lowercased by `loadBrandProfile`). Forwarding it to the
-                // client lets S1 pre-flight against the *same* list and
-                // gate Generate before the GenAI spend.
+                // client lets the brief editor pre-flight against the *same*
+                // list and gate Generate before the GenAI spend.
                 bannedWords: brand.profile.bannedWords,
               }
             : null

@@ -2,7 +2,10 @@
 
 import * as React from "react"
 
-import { Badge } from "@/components/ui/badge"
+import { ComplianceBadgePill } from "@/components/cast/compliance-badge-pill"
+import { CreativeSourcePill } from "@/components/cast/creative-source-pill"
+import { aspectClassForRatio } from "@/lib/cast/creative-aspect-class"
+import { buildCreativeProxyUrl } from "@/lib/cast/creative-proxy-url"
 import type { Creative } from "@/lib/cast/schemas"
 import { cn } from "@/lib/utils"
 
@@ -13,7 +16,7 @@ interface CreativeTileProps {
 }
 
 /**
- * A single creative cell in the S3 output grid.
+ * A single creative cell in the output grid.
  *
  * The tile is purely a view of `creative` — no fetching, no badge logic
  * beyond mapping the schema's `compliance.badge` to a colour. When
@@ -26,12 +29,7 @@ interface CreativeTileProps {
  * tree). `loading="lazy"` keeps the initial paint cheap for large grids.
  */
 export function CreativeTile({ creative, campaign, onClick }: CreativeTileProps) {
-  const aspectClass =
-    creative.ratio === "1x1"
-      ? "aspect-square"
-      : creative.ratio === "9x16"
-        ? "aspect-[9/16]"
-        : "aspect-video"
+  const aspectClass = aspectClassForRatio(creative.ratio)
 
   const failed = creative.path === null
   const badge: "OK" | "WARN" | "FAIL" =
@@ -39,9 +37,7 @@ export function CreativeTile({ creative, campaign, onClick }: CreativeTileProps)
 
   const src = failed
     ? null
-    : `/api/outputs/${encodeURIComponent(campaign)}/${encodeURIComponent(
-        creative.market,
-      )}/${encodeURIComponent(creative.product)}/${creative.ratio}.png`
+    : buildCreativeProxyUrl(campaign, creative.market, creative.product, creative.ratio)
 
   return (
     <button
@@ -79,42 +75,17 @@ export function CreativeTile({ creative, campaign, onClick }: CreativeTileProps)
           </div>
         )}
         <div className="absolute right-1 top-1">
-          <BadgePill badge={badge} />
+          <ComplianceBadgePill badge={badge} />
         </div>
       </div>
       <div className="flex items-center gap-2 px-1 text-xs">
         <span className="truncate font-medium text-fg-1">{creative.product}</span>
-        <SourcePill source={creative.source} />
+        <CreativeSourcePill source={creative.source} />
         <span className="grow" />
         <span className="font-mono text-[10px] text-fg-3">
           {creative.market} · {creative.ratio}
         </span>
       </div>
     </button>
-  )
-}
-
-function BadgePill({ badge }: { badge: "OK" | "WARN" | "FAIL" }) {
-  if (badge === "OK") {
-    return <Badge className="bg-ok/15 text-ok hover:bg-ok/15">OK</Badge>
-  }
-  if (badge === "WARN") {
-    return <Badge className="bg-warn/15 text-warn hover:bg-warn/15">WARN</Badge>
-  }
-  return <Badge variant="destructive">FAIL</Badge>
-}
-
-function SourcePill({ source }: { source: "local" | "genai" }) {
-  return (
-    <span
-      className={cn(
-        "rounded px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide",
-        source === "local"
-          ? "bg-brand-cyan/15 text-fg-1"
-          : "bg-brand-lime/20 text-fg-1",
-      )}
-    >
-      {source}
-    </span>
   )
 }

@@ -1,5 +1,5 @@
 /**
- * S1 brief-editor state machine and reducer.
+ * Brief-editor state machine and reducer.
  *
  * Ports `docs/prototype/cast-app.jsx` reducer to TypeScript and adapts it to
  * the locked `briefSchema` shape (the prototype's `messageByLocale` /
@@ -9,9 +9,7 @@
  * State machine:
  *   editing → running → (complete | failed)
  *               ↑___________________________|   (retry)
- *
- * V2 only ships the `editing` slice. `running`, `complete`, `failed`,
- * `detailOpen`, and `pipeline-event` land in V4/V5.
+
  */
 
 import { ALL_RATIOS, type AspectRatio } from "@/lib/cast/ratios"
@@ -23,6 +21,14 @@ import {
   type Manifest,
 } from "@/lib/cast/schemas"
 import type { PipelineEvent } from "@/lib/cast/events"
+import type {
+  AppScreen,
+  ClientLogoVariant,
+  RunState,
+  UploadPreview,
+} from "@/lib/cast/app-types"
+
+export type { AppScreen, ClientLogoVariant, RunState, UploadPreview }
 
 /**
  * Reasons a run can terminally fail. Pipeline-stage failures map to the
@@ -36,53 +42,7 @@ export type RunErrorStage = ErrorStage | "stream" | "validation"
 // State shape
 // ---------------------------------------------------------------------------
 
-export type RunState = "editing" | "running" | "complete" | "failed"
-
-/**
- * Which screen is mounted. Independent of `runState` — the terminal
- * `complete` event leaves `screen: "S2"` until the user clicks
- * "view output grid →" (matches prototype). `goto-edit` resets both.
- */
-export type Screen = "S1" | "S2" | "S3"
-
-/**
- * Logo variant id. Each brand's `logos.json` manifest declares its own
- * variant ids; the type is intentionally `string` (validated against
- * `SLUG_RE` at boundaries) so manifests with N variants are accepted.
- */
-export type LogoVariantId = string
-
-/**
- * Client-safe logo variant. The server's `BrandProfile.logoVariants[*]`
- * carries an absolute filesystem `path` resolved via `safeJoin` — that
- * field must NOT cross the server→client boundary. The page-level server
- * component projects to this shape before passing to `S1Shell`.
- */
-export interface ClientLogoVariant {
-  id: LogoVariantId
-  displayName: string
-  theme?: "light" | "dark"
-}
-
-/**
- * In-memory upload preview for V2.
- *
- * V2 has no upload route — the dropzone holds an object-URL preview in this
- * map. V3 swaps the preview for a real `/api/upload` POST and replaces the
- * `objectUrl` with a `savedAs` path returned by the server.
- *
- * The object URL must be revoked on remove (handled in the dropzone unmount /
- * `removeUpload` action consumer).
- */
-export interface UploadPreview {
-  fileName: string
-  /** `URL.createObjectURL(file)` — local-only, revoke before discarding. */
-  objectUrl: string
-  size: number
-  type: string
-}
-
-export interface S1State {
+export interface CastAppState {
   /** Slug of the active brand (`brisa`, `volt`, …). */
   brandSlug: string
   /** The brief being edited — same shape as `briefSchema`. */
@@ -91,8 +51,8 @@ export interface S1State {
   /** Per-product slug → preview. Slug is derived via `slugify(product.name)`. */
   uploads: Record<string, UploadPreview>
   /** Sidebar logo-variant picker — surfaces as `brief.logoVariant` on submit. */
-  logoVariant: LogoVariantId
-  /** NDJSON event tape from `/api/generate` (V4). S2 renders this. */
+  logoVariant: string
+  /** NDJSON event tape from `/api/generate`. The pipeline run view renders this. */
   events: PipelineEvent[]
   /** Final run manifest — set when the terminal `complete` event arrives. */
   manifest: Manifest | null
@@ -100,11 +60,11 @@ export interface S1State {
   runError: { stage: RunErrorStage; message: string } | null
   /** Wall-clock timestamp of the most recent run start — set when `generate` dispatches. */
   runStartedAt: Date
-  /** Which screen is mounted. Default `"S1"`. */
-  screen: Screen
+  /** Which screen is mounted. Default `"brief-editor"`. */
+  screen: AppScreen
   /**
-   * S3 detail dialog target. `null` when closed. The reducer owns the
-   * open/close transitions; the dialog itself lands in V5e.
+   * Detail dialog target. `null` when closed. The reducer owns the
+   * open/close transitions.
    */
   detailOpen: Creative | null
 }
@@ -113,7 +73,7 @@ export interface S1State {
 // Actions
 // ---------------------------------------------------------------------------
 
-export type S1Action =
+export type CastAppAction =
   | { type: "setBrand"; slug: string; brief: Brief }
   | { type: "setField"; field: "campaign" | "audience"; value: string }
   | { type: "setLocaleMessage"; lang: string; value: string }
@@ -121,14 +81,13 @@ export type S1Action =
   | { type: "toggleRatio"; value: AspectRatio }
   | { type: "addProduct"; product: { name: string; sku: string } }
   | { type: "removeProduct"; sku: string }
-  | { type: "setLogoVariant"; id: LogoVariantId }
+  | { type: "setLogoVariant"; id: string }
   | { type: "upload"; productSlug: string; preview: UploadPreview }
   | { type: "removeUpload"; productSlug: string }
   | { type: "replaceBrief"; brief: Brief }
   | { type: "generate" }
   | { type: "pipeline-event"; event: PipelineEvent }
   | { type: "run-error"; stage: RunErrorStage; message: string }
-  | { type: "run-reset" }
   | { type: "goto-run" }
   | { type: "goto-grid" }
   | { type: "goto-edit" }
@@ -139,7 +98,7 @@ export type S1Action =
 // Reducer
 // ---------------------------------------------------------------------------
 
-export function s1Reducer(state: S1State, action: S1Action): S1State {
+export function castAppReducer(state: CastAppState, action: CastAppAction): CastAppState {
   switch (action.type) {
     case "setBrand":
       // Brand swap discards uploads — different products, different slugs.
@@ -168,8 +127,8 @@ export function s1Reducer(state: S1State, action: S1Action): S1State {
       const markets = has
         ? state.brief.markets.filter((m) => m !== code)
         : [...state.brief.markets, code]
-      // Seed an empty message slot for any newly added language (D11 — locale
-      // completeness is enforced by the schema; prefill keeps the UI honest).
+      // Seed an empty message slot for any newly added language — locale
+      // completeness is enforced by the schema; prefill keeps the UI honest.
       const message = { ...state.brief.message }
       if (!has) {
         const lang = getMarket(code)?.language ?? code.split("-").pop()
@@ -247,10 +206,10 @@ export function s1Reducer(state: S1State, action: S1Action): S1State {
       return { ...state, brief: action.brief }
     case "generate":
     case "goto-run":
-      // V4: flip to running and clear any previous run's artifacts. The
+      // Flip to running and clear any previous run's artifacts. The
       // shell's run-effect picks up the transition and opens the NDJSON
-      // stream against `/api/generate`. V5c: also flip the screen to S2 so
-      // the run view mounts as the network call starts.
+      // stream against `/api/generate`. Also flip the screen to pipeline-run
+      // so the run view mounts as the network call starts.
       return {
         ...state,
         runState: "running",
@@ -258,20 +217,20 @@ export function s1Reducer(state: S1State, action: S1Action): S1State {
         events: [],
         manifest: null,
         runError: null,
-        screen: "S2",
+        screen: "pipeline-run",
       }
     case "goto-grid":
       // Only meaningful once the run has terminally completed. Ignored
       // otherwise so a stray dispatch can't strand the user on an empty grid.
       if (state.runState !== "complete") return state
-      return { ...state, screen: "S3" }
+      return { ...state, screen: "output-grid" }
     case "goto-edit":
       // Discard the prior run's artifacts and return the editor to the
       // initial `editing` state. Brief, brand, uploads stay intact.
       // Also close any open detail dialog so it doesn't reappear on re-run.
       return {
         ...state,
-        screen: "S1",
+        screen: "brief-editor",
         runState: "editing",
         events: [],
         manifest: null,
@@ -299,14 +258,6 @@ export function s1Reducer(state: S1State, action: S1Action): S1State {
         ...state,
         runState: "failed",
         runError: { stage: action.stage, message: action.message },
-      }
-    case "run-reset":
-      return {
-        ...state,
-        runState: "editing",
-        events: [],
-        manifest: null,
-        runError: null,
       }
     default: {
       const _exhaustive: never = action

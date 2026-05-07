@@ -1,16 +1,12 @@
 /**
- * Demo brand fixtures — TEMPORARY.
+ * Seed brand fixtures — Brisa and Volt product catalogs.
  *
- * V2 ships the S1 editor before V3 lands `/api/brands` + `inputs/brands/`.
- * This module exposes Brisa + Volt as inline data so the brand sidebar,
- * palette chips, and product catalog have something to render. V3 deletes
- * this file and switches all consumers to the brand-loader/route response.
- *
- * Shape mirrors what `BrandProfile` will look like once V3 lands, minus
- * the filesystem-backed fields (logo file paths, font path).
+ * This module exposes inline brand data so the brand sidebar,
+ * palette chips, and product catalog have something to render.
+ * The brand-loader/route response supplements this with on-disk profiles.
  */
 
-export interface DemoBrandProduct {
+export interface SeedBrandProduct {
   name: string
   sku: string
   /** 2-stop swatch gradient — matches the prototype's product chip. */
@@ -19,11 +15,11 @@ export interface DemoBrandProduct {
   hex: string
 }
 
-export interface DemoBrand {
+export interface SeedBrand {
   slug: string
   displayName: string
   /** Tagline — purely visual, sub-line of the sidebar card. */
-  sub: string
+  tagline: string
   colors: {
     primary: string
     secondary: string
@@ -31,14 +27,14 @@ export interface DemoBrand {
   }
   voice: readonly string[]
   bannedWords: readonly string[]
-  products: readonly DemoBrandProduct[]
+  products: readonly SeedBrandProduct[]
 }
 
-export const DEMO_BRANDS: readonly DemoBrand[] = Object.freeze([
+export const SEED_BRANDS: readonly SeedBrand[] = Object.freeze([
   {
     slug: "brisa",
     displayName: "Brisa",
-    sub: "sparkling water",
+    tagline: "sparkling water",
     colors: { primary: "#0F6E56", secondary: "#9FE1CB", accent: "#F4C0D1" },
     voice: ["soft natural lighting", "citrus tones", "condensation on glass"],
     bannedWords: ["healthy", "cure", "energy", "guarantee", "miracle", "instant"],
@@ -60,7 +56,7 @@ export const DEMO_BRANDS: readonly DemoBrand[] = Object.freeze([
   {
     slug: "volt",
     displayName: "Volt",
-    sub: "energy drink",
+    tagline: "energy drink",
     colors: { primary: "#1A1A18", secondary: "#FAC775", accent: "#7DD3FC" },
     voice: ["dramatic lighting", "high contrast", "kinetic energy"],
     bannedWords: ["bro", "hustle", "grind", "pumped", "free", "guarantee"],
@@ -81,6 +77,6 @@ export const DEMO_BRANDS: readonly DemoBrand[] = Object.freeze([
   },
 ])
 
-export function getDemoBrand(slug: string): DemoBrand | undefined {
-  return DEMO_BRANDS.find((b) => b.slug === slug)
+export function getSeedBrand(slug: string): SeedBrand | undefined {
+  return SEED_BRANDS.find((b) => b.slug === slug)
 }

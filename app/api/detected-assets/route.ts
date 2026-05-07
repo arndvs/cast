@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import fs from "node:fs/promises"
 import { safeJoin } from "@/lib/cast/server/safe-join"
+import { isENOENT } from "@/lib/cast/server/api-helpers"
 import { SLUG_RE } from "@/lib/cast/schemas"
 
 export const runtime = "nodejs"
@@ -8,8 +9,8 @@ export const runtime = "nodejs"
 /**
  * GET /api/detected-assets?slugs=brisa-citrus,brisa-berry
  *
- * Returns [{ slug, foundFile | null }] for the Detected Assets panel on S1.
- * Resolver lookup order: png, jpg, jpeg, webp (first hit wins, per D4).
+ * Returns [{ slug, foundFile | null }] for the Detected Assets panel.
+ * Resolver lookup order: png, jpg, jpeg, webp (first hit wins).
  *
  * Every slug is SLUG_RE-validated before any filesystem call. Lookups go
  * through safeJoin('inputs', 'assets', ...).
@@ -64,11 +65,4 @@ export async function GET(req: Request): Promise<NextResponse> {
   })
 }
 
-function isENOENT(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code: unknown }).code === "ENOENT"
-  )
-}
+

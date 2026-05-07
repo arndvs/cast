@@ -3,8 +3,8 @@
  *
  * Sharp composite: base photo → headline text overlay (SVG) → corner logo.
  *
- * Subhead/CTA at the compose stage is an open design decision (carried
- * forward from V3 review). For V4 we render headline only; the SVG renderer
+ * Subhead/CTA at the compose stage is an open design decision. Currently
+ * we render headline only; the SVG renderer
  * leaves room for `subheadline` / `cta` once that lands.
  */
 

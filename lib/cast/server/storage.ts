@@ -1,7 +1,7 @@
 /**
  * LocalFsStorage — single point of contact between the pipeline and disk.
  *
- * Every path passes through `safeJoin` (D12, D13). All callers MUST validate
+ * Every path passes through `safeJoin` to prevent path traversal. All callers MUST validate
  * `campaign` / `market` / `productSlug` against the canonical regexes BEFORE
  * invoking these helpers. The pipeline writer relies on this — it does not
  * re-validate per write.
@@ -48,7 +48,7 @@ export async function readAsset(repoRelativePath: string): Promise<Buffer> {
 }
 
 /**
- * Idempotency (D15): wipe `outputs/[campaign]/` before writing anything.
+ * Wipe `outputs/[campaign]/` before writing anything for run idempotency.
  * Safe on first run (ENOENT swallowed).
  */
 export async function clearCampaignOutput(campaign: string): Promise<void> {

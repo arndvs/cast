@@ -2,18 +2,18 @@
 
 import * as React from "react"
 
-import type { S1Action, S1State } from "@/components/cast/s1-state"
+import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 import { pipelineEventSchema } from "@/lib/cast/events"
 
 /**
- * D30 — stream idle abort threshold. The server's `start` callback may pause
+ * Stream idle abort threshold. The server's `start` callback may pause
  * for tens of seconds during dall-e-3 generation, so the threshold has to be
  * generous. 90 s matches the spec.
  */
 const IDLE_TIMEOUT_MS = 90_000
 
 /**
- * V4 run controller.
+ * Run controller hook.
  *
  * Watches `state.runState`. When it transitions to `running`, POSTs the
  * current brief to `/api/generate`, decodes the NDJSON response line-by-line,
@@ -22,7 +22,7 @@ const IDLE_TIMEOUT_MS = 90_000
  *   - non-2xx responses                  → stage = "validation" (server
  *                                          returned JSON `{ errors: [...] }`)
  *   - non-NDJSON content type            → stage = "stream"
- *   - `IDLE_TIMEOUT_MS` between chunks   → stage = "stream" (D30)
+ *   - `IDLE_TIMEOUT_MS` between chunks   → stage = "stream"
  *   - JSON.parse failure on a line       → stage = "stream"
  *   - fetch/network error                → stage = "stream"
  *
@@ -32,8 +32,8 @@ const IDLE_TIMEOUT_MS = 90_000
  * `stage: "stream"` error.
  */
 export function useRunController(
-  state: S1State,
-  dispatch: React.Dispatch<S1Action>,
+  state: CastAppState,
+  dispatch: React.Dispatch<CastAppAction>,
   cancelRef?: React.RefObject<(() => void) | null>,
 ): void {
   // Track the active controller so a re-run or unmount cancels in-flight work.
@@ -120,12 +120,17 @@ export function useRunController(
             buffer = buffer.slice(nl + 1)
             if (!line) continue
             const dispatched = parseAndDispatch(line, dispatch)
-            if (!dispatched) return // parse failure already dispatched run-error
+            if (!dispatched) {
+              // parse failure already dispatched run-error; clean up and exit
+              controller.abort()
+              await reader.cancel()
+              return
+            }
           }
         }
         // Tail: a stream that ends without a trailing newline.
         const tail = buffer.trim()
-        if (tail) parseAndDispatch(tail, dispatch)
+        if (tail && !parseAndDispatch(tail, dispatch)) return // parse failure already dispatched run-error
       } catch (err) {
         if (cancelled) return
         const isAbort =
@@ -164,7 +169,7 @@ export function useRunController(
 
 function parseAndDispatch(
   line: string,
-  dispatch: React.Dispatch<S1Action>,
+  dispatch: React.Dispatch<CastAppAction>,
 ): boolean {
   let raw: unknown
   try {

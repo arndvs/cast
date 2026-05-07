@@ -1,7 +1,5 @@
 # Attributes & Screen Requirements — Cast
 
-### Local Next.js App · POC · v1
-
 ---
 
 ## Step 4 — Modeling the Attributes
@@ -20,7 +18,7 @@ Fields are defined by the canonical Zod `briefSchema` in [flow-diagrams.md §4.2
 - `audience` (string, 1–500 chars)
 - `message` — `Record<lang, string>` (locale → copy)
 - `ratios[]` — enum subset of `[1x1, 9x16, 16x9]`
-- `logoVariant?` — optional id of the logo variant the run uses; cross-validated server-side against the loaded brand's `logos.variants[]`. Absent → falls back to `brandProfile.defaultLogoId` (D27).
+- `logoVariant?` — optional id of the logo variant the run uses; cross-validated server-side against the loaded brand's `logos.variants[]`. Absent → falls back to `brandProfile.defaultLogoId`.
 
 ### Product
 
@@ -41,15 +39,15 @@ Fields are defined by the canonical Zod `briefSchema` in [flow-diagrams.md §4.2
 - product slug
 - file path after generation
 
-(`source` is a creative-level field, not a hero-image field — see Output Creative below and [flow-diagrams.md §4.2 / D3](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview).)
+(`source` is a creative-level field, not a hero-image field — see Output Creative below and [flow-diagrams.md §4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview).)
 
 ### Output Creative
 
 - product slug
 - market
 - ratio (`1x1`, `9x16`, `16x9`)
-- source: `local` | `genai` (per [flow-diagrams.md §4.2 / D3](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview); drives `counts.reused` / `counts.generated`)
-- file path: `string | null` — repo-relative on success, `null` on pipeline failure ([D19](flow-diagrams.md#appendix-a--design-decision-register)). Successful path shape: `outputs/[campaign]/[market]/[product]/[ratio].png`
+- source: `local` | `genai` (per [flow-diagrams.md §4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview); drives `counts.reused` / `counts.generated`)
+- file path: `string | null` — repo-relative on success, `null` on pipeline failure. Successful path shape: `outputs/[campaign]/[market]/[product]/[ratio].png`
 - badge: `OK` | `WARN` | `FAIL` (compliance axis only — orthogonal to success/failure)
 - compliance checks (logoPresent, colorsOk, bannedWords)
 
@@ -63,21 +61,21 @@ Fields are defined by the canonical Zod `briefSchema` in [flow-diagrams.md §4.2
 
 ### Brand Profile
 
-Loaded by `loadBrandProfile(brand)` at `/api/generate` entry; validated against `brandProfileSchema` ([flow-diagrams.md §4.3 / D11](flow-diagrams.md#brand-profile-schema-d11--contract)). Fields are not restated here — the schema is the single source of truth. Summary:
+Loaded by `loadBrandProfile(brand)` at `/api/generate` entry; validated against `brandProfileSchema` ([flow-diagrams.md §4.3](flow-diagrams.md#brand-profile-schema-contract)). Fields are not restated here — the schema is the single source of truth. Summary:
 
 - slug (matches `brief.brand`)
 - brand (`brand.json` — `displayName`, `colors`, optional `tokens`)
 - voice (`voice.json` — `tone`, `do`, `dont`, `promptFragments`)
-- bannedWords — **union** of `lib/banned-words.ts` defaults (`getDefaultBannedWords()`) and `inputs/brands/[brand]/banned-words.json` (when present); deduped, lowercased. Defaults always apply. Missing brand file emits a `step` event noting only brand-specific additions are skipped — the floor remains in force.
-- logoVariants[] (`logos.json` — each `{ id, displayName, path }`; `path` resolved via `safeJoin` against `inputs/brands/[brand]/logos/`) — D27
+- bannedWords — **union** of `lib/cast/banned-words.ts` defaults (`getDefaultBannedWords()`) and `inputs/brands/[brand]/banned-words.json` (when present); deduped, lowercased. Defaults always apply. Missing brand file is silently skipped — the floor remains in force.
+- logoVariants[] (`logos/logos.json` — each `{ id, displayName, path, theme? }`; `path` resolved via `safeJoin` against `inputs/brands/[brand]/logos/`; `theme` is `"light" | "dark"` when present)
 - defaultLogoId (`logos.json` `default` — used when `brief.logoVariant` is absent)
 - fontPath (absolute, `safeJoin`-validated)
 
-Cached in-process for 90 s. Missing directory → `BrandNotFoundError` → `400`. Missing required file → `BrandIncompleteError` → `400`. Schema violation → `BrandInvalidError` → `400`.
+Cached in-process for 90 s. Missing directory → `BrandNotFoundError` → `404`. Missing required file → `BrandIncompleteError` → `400`. Schema violation → `BrandInvalidError` → `400`.
 
 ### Run Log
 
-- steps (array of: type, message, timestamp)
+- steps (array of: type, stage, slot, message)
 - event types: `step`, `asset_resolved`, `creative_ready`, `compliance_result`, `error`, `complete`
 
 ### Report (report.json)
@@ -101,7 +99,7 @@ Using the Inform → Engage → Invite framework.
 - Pre-loaded example brief in a JSON editor (editable)
 - GenAI mode badge — reads `NEXT_PUBLIC_CAST_GENAI_MODE` (default | cheap) at build time. Read-only; surfaces which model the run will hit before Generate fires. No runtime endpoint — the env is inlined at build, so the badge renders without a network round-trip.
 - Campaign name, brand, audience, message fields surfaced as readable form
-- Brand selector — dropdown listing every directory under `inputs/brands/` (slug + display name from `GET /api/brands`). Required; one brand per brief. Demo ships two profiles (`brisa`, `volt`) modeling sub-brands of the fictional Onda Beverages portfolio. On selection, S1 fetches `GET /api/brands/[slug]` to populate palette swatches, voice preview, the **union banned-words list** (lib defaults + brand file), the logo picker (D27), and the prompt preview shown elsewhere on the screen.
+- Brand selector — dropdown listing every directory under `inputs/brands/` (slug + display name from `GET /api/brands`). Required; one brand per brief. Demo ships two profiles (`brisa`, `volt`) modeling sub-brands of the fictional Onda Beverages portfolio. On selection, S1 fetches `GET /api/brands/[slug]` to populate palette swatches, voice preview, the **union banned-words list** (lib defaults + brand file), the logo picker, and the prompt preview shown elsewhere on the screen.
 - Markets field — typeahead input accepting any conforming `<region>-<lang>` value; suggestion list seeds common values (`us-en`, `mx-es`, `de-de`, `jp-ja`)
 - Ratios picker — three pill toggles (`1:1`, `9:16`, `16:9`); default all checked; at least one must remain selected
 - Products list — each row shows: name, sku, slug preview
@@ -109,9 +107,9 @@ Using the Inform → Engage → Invite framework.
 - Detected Assets panel — per-product status:
   - found: `brisa-citrus.png` — using local asset
   - missing: no asset found — will generate via GenAI
-- Logo picker (D27) — radio grid beneath the brand selector, populated from `GET /api/brands/[slug]` `logos.variants[]`. Each option renders the variant PNG (served by `GET /api/brands/[slug]/logos/[id]`) on a checkered alpha background plus its `displayName`. Default selected = `logos.default`. Selection writes `brief.logoVariant`. One choice per campaign — used by every creative the run produces. Auto-selection by hero luminance is v2 ([flow-diagrams.md §8](flow-diagrams.md#8-future-scope-v2--explicitly-out-of-poc)).
+- Logo picker — radio grid beneath the brand selector, populated from `GET /api/brands/[slug]` `logos.variants[]`. Each option renders the variant PNG (served by `GET /api/brands/[slug]/logos/[id]`) on a checkered alpha background plus its `displayName`. Default selected = `logos.default`. Selection writes `brief.logoVariant`. One choice per campaign — used by every creative the run produces. Auto-selection by hero luminance is v2 ([flow-diagrams.md §8](flow-diagrams.md#8-future-scope-v2--explicitly-out-of-poc)).
 - Read-only prompt preview — shows the prompt that will hit OpenAI per missing product (assembled from brand `voice.json` + product overrides)
-- Pre-flight banned-words check — always active. The selected brand's union list (`lib/banned-words.ts` defaults + `inputs/brands/[brand]/banned-words.json` if present) is fetched via `GET /api/brands/[slug]`; if any locale's `message` contains a banned word, the Generate button is disabled with an inline warning naming the term and locale. The defaults floor (violence, hate, NSFW, weapons, drugs, self-harm) applies to every brand — a brand without `banned-words.json` still gets the floor; the indicator does not have a "checks skipped" state. Pre-flight (S1) and server-side compliance (per-creative) call the **same** `containsBannedWord` symbol from `lib/banned-words.ts` against the same union list — see [flow-diagrams.md "Single-source rule (D29)"](flow-diagrams.md#compliance--banned-words-d21).
+- Pre-flight banned-words check — always active. The selected brand's union list (`lib/cast/banned-words.ts` defaults + `inputs/brands/[brand]/banned-words.json` if present) is fetched via `GET /api/brands/[slug]`; if any locale's `message` contains a banned word, the Generate button is disabled with an inline warning naming the term and locale. The defaults floor (violence, hate, NSFW, weapons, drugs, self-harm) applies to every brand — a brand without `banned-words.json` still gets the floor; the indicator does not have a "checks skipped" state. Pre-flight (S1) and server-side compliance (per-creative) call the **same** `containsBannedWord` symbol from `lib/cast/banned-words.ts` against the same union list — see [flow-diagrams.md "Single-source rule"](flow-diagrams.md#compliance--banned-words).
 - Generate button (enabled when brief is valid + no banned-word violations)
 - Validation badge on brief (valid / invalid)
 
@@ -139,16 +137,16 @@ Using the Inform → Engage → Invite framework.
 **Inform — what the user sees:**
 
 - Live pipeline log — NDJSON events rendered as they stream:
-  - `step` → grey log line: "Parsing brief..."
-  - `asset_resolved` → green/amber line: "brisa-citrus — using local asset" / "brisa-berry — generating via GenAI"
-  - `creative_ready` → cyan line: "brisa-citrus 1:1 → composed"
-  - `compliance_result` → badge line: "brisa-citrus 1:1 — OK"
-  - `error` → red line: error message
+  - `step` → grey log line showing the pipeline `stage` and `slot` (product × market × ratio), e.g. "resolve · brisa-citrus · us-en · 1x1"
+  - `asset_resolved` → green/amber line: "brisa-citrus — using local asset (inputs/assets/brisa-citrus.png)" / "brisa-berry — generating via GenAI"
+  - `creative_ready` → cyan line: "brisa-citrus · us-en · 1x1 → composed (local)"
+  - `compliance_result` → badge line: "brisa-citrus · us-en · 1x1 — OK"
+  - `error` → red line: error message with stage and optional slot
 - Progress indicator — products × markets × ratios (e.g. "4 of 12 creatives done")
 - Brief is locked — editor not visible, shows campaign name only
 - No Generate button (pipeline running)
 
-**Streaming render mode (D14):** the log and progress indicator update **incrementally** on each NDJSON event. The output grid is **not** rendered yet — it hydrates only on the terminal `complete` event so all tiles appear together with their final compliance badges. This avoids a flicker of partially-resolved tiles and keeps S2 → S3 as a clean state transition.
+**Streaming render mode:** the log and progress indicator update **incrementally** on each NDJSON event. The output grid is **not** rendered yet — it hydrates only on the terminal `complete` event so all tiles appear together with their final compliance badges. This avoids a flicker of partially-resolved tiles and keeps S2 → S3 as a clean state transition.
 
 **Engage — what the user can do:**
 
@@ -159,7 +157,7 @@ Using the Inform → Engage → Invite framework.
 - `complete` event received → transitions to Complete (S3)
 - `error` event received → transitions to Failed (S2′)
 - Stream closes without a terminal `complete` or `error` event (network drop, server crash) → treated as a stream-level failure → transitions to Failed (S2′). Mirrors [flow-diagrams.md §4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview).
-- Stream idle for 90 s with no events (D30) → client aborts the `fetch` via `AbortController` and synthesizes a terminal `error` event with `stage: 'stream'` → transitions to Failed (S2′). Prevents an indefinite spinner on a hung GenAI call or mid-stream server crash.
+- Stream idle for 90 s with no events → client aborts the `fetch` via `AbortController` and synthesizes a terminal `error` event with `stage: 'stream'` → transitions to Failed (S2′). Prevents an indefinite spinner on a hung GenAI call or mid-stream server crash.
 
 ---
 
@@ -177,7 +175,7 @@ Using the Inform → Engage → Invite framework.
 - Click "Edit brief" — go back to S1 to fix the brief
 - Click "Retry" — rerun the same brief
 
-**Run idempotency (D15):** Both **Generate** (from S1) and **Retry** (from S2′) clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products of the run, not preserved artifacts — the recursive clear ensures a failed run never leaves a stale `report.json` on disk claiming success. End state of any successful run is invariant under retry; on mid-run failure the partial creatives plus the new `brief.json` describe the current attempt and the prior `report.json` is gone. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call, and the campaign slug is regex-validated (`SLUG_RE`) before it enters `safeJoin`.
+**Run idempotency:** Both **Generate** (from S1) and **Retry** (from S2′) clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products of the run, not preserved artifacts — the recursive clear ensures a failed run never leaves a stale `report.json` on disk claiming success. End state of any successful run is invariant under retry; on mid-run failure the partial creatives plus the new `brief.json` describe the current attempt and the prior `report.json` is gone. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call, and the campaign slug is regex-validated (`SLUG_RE`) before it enters `safeJoin`.
 
 **Invite — how they move to the next screen:**
 
@@ -192,9 +190,9 @@ Using the Inform → Engage → Invite framework.
 
 - Grid: one row per product, three columns (1:1 · 9:16 · 16:9)
 - Each cell: generated image + compliance badge (OK / WARN / FAIL)
-- **Failed tile rendering** — cells where `creatives[].path === null` ([D19](flow-diagrams.md#appendix-a--design-decision-register)) render as a red placeholder with the failing pipeline `stage` label (e.g. "genai timeout", "resize failed"). Distinct from a compliance FAIL badge: pipeline error and compliance violation are orthogonal axes. The `compliance` field is stage-dependent: failures before the `compliance` stage (`resolve | genai | resize | compose`) omit it; failures at or after `compliance` may carry the result through. The grid never renders a compliance badge for a failed tile — the red placeholder + stage label takes its place.
+- **Failed tile rendering** — cells where `creatives[].path === null` render as a red placeholder with the failing pipeline `stage` label (e.g. "genai timeout", "resize failed"). Distinct from a compliance FAIL badge: pipeline error and compliance violation are orthogonal axes. The `compliance` field is stage-dependent: failures before the `compliance` stage (`resolve | genai | resize | compose`) omit it; failures at or after `compliance` may carry the result through. The grid never renders a compliance badge for a failed tile — the red placeholder + stage label takes its place.
 - Ratio label on each cell (1:1 · Instagram, 9:16 · Stories, 16:9 · Facebook)
-- Summary bar — display string "6 requested · 4 passed · 1 flagged · 1 failed". Driven by canonical `counts` keys from [§4.2 / D3](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview): `requested`, `succeeded`, `flagged`, `failed`. `passed` is a derived UI metric: `passed = succeeded - flagged`. `flagged` and `failed` are independent.
+- Summary bar — display string "6 requested · 4 passed · 1 flagged · 1 failed". Driven by canonical `counts` keys from [§4.2](flow-diagrams.md#42-api-contract--streaming-generate--light-uploadpreview): `requested`, `succeeded`, `flagged`, `failed`. `passed` is a derived UI metric: `passed = succeeded - flagged`. `flagged` and `failed` are independent.
 - Absolute output path as a copyable code block
 - "Reveal in file explorer" button
 - "Edit brief & re-run" button
@@ -256,12 +254,12 @@ Dual-mode modal: **compliance violation** (badge ∈ WARN / FAIL, path is a real
 
 **What it does:**
 
-- Server action `revealOutputFolder(absPath)` reveals the generated output folder via the OS:
+- Server action `revealOutputFolder({ campaign })` reveals the generated output folder via the OS:
   - macOS: `open`
   - Windows: `explorer.exe`
   - Linux: `xdg-open`
-- **Path validation:** `absPath` must be normalized (`path.resolve`) and verified to remain within the outputs root (`ROOTS.outputs`) before invocation. Reject and 400 otherwise.
-- **Process model:** use `execFile`-style API with explicit argv (`execFile(bin, [absPath])`). Do **not** build the command via shell string interpolation (`exec`, `spawn` with `shell: true`, or template literals).
+- **Path derivation:** The campaign slug is validated against `SLUG_RE` and the absolute path is derived internally via `safeJoin("outputs", campaign)`. The caller never passes an arbitrary path.
+- **Process model:** use `execFile`-style API with explicit argv (`execFile(bin, [resolvedPath])`). Do **not** build the command via shell string interpolation (`exec`, `spawn` with `shell: true`, or template literals).
 - Fallback: absolute path is already visible as a copyable code block in S3.
 
 **Inform:** The copyable path on S3 is the primary affordance — always visible, always works.
@@ -277,7 +275,7 @@ Dual-mode modal: **compliance violation** (badge ∈ WARN / FAIL, path is a real
 | open app                | S1      | Pre-loaded example brief             |
 | edit brief              | S1      | JSON editor + structured fields      |
 | selects brand           | S1      | Brand selector (drives palette / voice / banned-words) |
-| select logo variant     | S1      | Logo picker (radio grid, fed by `GET /api/brands/[slug]` `logos.variants[]`; writes `brief.logoVariant`) — D27 |
+| select logo variant     | S1      | Logo picker (radio grid, fed by `GET /api/brands/[slug]` `logos.variants[]`; writes `brief.logoVariant`) |
 | drop product photos     | S1      | Per-product drop zone                |
 | confirm assets detected | S1      | Detected Assets panel                |
 | sees GenAI mode         | S1      | GenAI mode badge (reads `NEXT_PUBLIC_CAST_GENAI_MODE` build-time env) |
@@ -295,6 +293,4 @@ Dual-mode modal: **compliance violation** (badge ∈ WARN / FAIL, path is a real
 
 Every verb has a screen and a named attribute. Nothing is floating.
 
----
 
-_Cast · Attributes & Screen Requirements v1 · Adobe FDE Take-Home · Aaron Davis · 2026_

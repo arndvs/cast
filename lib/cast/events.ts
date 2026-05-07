@@ -8,7 +8,7 @@
  * The `complete` event payload is the run manifest (== `report.json` on disk).
  *
  * Server emitters: `lib/cast/server/ndjson-emit.ts`.
- * Client decoder: `S1Shell` (V4 wiring).
+ * Client decoder: `CastAppShell` (run controller wiring).
  */
 
 import { z } from "zod"
@@ -65,7 +65,7 @@ export const complianceResultEventSchema = z.object({
 
 export const errorEventSchema = z.object({
   type: z.literal("error"),
-  /** `'stream'` is reserved for the client-side idle abort (D30). */
+  /** `'stream'` is reserved for the client-side idle abort. */
   stage: z.union([errorStageSchema, z.literal("stream")]),
   slot: slotSchema.optional(),
   message: z.string(),
