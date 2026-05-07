@@ -1,23 +1,22 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Trash2 } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-import { Dropzone, type DropzoneFile } from "@/components/cast/dropzone"
+import { BriefPickChip } from "@/components/cast/brief-pick-chip"
+import { BriefProductRow } from "@/components/cast/brief-product-row"
+import { CatalogAddDropdown } from "@/components/cast/catalog-add-dropdown"
 import { MarketsTypeahead } from "@/components/cast/markets-typeahead"
 import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
-import { ALL_RATIOS, RATIO_LABELS, type AspectRatio } from "@/lib/cast/ratios"
+import { ALL_RATIOS, RATIO_LABELS } from "@/lib/cast/ratios"
 import { ALL_MARKETS, activeLanguages } from "@/lib/cast/markets"
 import { containsBannedWord, getDefaultBannedWords } from "@/lib/cast/banned-words"
-import { SEED_BRANDS, getSeedBrand, type SeedBrand, type SeedBrandProduct } from "@/lib/cast/seed-brands"
-import { buildPromptPreview } from "@/lib/cast/prompt"
+import { SEED_BRANDS, getSeedBrand, type SeedBrand } from "@/lib/cast/seed-brands"
 import { SLUG_RE, slugify } from "@/lib/cast/schemas"
 import type { ClientLogoVariant } from "@/components/cast/cast-app-state"
 import { cn } from "@/lib/utils"
@@ -423,19 +422,19 @@ function FormView({
             {ALL_MARKETS.map((m) => {
               const on = brief.markets.includes(m.code)
               return (
-                <PickChip
+                <BriefPickChip
                   key={m.code}
                   on={on}
                   onClick={() => dispatch({ type: "toggleMarket", code: m.code })}
                 >
                   {m.name}
-                </PickChip>
+                </BriefPickChip>
               )
             })}
             {brief.markets
               .filter((c) => !ALL_MARKETS.some((m) => m.code === c))
               .map((c) => (
-                <PickChip
+                <BriefPickChip
                   key={c}
                   on
                   onClick={() => dispatch({ type: "toggleMarket", code: c })}
@@ -445,7 +444,7 @@ function FormView({
                   <Badge variant="outline" className="ml-1 text-[0.625rem]">
                     custom
                   </Badge>
-                </PickChip>
+                </BriefPickChip>
               ))}
           </div>
         </CardContent>
@@ -461,13 +460,13 @@ function FormView({
             {ALL_RATIOS.map((r) => {
               const on = brief.ratios.includes(r)
               return (
-                <PickChip
+                <BriefPickChip
                   key={r}
                   on={on}
                   onClick={() => dispatch({ type: "toggleRatio", value: r })}
                 >
                   {RATIO_LABELS[r]}
-                </PickChip>
+                </BriefPickChip>
               )
             })}
           </div>
@@ -486,7 +485,7 @@ function FormView({
                 </span>
               )}
             </CardTitle>
-            <CatalogAdd
+            <CatalogAddDropdown
               available={availableCatalog}
               onAdd={(p) => dispatch({ type: "addProduct", product: { name: p.name, sku: p.sku } })}
             />
@@ -499,7 +498,7 @@ function FormView({
             </p>
           )}
           {brief.products.map((p) => (
-            <ProductRow
+            <BriefProductRow
               key={p.sku}
               product={p}
               brand={brand}
@@ -510,204 +509,6 @@ function FormView({
           ))}
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-function PickChip({
-  on,
-  onClick,
-  children,
-  title,
-}: {
-  on: boolean
-  onClick: () => void
-  children: React.ReactNode
-  title?: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors",
-        on
-          ? "border-brand-cyan bg-brand-cyan/10 text-fg-1"
-          : "border-border bg-card text-fg-3 hover:bg-accent",
-      )}
-    >
-      {on && <span className="text-brand-cyan">✓</span>}
-      {children}
-    </button>
-  )
-}
-
-function CatalogAdd({
-  available,
-  onAdd,
-}: {
-  available: readonly SeedBrandProduct[]
-  onAdd: (p: SeedBrandProduct) => void
-}) {
-  const [open, setOpen] = React.useState(false)
-  if (available.length === 0) {
-    return (
-      <span className="font-mono text-xs text-muted-foreground">
-        all catalog products in brief
-      </span>
-    )
-  }
-  return (
-    <div className="relative">
-      <Button
-        variant="outline"
-        size="sm"
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-      >
-        <Plus className="mr-1 h-3 w-3" /> Add product
-      </Button>
-      {open && (
-        <div className="absolute right-0 top-full z-20 mt-1 w-64 rounded-md border border-border bg-popover shadow-md">
-          {available.map((p) => (
-            <button
-              key={p.sku}
-              type="button"
-              onClick={() => {
-                onAdd(p)
-                setOpen(false)
-              }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
-            >
-              <span
-                className="h-6 w-6 shrink-0 rounded"
-                style={{
-                  background: `linear-gradient(135deg, ${p.swatch[0]}, ${p.swatch[1]})`,
-                }}
-              />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate">{p.name}</span>
-                <span className="block truncate font-mono text-[0.625rem] text-muted-foreground">
-                  {p.sku}
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function ProductRow({
-  product,
-  brand,
-  brief,
-  upload,
-  dispatch,
-}: {
-  product: { name: string; sku: string }
-  /** Seed-brand data; absent for non-seed fixtures. */
-  brand?: SeedBrand
-  brief: CastAppState["brief"]
-  upload: CastAppState["uploads"][string] | null
-  dispatch: React.Dispatch<CastAppAction>
-}) {
-  const slug = slugify(product.name)
-  const swatch = brand?.products.find((p) => p.sku === product.sku)
-  const previewMarket = brief.markets[0] || "us-en"
-  const previewRatio: AspectRatio = brief.ratios[0] ?? "1x1"
-  const promptPreview = brand
-    ? buildPromptPreview({
-        brand: {
-          displayName: brand.displayName,
-          voice: brand.voice,
-          paletteHexes: Object.values(brand.colors),
-          bannedWords: brand.bannedWords,
-        },
-        product,
-        market: previewMarket,
-        ratio: previewRatio,
-      })
-    : null
-
-  const dropFile: DropzoneFile | null = upload
-    ? {
-        fileName: upload.fileName,
-        objectUrl: upload.objectUrl,
-        size: upload.size,
-        type: upload.type,
-      }
-    : null
-
-  return (
-    <div className="grid grid-cols-1 items-start gap-3 rounded-md border border-border bg-card p-3 sm:grid-cols-[1fr_140px_auto]">
-      <div className="flex items-center gap-3">
-        {swatch && (
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded font-display text-lg font-bold"
-            style={{
-              background: `linear-gradient(135deg, ${swatch.swatch[0]}, ${swatch.swatch[1]})`,
-              color: swatch.hex,
-            }}
-          >
-            {(brand?.displayName ?? product.name).slice(0, 1)}
-          </div>
-        )}
-        <div className="min-w-0">
-          <div className="truncate text-sm font-medium">{product.name}</div>
-          <div className="truncate font-mono text-xs text-muted-foreground">
-            {product.sku}
-          </div>
-          <div className="truncate font-mono text-[0.6875rem] text-muted-foreground">
-            slug: {slug}
-          </div>
-        </div>
-      </div>
-      <div className="flex flex-col gap-2">
-        <Dropzone
-          preview={dropFile}
-          onUpload={(f) =>
-            dispatch({
-              type: "upload",
-              productSlug: slug,
-              preview: {
-                fileName: f.fileName,
-                objectUrl: f.objectUrl,
-                size: f.size,
-                type: f.type,
-              },
-            })
-          }
-          onRemove={() => dispatch({ type: "removeUpload", productSlug: slug })}
-        />
-        <Badge variant="outline" className="self-center text-[0.625rem]">
-          {upload ? "local" : "→ GenAI"}
-        </Badge>
-      </div>
-      <button
-        type="button"
-        aria-label={`remove ${product.name}`}
-        onClick={() => dispatch({ type: "removeProduct", sku: product.sku })}
-        className="self-start rounded p-1 text-muted-foreground hover:bg-accent hover:text-bad"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
-      <details className="sm:col-span-3">
-        <summary className="cursor-pointer text-xs text-muted-foreground hover:text-fg-1">
-          Show prompt · {previewMarket} · {previewRatio}
-        </summary>
-        {promptPreview ? (
-          <pre className="mt-2 overflow-auto rounded bg-muted/40 p-3 font-mono text-[0.6875rem] leading-relaxed text-fg-2">
-            {promptPreview}
-          </pre>
-        ) : (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Prompt preview unavailable — brand voice data not loaded.
-          </p>
-        )}
-      </details>
     </div>
   )
 }
