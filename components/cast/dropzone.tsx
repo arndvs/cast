@@ -6,13 +6,13 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+import { UPLOAD_MAX_BYTES } from "@/lib/cast/upload-constraints"
+
 const ACCEPT = {
   "image/png": [".png"],
   "image/jpeg": [".jpg", ".jpeg"],
   "image/webp": [".webp"],
 }
-
-const MAX_BYTES = 5 * 1024 * 1024 // 5 MB — matches the /api/upload contract.
 
 export interface DropzoneFile {
   fileName: string
@@ -40,7 +40,7 @@ export function Dropzone({ preview, onUpload, onRemove, className }: DropzonePro
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: ACCEPT,
-    maxSize: MAX_BYTES,
+    maxSize: UPLOAD_MAX_BYTES,
     multiple: false,
     onDrop: (accepted, rejected) => {
       setError(null)

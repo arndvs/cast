@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import fs from "node:fs/promises"
 import { safeJoin } from "@/lib/cast/server/safe-join"
 import { isENOENT, jsonError } from "@/lib/cast/server/api-helpers"
+import { UPLOAD_MAX_BYTES } from "@/lib/cast/upload-constraints"
 import { SLUG_RE } from "@/lib/cast/schemas"
 
 export const runtime = "nodejs"
@@ -20,7 +21,6 @@ export const runtime = "nodejs"
  *     so one slug owns one file at a time.
  */
 
-const MAX_BYTES = 5 * 1024 * 1024
 const MIME_TO_EXT: Record<string, "png" | "jpg" | "webp"> = {
   "image/png": "png",
   "image/jpeg": "jpg",
@@ -52,7 +52,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       },
     ])
   }
-  if (declaredBytes > MAX_BYTES) {
+  if (declaredBytes > UPLOAD_MAX_BYTES) {
     return jsonError(413, [{ path: ["file"], message: "file exceeds 5 MB limit" }])
   }
 
@@ -74,7 +74,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   if (!(file instanceof File)) {
     return jsonError(400, [{ path: ["file"], message: "file is required" }])
   }
-  if (file.size > MAX_BYTES) {
+  if (file.size > UPLOAD_MAX_BYTES) {
     return jsonError(413, [{ path: ["file"], message: "file exceeds 5 MB limit" }])
   }
 
@@ -90,7 +90,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer())
-  if (bytes.byteLength > MAX_BYTES) {
+  if (bytes.byteLength > UPLOAD_MAX_BYTES) {
     return jsonError(413, [{ path: ["file"], message: "file exceeds 5 MB limit" }])
   }
 
