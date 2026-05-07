@@ -35,7 +35,7 @@ function mkManifest(overrides: Partial<Manifest> = {}): Manifest {
         path: "outputs/summer-refresh-2026/us-en/brisa-citrus/1x1.png",
         compliance: {
           badge: "OK",
-          checks: { logoPresent: true, colorsOk: true, bannedWords: [] },
+          checks: { logoPresent: true, bannedWords: [] },
         },
       },
       {
@@ -46,7 +46,7 @@ function mkManifest(overrides: Partial<Manifest> = {}): Manifest {
         path: "outputs/summer-refresh-2026/us-en/brisa-citrus/9x16.png",
         compliance: {
           badge: "WARN",
-          checks: { logoPresent: true, colorsOk: false, bannedWords: [] },
+          checks: { logoPresent: true, bannedWords: [] },
         },
       },
       {
@@ -57,7 +57,7 @@ function mkManifest(overrides: Partial<Manifest> = {}): Manifest {
         path: "outputs/summer-refresh-2026/us-en/brisa-citrus/16x9.png",
         compliance: {
           badge: "OK",
-          checks: { logoPresent: true, colorsOk: true, bannedWords: [] },
+          checks: { logoPresent: true, bannedWords: [] },
         },
       },
       {

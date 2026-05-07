@@ -7,12 +7,11 @@
  * referential identity. The parity test asserts the import is the
  * same module instance.
  *
- * Color check is a placeholder for the POC — we composite in our own brand
- * colors via the SVG overlay, so `colorsOk` is always `true`. A real
- * post-render pixel sample lands later.
- *
  * Logo presence is always `true` because the compose stage always drops the
  * brand logo. Kept on the result type so downstream UI stays stable.
+ *
+ * Color validation (headline bar vs brand primary) is v2 — see
+ * flow-diagrams.md §8.
  */
 
 import { containsBannedWord } from "@/lib/cast/banned-words"
@@ -27,7 +26,6 @@ export interface ComplianceResult {
   badge: ComplianceBadge
   checks: {
     logoPresent: boolean
-    colorsOk: boolean
     bannedWords: string[]
   }
 }
@@ -39,7 +37,6 @@ export function runCompliance(input: ComplianceInput): ComplianceResult {
     badge,
     checks: {
       logoPresent: true,
-      colorsOk: true,
       bannedWords: hits,
     },
   }
