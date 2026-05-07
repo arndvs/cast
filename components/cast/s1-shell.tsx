@@ -212,6 +212,7 @@ export function S1Shell({
                 dispatch={dispatch}
                 logoVariants={activeBrand?.logoVariants ?? []}
                 bannedList={bannedList}
+                availableBrands={brandsAvailable}
               />
             </>
           )}

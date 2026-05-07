@@ -16,7 +16,7 @@ import type { S1Action, S1State } from "@/components/cast/s1-state"
 import { ALL_RATIOS, RATIO_LABELS, type AspectRatio } from "@/lib/cast/ratios"
 import { ALL_MARKETS, activeLanguages } from "@/lib/cast/markets"
 import { containsBannedWord, getDefaultBannedWords } from "@/lib/cast/banned-words"
-import { DEMO_BRANDS, getDemoBrand, type DemoBrand } from "@/lib/cast/demo-brands"
+import { DEMO_BRANDS, getDemoBrand, type DemoBrand, type DemoBrandProduct } from "@/lib/cast/demo-brands"
 import { buildPromptPreview } from "@/lib/cast/prompt"
 import { SLUG_RE, slugify } from "@/lib/cast/schemas"
 import type { ClientLogoVariant } from "@/components/cast/s1-state"
@@ -43,11 +43,19 @@ interface S1BriefEditorProps {
    * omitted (e.g. unit tests rendering the editor in isolation).
    */
   bannedList?: readonly string[]
+  /**
+   * Brand slugs available on disk (from listBrandSlugs / /api/brands).
+   * Drives the brand picker so it reflects the on-disk registry rather than
+   * the hardcoded demo list. Falls back to the demo-brand slugs when omitted.
+   */
+  availableBrands?: readonly string[]
 }
 
-export function S1BriefEditor({ state, dispatch, logoVariants, bannedList }: S1BriefEditorProps) {
+export function S1BriefEditor({ state, dispatch, logoVariants, bannedList, availableBrands }: S1BriefEditorProps) {
   const [jsonMode, setJsonMode] = React.useState(false)
-  const brand = getDemoBrand(state.brandSlug)
+  // Demo-brand data provides rich visual display (colors, products, voice).
+  // Non-demo slugs (or newly added on-disk fixtures) render without it.
+  const demoBrand = getDemoBrand(state.brandSlug) ?? undefined
 
   // Banned-word check across the audience field + every locale message.
   // Prefer the shell-supplied `bannedList` (default floor ∪ brand fixture
@@ -65,17 +73,12 @@ export function S1BriefEditor({ state, dispatch, logoVariants, bannedList }: S1B
   const bannedHits = containsBannedWord(haystack, effectiveBannedList)
   const slugInvalid = !SLUG_RE.test(state.brief.campaign || "")
 
-  if (!brand) {
-    return (
-      <div className="p-6 text-sm text-bad">
-        Unknown brand: <code>{state.brandSlug}</code>
-      </div>
-    )
-  }
+  // Fallback: if no availableBrands list supplied, use the demo-brand slugs.
+  const brandList = availableBrands ?? DEMO_BRANDS.map((b) => b.slug)
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-      <Sidebar state={state} dispatch={dispatch} brand={brand} logoVariants={logoVariants} />
+      <Sidebar state={state} dispatch={dispatch} brand={demoBrand} logoVariants={logoVariants} availableBrands={brandList} />
 
       <div className="flex min-w-0 flex-col gap-4">
         <div className="flex items-center gap-3">
@@ -108,7 +111,7 @@ export function S1BriefEditor({ state, dispatch, logoVariants, bannedList }: S1B
           <FormView
             state={state}
             dispatch={dispatch}
-            brand={brand}
+            brand={demoBrand}
             bannedList={effectiveBannedList}
             slugInvalid={slugInvalid}
           />
@@ -127,41 +130,51 @@ function Sidebar({
   dispatch,
   brand,
   logoVariants,
+  availableBrands,
 }: {
   state: S1State
   dispatch: React.Dispatch<S1Action>
-  brand: DemoBrand
+  /** Demo-brand data for visual display; absent for non-demo fixtures. */
+  brand?: DemoBrand
   logoVariants: readonly EditorLogoVariant[]
+  /** Slug list from the on-disk registry — drives the brand picker. */
+  availableBrands: readonly string[]
 }) {
   return (
     <aside className="flex flex-col gap-5">
       <Section title="Brand">
         <div className="flex flex-col gap-2">
-          {DEMO_BRANDS.map((b) => {
-            const active = state.brandSlug === b.slug
+          {availableBrands.map((slug) => {
+            const b = getDemoBrand(slug)
+            const active = state.brandSlug === slug
             return (
               <button
-                key={b.slug}
+                key={slug}
                 type="button"
-                onClick={() => {
-                  // V2 keeps the same brief shape across brand swaps so we
-                  // emit an action with the same brief — V3 will swap to a
-                  // brand-specific default brief from `inputs/brands/[slug]/`.
-                  dispatch({ type: "setBrand", slug: b.slug, brief: state.brief })
-                }}
+                onClick={() =>
+                  dispatch({ type: "setBrand", slug, brief: state.brief })
+                }
                 className={cn(
                   "flex items-center gap-3 rounded-md border border-border bg-card p-3 text-left transition-colors",
                   active && "ring-2 ring-brand-cyan",
                 )}
               >
-                <div className="flex h-8 w-8 overflow-hidden rounded">
-                  <span className="h-full w-1/3" style={{ background: b.colors.primary }} />
-                  <span className="h-full w-1/3" style={{ background: b.colors.secondary }} />
-                  <span className="h-full w-1/3" style={{ background: b.colors.accent }} />
-                </div>
+                {b ? (
+                  <div className="flex h-8 w-8 overflow-hidden rounded">
+                    <span className="h-full w-1/3" style={{ background: b.colors.primary }} />
+                    <span className="h-full w-1/3" style={{ background: b.colors.secondary }} />
+                    <span className="h-full w-1/3" style={{ background: b.colors.accent }} />
+                  </div>
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-muted font-mono text-[0.6875rem] uppercase">
+                    {slug.slice(0, 2)}
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{b.displayName}</div>
-                  <div className="truncate text-xs text-muted-foreground">{b.sub}</div>
+                  <div className="truncate text-sm font-medium">{b?.displayName ?? slug}</div>
+                  {b?.sub && (
+                    <div className="truncate text-xs text-muted-foreground">{b.sub}</div>
+                  )}
                 </div>
                 {active && <span className="text-brand-cyan">✓</span>}
               </button>
@@ -170,22 +183,24 @@ function Sidebar({
         </div>
       </Section>
 
-      <Section title="Brand colors">
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(brand.colors).map(([name, hex]) => (
-            <span
-              key={name}
-              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-2 py-1 text-xs"
-            >
+      {brand?.colors && (
+        <Section title="Brand colors">
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(brand.colors).map(([name, hex]) => (
               <span
-                className="h-3 w-3 rounded-full border border-border"
-                style={{ background: hex }}
-              />
-              {name}
-            </span>
-          ))}
-        </div>
-      </Section>
+                key={name}
+                className="flex items-center gap-1.5 rounded-full border border-border bg-card px-2 py-1 text-xs"
+              >
+                <span
+                  className="h-3 w-3 rounded-full border border-border"
+                  style={{ background: hex }}
+                />
+                {name}
+              </span>
+            ))}
+          </div>
+        </Section>
+      )}
 
       {logoVariants.length > 0 && (
         <Section title="Logo variant">
@@ -207,10 +222,10 @@ function Sidebar({
                     className="flex h-10 w-full items-center justify-center rounded font-display text-base font-bold"
                     style={{
                       background: isLight ? "#ffffff" : "#222",
-                      color: isLight ? brand.colors.primary : "#ffffff",
+                      color: isLight ? (brand?.colors.primary ?? "currentColor") : "#ffffff",
                     }}
                   >
-                    {brand.displayName.slice(0, 1)}
+                    {(brand?.displayName ?? state.brandSlug).slice(0, 1)}
                   </div>
                   <div className="text-[0.625rem] leading-tight text-muted-foreground">
                     {v.displayName}
@@ -222,6 +237,7 @@ function Sidebar({
         </Section>
       )}
 
+      {brand?.products && (
       <Section title="Detected input assets">
         <ul className="flex flex-col gap-1.5 text-xs">
           {brand.products.map((p) => {
@@ -250,6 +266,7 @@ function Sidebar({
           })}
         </ul>
       </Section>
+      )}
 
       <Section title="GenAI mode">
         <Badge variant="outline" className="font-mono text-[0.6875rem]">
@@ -286,7 +303,8 @@ function FormView({
 }: {
   state: S1State
   dispatch: React.Dispatch<S1Action>
-  brand: DemoBrand
+  /** Demo-brand data; absent for non-demo fixtures. */
+  brand?: DemoBrand
   bannedList: readonly string[]
   slugInvalid: boolean
 }) {
@@ -294,7 +312,7 @@ function FormView({
   const langs = React.useMemo(() => activeLanguages(brief.markets), [brief.markets])
 
   const inBriefSkus = new Set(brief.products.map((p) => p.sku))
-  const availableCatalog = brand.products.filter((p) => !inBriefSkus.has(p.sku))
+  const availableCatalog = (brand?.products ?? []).filter((p) => !inBriefSkus.has(p.sku))
 
   return (
     <div className="flex flex-col gap-4">
@@ -463,9 +481,11 @@ function FormView({
           <div className="flex items-center justify-between gap-3">
             <CardTitle className="font-display text-lg">
               Products{" "}
-              <span className="font-sans text-xs font-normal text-muted-foreground">
-                · picked from {brand.displayName} catalog
-              </span>
+              {brand && (
+                <span className="font-sans text-xs font-normal text-muted-foreground">
+                  · picked from {brand.displayName} catalog
+                </span>
+              )}
             </CardTitle>
             <CatalogAdd
               available={availableCatalog}
@@ -528,8 +548,8 @@ function CatalogAdd({
   available,
   onAdd,
 }: {
-  available: DemoBrand["products"]
-  onAdd: (p: DemoBrand["products"][number]) => void
+  available: readonly DemoBrandProduct[]
+  onAdd: (p: DemoBrandProduct) => void
 }) {
   const [open, setOpen] = React.useState(false)
   if (available.length === 0) {
@@ -589,26 +609,29 @@ function ProductRow({
   dispatch,
 }: {
   product: { name: string; sku: string }
-  brand: DemoBrand
+  /** Demo-brand data; absent for non-demo fixtures. */
+  brand?: DemoBrand
   brief: S1State["brief"]
   upload: S1State["uploads"][string] | null
   dispatch: React.Dispatch<S1Action>
 }) {
   const slug = slugify(product.name)
-  const swatch = brand.products.find((p) => p.sku === product.sku)
+  const swatch = brand?.products.find((p) => p.sku === product.sku)
   const previewMarket = brief.markets[0] || "us-en"
   const previewRatio: AspectRatio = brief.ratios[0] ?? "1x1"
-  const promptPreview = buildPromptPreview({
-    brand: {
-      displayName: brand.displayName,
-      voice: brand.voice,
-      paletteHexes: Object.values(brand.colors),
-      bannedWords: brand.bannedWords,
-    },
-    product,
-    market: previewMarket,
-    ratio: previewRatio,
-  })
+  const promptPreview = brand
+    ? buildPromptPreview({
+        brand: {
+          displayName: brand.displayName,
+          voice: brand.voice,
+          paletteHexes: Object.values(brand.colors),
+          bannedWords: brand.bannedWords,
+        },
+        product,
+        market: previewMarket,
+        ratio: previewRatio,
+      })
+    : null
 
   const dropFile: DropzoneFile | null = upload
     ? {
@@ -630,7 +653,7 @@ function ProductRow({
               color: swatch.hex,
             }}
           >
-            {brand.displayName.slice(0, 1)}
+            {(brand?.displayName ?? product.name).slice(0, 1)}
           </div>
         )}
         <div className="min-w-0">
@@ -676,9 +699,15 @@ function ProductRow({
         <summary className="cursor-pointer text-xs text-muted-foreground hover:text-fg-1">
           Show prompt (D18) · {previewMarket} · {previewRatio}
         </summary>
-        <pre className="mt-2 overflow-auto rounded bg-muted/40 p-3 font-mono text-[0.6875rem] leading-relaxed text-fg-2">
-          {promptPreview}
-        </pre>
+        {promptPreview ? (
+          <pre className="mt-2 overflow-auto rounded bg-muted/40 p-3 font-mono text-[0.6875rem] leading-relaxed text-fg-2">
+            {promptPreview}
+          </pre>
+        ) : (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Prompt preview unavailable — brand voice data not loaded.
+          </p>
+        )}
       </details>
     </div>
   )
