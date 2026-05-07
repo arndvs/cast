@@ -25,6 +25,7 @@ import {
   BrandInvalidError,
   BrandNotFoundError,
 } from "@/lib/cast/errors"
+import { BRAND_HINTS } from "@/lib/cast/brand-hints"
 import {
   briefSchema,
   slugify,
@@ -99,19 +100,23 @@ export async function POST(req: Request): Promise<Response> {
     brand = await loadBrandProfile(brief.brand)
   } catch (err) {
     if (err instanceof BrandNotFoundError) {
-      return jsonError(404, [{ path: ["brand"], message: err.message }])
+      return jsonError(404, [
+        { path: ["brand"], message: err.message },
+        { path: ["brand"], message: BRAND_HINTS.notFound },
+      ])
     }
     if (err instanceof BrandIncompleteError) {
       return jsonError(400, [
         { path: ["brand"], message: err.message },
         { path: ["brand"], message: `missing: ${err.missing}` },
+        { path: ["brand"], message: BRAND_HINTS.incomplete },
       ])
     }
     if (err instanceof BrandInvalidError) {
-      return jsonError(
-        400,
-        err.issues.map((i) => ({ path: ["brand", err.file, ...i.path], message: i.message })),
-      )
+      return jsonError(400, [
+        ...err.issues.map((i) => ({ path: ["brand", err.file, ...i.path], message: i.message })),
+        { path: ["brand"], message: BRAND_HINTS.invalid },
+      ])
     }
     throw err
   }
