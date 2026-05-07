@@ -155,14 +155,16 @@ export function JobRunnerView({ state, dispatch, cancelRef }: JobRunnerViewProps
               <Pencil className="mr-1 h-3 w-3" />
               Edit brief
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => dispatch({ type: "generate" })}
-            >
-              <RotateCcw className="mr-1 h-3 w-3" />
-              Retry
-            </Button>
+            {runError.stage !== "validation" && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => dispatch({ type: "generate" })}
+              >
+                <RotateCcw className="mr-1 h-3 w-3" />
+                Retry
+              </Button>
+            )}
           </div>
         </Card>
       )}
