@@ -21,6 +21,14 @@ import {
   type Manifest,
 } from "@/lib/cast/schemas"
 import type { PipelineEvent } from "@/lib/cast/events"
+import type {
+  AppScreen,
+  ClientLogoVariant,
+  RunState,
+  UploadPreview,
+} from "@/lib/cast/app-types"
+
+export type { AppScreen, ClientLogoVariant, RunState, UploadPreview }
 
 /**
  * Reasons a run can terminally fail. Pipeline-stage failures map to the
@@ -33,51 +41,6 @@ export type RunErrorStage = ErrorStage | "stream" | "validation"
 // ---------------------------------------------------------------------------
 // State shape
 // ---------------------------------------------------------------------------
-
-export type RunState = "editing" | "running" | "complete" | "failed"
-
-/**
- * Which screen is mounted. Independent of `runState` — the terminal
- * `complete` event leaves `screen: "pipeline-run"` until the user clicks
- * "view output grid →" (matches prototype). `goto-edit` resets both.
- */
-export type AppScreen = "brief-editor" | "pipeline-run" | "output-grid"
-
-/**
- * Logo variant id. Each brand's `logos.json` manifest declares its own
- * variant ids; the type is intentionally `string` (validated against
- * `SLUG_RE` at boundaries) so manifests with N variants are accepted.
- */
-
-/**
- * Client-safe logo variant. The server's `BrandProfile.logoVariants[*]`
- * carries an absolute filesystem `path` resolved via `safeJoin` — that
- * field must NOT cross the server→client boundary. The page-level server
- * component projects to this shape before passing to `CastAppShell`.
- */
-export interface ClientLogoVariant {
-  id: string
-  displayName: string
-  theme?: "light" | "dark"
-}
-
-/**
- * In-memory upload preview.
- *
- * The dropzone holds an object-URL preview in this
- * map. The upload route replaces the
- * `objectUrl` with a `savedAs` path returned by the server.
- *
- * The object URL must be revoked on remove (handled in the dropzone unmount /
- * `removeUpload` action consumer).
- */
-export interface UploadPreview {
-  fileName: string
-  /** `URL.createObjectURL(file)` — local-only, revoke before discarding. */
-  objectUrl: string
-  size: number
-  type: string
-}
 
 export interface CastAppState {
   /** Slug of the active brand (`brisa`, `volt`, …). */
