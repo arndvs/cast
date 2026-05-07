@@ -47,7 +47,7 @@ export function buildPromptPreview({ brand, product, market, ratio }: PromptPrev
     `Brand: ${brand.displayName} — ${voice}.`,
     `Color palette: ${palette}.`,
     `Composition: clean studio background, room for headline overlay, ${ratioHint} (${ratio}).`,
-    `Locale: ${market} (${lang}). No on-image text — text is composited at the resize step.`,
+    `Locale: ${market} (${lang}). No on-image text — text is composited at the compose step.`,
     `Avoid: ${brand.bannedWords.slice(0, 4).join(", ")}.`,
   ].join(" ")
 }
