@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import fs from "node:fs/promises"
 import { safeJoin } from "@/lib/cast/server/safe-join"
+import { isENOENT } from "@/lib/cast/server/api-helpers"
 import { SLUG_RE } from "@/lib/cast/schemas"
 
 export const runtime = "nodejs"
@@ -64,11 +65,4 @@ export async function GET(req: Request): Promise<NextResponse> {
   })
 }
 
-function isENOENT(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code: unknown }).code === "ENOENT"
-  )
-}
+

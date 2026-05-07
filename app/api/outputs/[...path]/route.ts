@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import fs from "node:fs/promises"
 import nodePath from "node:path"
 import { safeJoin, PathTraversalError } from "@/lib/cast/server/safe-join"
+import { isENOENT } from "@/lib/cast/server/api-helpers"
 
 export const runtime = "nodejs"
 
@@ -76,11 +77,4 @@ export async function GET(
   })
 }
 
-function isENOENT(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code?: string }).code === "ENOENT"
-  )
-}
+

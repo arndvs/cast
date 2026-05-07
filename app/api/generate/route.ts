@@ -65,6 +65,7 @@ import {
   emitStep,
 } from "@/lib/cast/server/ndjson-emit"
 import { buildPromptPreview } from "@/lib/cast/prompt"
+import { jsonError } from "@/lib/cast/server/api-helpers"
 import type { Slot } from "@/lib/cast/events"
 
 export const runtime = "nodejs"
@@ -534,9 +535,4 @@ function byError(a: ManifestError, b: ManifestError): number {
   )
 }
 
-function jsonError(
-  status: number,
-  errors: { path: (string | number)[]; message: string }[],
-): NextResponse {
-  return NextResponse.json({ errors }, { status })
-}
+

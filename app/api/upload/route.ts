@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import fs from "node:fs/promises"
 import { safeJoin } from "@/lib/cast/server/safe-join"
+import { isENOENT, jsonError } from "@/lib/cast/server/api-helpers"
 import { SLUG_RE } from "@/lib/cast/schemas"
 
 export const runtime = "nodejs"
@@ -133,21 +134,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   )
 }
 
-function jsonError(
-  status: number,
-  errors: { path: (string | number)[]; message: string }[],
-): NextResponse {
-  return NextResponse.json({ errors }, { status })
-}
 
-function isENOENT(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code: unknown }).code === "ENOENT"
-  )
-}
 
 /**
  * Verify the leading bytes of `bytes` match the declared `mime`.
