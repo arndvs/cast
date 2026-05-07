@@ -3,7 +3,6 @@
 import * as React from "react"
 import { AlertTriangle, ArrowRight, Pencil, RotateCcw, Square } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -11,9 +10,7 @@ import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-sta
 import { PipelineLogLine } from "@/components/cast/pipeline-log-line"
 import { PipelineRunStatusBadge } from "@/components/cast/pipeline-run-status-badge"
 import { Wordmark } from "@/components/cast/wordmark"
-import type { PipelineEvent } from "@/lib/cast/events"
 import { formatRunTime } from "@/lib/cast/format-run-time"
-import { cn } from "@/lib/utils"
 
 interface PipelineRunViewProps {
   state: CastAppState

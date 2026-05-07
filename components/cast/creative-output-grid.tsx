@@ -23,8 +23,7 @@ import { downloadJson } from "@/lib/cast/download-json"
 import { type StatusFilter, type RatioFilter, type MarketCodeFilter, creativeMatchesFilters } from "@/lib/cast/filter-creatives"
 import { groupCreativesByMarket } from "@/lib/cast/group-creatives-by-market"
 import { deriveCounts } from "@/lib/cast/manifest-counts"
-import type { Creative, Manifest } from "@/lib/cast/schemas"
-import { cn } from "@/lib/utils"
+import type { Manifest } from "@/lib/cast/schemas"
 
 interface CreativeOutputGridProps {
   state: CastAppState
