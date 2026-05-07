@@ -292,3 +292,86 @@ describe("tryLoadBrand", () => {
     await expect(tryLoadBrand("acme")).rejects.toThrow("EACCES")
   })
 })
+
+describe("canVariants — products.json", () => {
+  const VALID_PRODUCTS = {
+    items: [
+      { id: "citrus-front", sku: "TST-CIT-12", file: "products/can-citrus.png", pose: "upright-center", detail: "clean" },
+      { id: "citrus-tilt",  sku: "TST-CIT-12", file: "products/can-citrus-tilt.png", pose: "tilt-left", detail: "clean" },
+    ],
+  }
+
+  it("populates canVariants when products.json is present", async () => {
+    mockedFs.access.mockResolvedValue(undefined)
+    mockedFs.readFile.mockImplementation(async (p: string) => {
+      const path = String(p).replace(/\\/g, "/")
+      if (path.endsWith("brands/acme/brand.json")) return JSON.stringify(VALID_BRAND)
+      if (path.endsWith("brands/acme/voice.json")) return JSON.stringify(VALID_VOICE)
+      if (path.endsWith("brands/acme/logos/logos.json")) return JSON.stringify(VALID_LOGOS)
+      if (path.endsWith("brands/acme/products.json")) return JSON.stringify(VALID_PRODUCTS)
+      if (path.endsWith("brands/acme/banned-words.json")) throw enoent()
+      if (path.endsWith("brands/acme/backgrounds.json")) throw enoent()
+      throw enoent()
+    })
+    const profile = await loadBrandProfile("acme")
+    expect(profile.canVariants).toHaveLength(2)
+    expect(profile.canVariants[0].sku).toBe("TST-CIT-12")
+    expect(profile.canVariants[0].pose).toBe("upright-center")
+    expect(profile.canVariants[0].file.replace(/\\/g, "/")).toContain("can-citrus.png")
+  })
+
+  it("returns empty canVariants when products.json is absent", async () => {
+    mountValidBrandFixture()
+    const profile = await loadBrandProfile("acme")
+    expect(profile.canVariants).toEqual([])
+  })
+
+  it("throws BrandInvalidError when products.json has invalid schema", async () => {
+    mockedFs.access.mockResolvedValue(undefined)
+    mockedFs.readFile.mockImplementation(async (p: string) => {
+      const path = String(p).replace(/\\/g, "/")
+      if (path.endsWith("brands/acme/brand.json")) return JSON.stringify(VALID_BRAND)
+      if (path.endsWith("brands/acme/voice.json")) return JSON.stringify(VALID_VOICE)
+      if (path.endsWith("brands/acme/logos/logos.json")) return JSON.stringify(VALID_LOGOS)
+      if (path.endsWith("brands/acme/products.json")) return JSON.stringify({ items: [] }) // min(1) violation
+      if (path.endsWith("brands/acme/banned-words.json")) throw enoent()
+      if (path.endsWith("brands/acme/backgrounds.json")) throw enoent()
+      throw enoent()
+    })
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
+  })
+})
+
+describe("backgroundVariants — backgrounds.json", () => {
+  const VALID_BACKGROUNDS = {
+    items: [
+      { id: "studio-1x1", file: "backgrounds/bg-studio.png", ratio: "1x1", sku: "TST-CIT-12", luminance: "light" },
+      { id: "story-9x16", file: "backgrounds/bg-story.png",  ratio: "9x16", sku: "TST-BRY-12", luminance: "dark"  },
+    ],
+  }
+
+  it("populates backgroundVariants when backgrounds.json is present", async () => {
+    mockedFs.access.mockResolvedValue(undefined)
+    mockedFs.readFile.mockImplementation(async (p: string) => {
+      const path = String(p).replace(/\\/g, "/")
+      if (path.endsWith("brands/acme/brand.json")) return JSON.stringify(VALID_BRAND)
+      if (path.endsWith("brands/acme/voice.json")) return JSON.stringify(VALID_VOICE)
+      if (path.endsWith("brands/acme/logos/logos.json")) return JSON.stringify(VALID_LOGOS)
+      if (path.endsWith("brands/acme/backgrounds.json")) return JSON.stringify(VALID_BACKGROUNDS)
+      if (path.endsWith("brands/acme/banned-words.json")) throw enoent()
+      if (path.endsWith("brands/acme/products.json")) throw enoent()
+      throw enoent()
+    })
+    const profile = await loadBrandProfile("acme")
+    expect(profile.backgroundVariants).toHaveLength(2)
+    expect(profile.backgroundVariants[0].ratio).toBe("1x1")
+    expect(profile.backgroundVariants[0].luminance).toBe("light")
+    expect(profile.backgroundVariants[1].luminance).toBe("dark")
+  })
+
+  it("returns empty backgroundVariants when backgrounds.json is absent", async () => {
+    mountValidBrandFixture()
+    const profile = await loadBrandProfile("acme")
+    expect(profile.backgroundVariants).toEqual([])
+  })
+})
