@@ -23,7 +23,7 @@ Brisa and Volt are the only two brands that need extraction. Onboarding a real c
 
 ## Schema reduction
 
-`loadBrandProfile` validates each per-brand file against the matching sub-schema of `brandProfileSchema` — `brand.json` → `brandJsonSchema`, `voice.json` → `voiceJsonSchema`, `banned-words.json` (when present) → `bannedWordsSchema`, `logos.json` → `logosManifestSchema`. `font.ttf` (or `font.otf`) is existence-checked only (no parse). The HTML carries far more than the schema accepts; the table below names exactly what the runtime reads.
+`loadBrandProfile` validates each per-brand file against the matching sub-schema of `brandProfileSchema` — `brand.json` → `brandJsonSchema`, `voice.json` → `voiceJsonSchema`, `banned-words.json` (when present) → `bannedWordsSchema`, `logos/logos.json` → `logosManifestSchema`. `font.ttf` (or `font.otf`) is existence-checked only (no parse). The HTML carries far more than the schema accepts; the table below names exactly what the runtime reads.
 
 ### `brand.json`
 
