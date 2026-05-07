@@ -1,13 +1,9 @@
 /**
- * Demo brand fixtures — TEMPORARY.
+ * Seed brand fixtures — Brisa and Volt product catalogs.
  *
- * V2 ships the S1 editor before V3 lands `/api/brands` + `inputs/brands/`.
- * This module exposes Brisa + Volt as inline data so the brand sidebar,
- * palette chips, and product catalog have something to render. V3 deletes
- * this file and switches all consumers to the brand-loader/route response.
- *
- * Shape mirrors what `BrandProfile` will look like once V3 lands, minus
- * the filesystem-backed fields (logo file paths, font path).
+ * This module exposes inline brand data so the brand sidebar,
+ * palette chips, and product catalog have something to render.
+ * The brand-loader/route response supplements this with on-disk profiles.
  */
 
 export interface DemoBrandProduct {

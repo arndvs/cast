@@ -1,10 +1,10 @@
 /**
- * Canonical aspect-ratio enum (D7) and pixel dims.
+ * Canonical aspect-ratio enum and pixel dims.
  *
  * The schema in `./schemas.ts` already enforces the closed enum on `briefSchema`.
  * This file is the typed surface for any consumer that needs the pixel dims —
- * currently just the renderer (S1 prompt preview, future S3 tile sizing) and
- * the GenAI client (V4) which calls dall-e-3 at native sizes.
+ * currently just the renderer (prompt preview, future tile sizing) and
+ * the GenAI client which calls dall-e-3 at native sizes.
  */
 
 import type { AspectRatio } from "./schemas"

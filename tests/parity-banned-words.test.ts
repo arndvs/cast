@@ -1,7 +1,7 @@
 /**
- * D29 parity — module-reference + behavioral parity test.
+ * Banned-words parity — module-reference + behavioral parity test.
  *
- * The brief editor (`components/cast/s1-brief-editor.tsx`) imports
+ * The brief editor (`components/cast/brief-editor.tsx`) imports
  * `containsBannedWord` directly from the canonical module; this test asserts
  * that the import IS the same object reference (referential identity).
  *
@@ -17,11 +17,11 @@ import { describe, it, expect } from "vitest"
 import * as canonical from "@/lib/cast/banned-words"
 // The two consumers we care about:
 import * as serverCompliance from "@/lib/cast/server/pipeline/compliance"
-// The S1 editor module pulls heavy UI deps; instead, test the import path
+// The editor module pulls heavy UI deps; instead, test the import path
 // the editor uses directly via the same module reference.
 import { containsBannedWord as clientImport } from "@/lib/cast/banned-words"
 
-describe("D29 banned-words parity", () => {
+describe("banned-words parity", () => {
   it("client import is the same reference as the canonical module export", () => {
     // The editor imports containsBannedWord from @/lib/cast/banned-words directly;
     // this referential check fails if that import is ever aliased or re-wrapped.

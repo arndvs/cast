@@ -82,7 +82,7 @@ export function CastAppShell({
   // switching brands dispatches setBrand which changes state.brandSlug, but the
   // prop never updates. Without this effect bannedList and logoVariants stay
   // bound to the initial brand and the compliance gate silently uses the wrong
-  // word list (D29 desync).
+  // word list desync).
   const [activeBrand, setActiveBrand] = React.useState(brand)
   const [activeBrandLoadError, setActiveBrandLoadError] =
     React.useState<BrandLoadErrorInfo | null>(brandLoadError ?? null)
@@ -182,7 +182,7 @@ export function CastAppShell({
   // is treated as unavailable (Generate stays blocked until fetch settles).
   const brandLoadable = loadedSlug === state.brandSlug && activeBrandLoadError == null
 
-  // D29 — single source of truth for the banned-word list. The server
+  // Single source of truth for the banned-word list. The server
   // already merges `getDefaultBannedWords()` with the brand fixture at
   // `inputs/brands/[slug]/banned-words.json` inside `loadBrandProfile`,
   // so we just forward `activeBrand.bannedWords` here. When the brand fixture

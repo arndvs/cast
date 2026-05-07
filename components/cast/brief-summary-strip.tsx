@@ -22,9 +22,9 @@ interface BriefSummaryStripProps {
    * supplied by the shell. The shell builds its list from
    * `BrandProfile.bannedWords` (default floor ∪ brand fixture, dedup +
    * lowercased on the server in `loadBrandProfile`) so this gate uses the
-   * same list `/api/generate`'s compliance pass uses (D29). When non-empty,
-   * Generate is disabled — failing closed at S1 prevents the "generation
-   * succeeded, compliance FAILED, demo wasted" loop where the operator
+   * same list `/api/generate`'s compliance pass uses. When non-empty,
+   * Generate is disabled — failing closed at the brief editor prevents the
+   * "generation succeeded, compliance FAILED, demo wasted" loop where the operator
    * only learns the brief was non-compliant after the API spend has
    * already happened.
    */
@@ -41,7 +41,7 @@ interface BriefSummaryStripProps {
  * - the brief contains a banned-list term (`bannedHits.length > 0`), or
  * - the run is already in flight.
  *
- * The full schema validation runs server-side in V4 — this strip just
+ * The full schema validation runs server-side — this strip just
  * surfaces the cheap, deterministic gates.
  */
 export function BriefSummaryStrip({

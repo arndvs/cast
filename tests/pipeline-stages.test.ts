@@ -40,7 +40,7 @@ describe("pipeline stage enum (closed)", () => {
     }
   })
 
-  it("error events allow the synthesized 'stream' stage (D30)", () => {
+  it("error events allow the synthesized 'stream' stage", () => {
     const result = pipelineEventSchema.safeParse({
       type: "error",
       stage: "stream",

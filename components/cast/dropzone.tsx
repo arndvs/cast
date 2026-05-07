@@ -12,7 +12,7 @@ const ACCEPT = {
   "image/webp": [".webp"],
 }
 
-const MAX_BYTES = 5 * 1024 * 1024 // 5 MB — matches the V3 /api/upload contract.
+const MAX_BYTES = 5 * 1024 * 1024 // 5 MB — matches the /api/upload contract.
 
 export interface DropzoneFile {
   fileName: string
@@ -30,11 +30,10 @@ interface DropzoneProps {
 }
 
 /**
- * V2 dropzone — local preview only via `URL.createObjectURL`. V3 wires the
- * actual `/api/upload` POST and replaces `objectUrl` with `savedAs`.
+ * Dropzone — local preview via `URL.createObjectURL`, with upload handling
+ * delegated to the parent component.
  *
- * The reducer revokes the object URL when the preview is replaced or removed
- * (see `s1-state.ts::removeUpload`).
+ * The reducer revokes the object URL when the preview is replaced or removed.
  */
 export function Dropzone({ preview, onUpload, onRemove, className }: DropzoneProps) {
   const [error, setError] = React.useState<string | null>(null)

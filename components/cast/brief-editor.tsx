@@ -37,7 +37,7 @@ interface BriefEditorProps {
   /** Logo variants from the loaded brand profile. Empty when no brand on disk. */
   logoVariants: readonly EditorLogoVariant[]
   /**
-   * Banned-word list to match against (D29). Supplied by the shell so the
+   * Banned-word list to match against. Supplied by the shell so the
    * inline ⚠ badge and the Generate gate read from the same merged source
    * (default floor ∪ brand fixture). Falls back to the universal floor when
    * omitted (e.g. unit tests rendering the editor in isolation).
@@ -697,7 +697,7 @@ function ProductRow({
       </button>
       <details className="sm:col-span-3">
         <summary className="cursor-pointer text-xs text-muted-foreground hover:text-fg-1">
-          Show prompt (D18) · {previewMarket} · {previewRatio}
+          Show prompt · {previewMarket} · {previewRatio}
         </summary>
         {promptPreview ? (
           <pre className="mt-2 overflow-auto rounded bg-muted/40 p-3 font-mono text-[0.6875rem] leading-relaxed text-fg-2">

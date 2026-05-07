@@ -3,18 +3,19 @@
  * events, and write `outputs/[campaign]/` (brief.json, per-creative PNGs,
  * report.json).
  *
- * Flow (per flow-diagrams §5 + slices doc § V4):
+ * Flow:
  *   1. Validate body against `briefSchema`. 400 on failure.
  *   2. Load brand profile (`BrandNotFoundError` → 404, others → 400).
  *      Loader errors come back as plain JSON, NOT a stream — the client can
  *      branch on `Content-Type` to decide whether to attach the NDJSON reader.
- *   3. Idempotency (D15): `rm -rf outputs/[campaign]/`, then write brief.json.
- *   4. Open the stream. For each market sequentially (D20), for each product,
+ *   3. Wipe `outputs/[campaign]/` for idempotency, then write brief.json.
+ *   4. Open the stream. For each market sequentially (to avoid concurrent filesystem writes), for each product,
  *      for each ratio in parallel: resolve → genai → resize → compose →
  *      compliance → write. Emit step + asset_resolved + creative_ready +
  *      compliance_result events as we go.
  *   5. On per-creative failure: record `errors[]`, omit compliance from the
- *      creative entry **unless** the failure is at the write stage (D19).
+ *      creative entry **unless** the failure is at the write stage (compliance
+ *      had already run in that case).
  *      Continue with remaining work.
  *   6. Write `report.json`. Emit terminal `complete` event with the manifest.
  */
@@ -403,7 +404,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
 
           if (failedAt) {
             errors.push({ ...slot, stage: failedAt.stage, message: failedAt.message })
-            // D19: omit `compliance` from the creative entry unless the
+            // Omit `compliance` from the creative entry unless the
             // failure was at the `write` stage (compliance had already run).
             const entry: Creative = {
               product: productSlug,

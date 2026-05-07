@@ -45,16 +45,15 @@ type MarketFilter = "ALL" | string
  * manifest === report.json === the `complete` event payload) and renders:
  *
  *   - a header with brand/campaign crumbs + brief.json/report.json downloads
- *     and a stub "Reveal in folder" button (V5e wires the server action),
+ *     and a stub "Reveal in folder" button (wires the revealOutputFolder server action),
  *   - six summary cards (requested / succeeded / reused / generated / WARN /
- *     FAIL) with a tooltip on WARN explaining the D3 flagged invariant,
+ *     FAIL) with a tooltip on WARN explaining the flagged invariant,
  *   - a filter bar (status / ratio / market) backed by three local
  *     `useState`s,
  *   - a market-grouped grid of `<CreativeTile>` thumbnails.
  *
- * The dialog itself (S4) is V5e — clicking a tile dispatches `open-detail`,
- * which the reducer stores. V5d ships the dispatch wired up but doesn't
- * mount the dialog.
+ * The dialog itself mounts via `CreativeDetailDialog` — clicking a tile dispatches `open-detail`,
+ * which the reducer stores.
  */
 export function CreativeOutputGrid({ state, dispatch }: CreativeOutputGridProps) {
   const { manifest } = state
@@ -179,7 +178,7 @@ function CreativeOutputGridContent({
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            WARN + FAIL on succeeded = {manifest.counts.flagged} flagged (D3)
+            WARN + FAIL on succeeded = {manifest.counts.flagged} flagged
           </TooltipContent>
         </Tooltip>
         <SummaryCard label="FAIL" value={counts.fail} tone="bad" />

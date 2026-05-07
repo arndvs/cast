@@ -1,5 +1,5 @@
 /**
- * Retry helper — D31 timing + classification.
+ * Retry helper — timing + classification.
  *
  * Verifies:
  *   - 3 attempts, with jittered delays drawn from BASE_BACKOFFS_MS

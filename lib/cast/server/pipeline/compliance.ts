@@ -3,8 +3,8 @@
  *
  * Banned-words union (default floor + brand list, deduped, lowercased) is
  * already pre-computed by the brand-loader. This stage just runs the headline
- * through the **same** `containsBannedWord` symbol the S1 client imports —
- * D29 referential identity. The V4 parity test asserts the import is the
+ * through the **same** `containsBannedWord` symbol the client imports —
+ * referential identity. The parity test asserts the import is the
  * same module instance.
  *
  * Color check is a placeholder for the POC — we composite in our own brand

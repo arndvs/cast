@@ -42,11 +42,11 @@ export default async function Page() {
                   displayName: v.displayName,
                   theme: v.theme,
                 })),
-                // D29 — the banned-word list the server's compliance pass
+                // The banned-word list the server's compliance pass
                 // will use (default floor ∪ brand fixture, deduped +
                 // lowercased by `loadBrandProfile`). Forwarding it to the
-                // client lets S1 pre-flight against the *same* list and
-                // gate Generate before the GenAI spend.
+                // client lets the brief editor pre-flight against the *same*
+                // list and gate Generate before the GenAI spend.
                 bannedWords: brand.profile.bannedWords,
               }
             : null

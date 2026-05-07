@@ -1,9 +1,9 @@
 /**
- * Path safety primitives — D12, D13.
+ * Path safety primitives — all filesystem paths go through safeJoin to prevent path traversal.
  *
  * Every filesystem write resolves through `safeJoin(root, ...segments)` against
  * the fixed `ROOTS` set. Mismatch throws. Used by /api/upload, /api/detected-assets,
- * the brand-loader, the logo proxy, and (in V4) the pipeline writer + reveal action.
+ * the brand-loader, the logo proxy, and the pipeline writer + reveal action.
  *
  * Lexical only — does NOT call `realpath` to re-validate after symlink resolution.
  * Accepted POC limitation; every caller MUST add a `// TODO(symlink-hardening)`

@@ -1,7 +1,7 @@
 /**
  * `buildPromptPreview` — pure, deterministic prompt the renderer would send to
- * dall-e-3 for a missing product asset (D18). Surfaced via the S1 "Show prompt"
- * disclosure and reused verbatim by the V4 GenAI client.
+ * dall-e-3 for a missing product asset. Surfaced via the brief editor's "Show prompt"
+ * disclosure and reused verbatim by the GenAI client.
  *
  * Ported from `docs/prototype/cast-data.jsx::buildPromptPreview`.
  */

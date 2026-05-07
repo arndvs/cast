@@ -6,7 +6,7 @@ import { SLUG_RE } from "@/lib/cast/schemas"
 export const runtime = "nodejs"
 
 /**
- * POST /api/upload — multipart upload of a product photo (D4, D5, D26).
+ * POST /api/upload — multipart upload of a product photo.
  *
  * Constraints (per flow-diagrams §4.2):
  *   - productSlug must match SLUG_RE → 400

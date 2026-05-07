@@ -1,5 +1,5 @@
 /**
- * Retry helper — D31.
+ * Retry helper.
  *
  * 3 attempts (initial + 2 retries). Backoff base sequence: 1s / 4s / 16s,
  * each multiplied by a uniform jitter in `[0.75, 1.25]`. `Retry-After` from
@@ -32,7 +32,7 @@ export interface RetryDeps {
 }
 
 export interface RetryOpts extends RetryDeps {
-  /** Total attempts including the first. Defaults to 3 (D31). */
+  /** Total attempts including the first. Defaults to 3. */
   attempts?: number
 }
 
@@ -82,7 +82,7 @@ export function nextDelayMs(
 }
 
 /**
- * Run `fn` with retry per D31. Returns `fn`'s resolved value or throws the
+ * Run `fn` with retry. Returns `fn`'s resolved value or throws the
  * final error (the last retryable, or the first non-retryable).
  */
 export async function retry<T>(

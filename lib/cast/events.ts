@@ -65,7 +65,7 @@ export const complianceResultEventSchema = z.object({
 
 export const errorEventSchema = z.object({
   type: z.literal("error"),
-  /** `'stream'` is reserved for the client-side idle abort (D30). */
+  /** `'stream'` is reserved for the client-side idle abort. */
   stage: z.union([errorStageSchema, z.literal("stream")]),
   slot: slotSchema.optional(),
   message: z.string(),

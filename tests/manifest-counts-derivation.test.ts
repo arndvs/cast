@@ -10,9 +10,9 @@
  *      is the helper-local `warn + fail` sum used by the WARN tooltip.
  *
  * For the WARN+FAIL-on-succeeded case the helper's `flagged` matches
- * `manifest.counts.flagged` (the D3 invariant). For all-failed runs the
+ * `manifest.counts.flagged` (the canonical invariant). For all-failed runs the
  * helper's `fail` reports the visible failure count even though
- * `manifest.counts.flagged` is `0` (because D3 only counts succeeded).
+ * `manifest.counts.flagged` is `0` (because the invariant only counts succeeded).
  */
 
 import { describe, it, expect } from "vitest"
@@ -111,7 +111,7 @@ describe("deriveCounts", () => {
     const d = deriveCounts(m)
     expect(d).toMatchObject({ ok: 1, warn: 2, fail: 1 })
     expect(d.flagged).toBe(d.warn + d.fail)
-    // D3: counts.flagged counts WARN+FAIL on succeeded only — matches the
+    // counts.flagged counts WARN+FAIL on succeeded only — matches the
     // helper's flagged here because every entry has `path !== null`.
     expect(d.flagged).toBe(m.counts.flagged)
   })
@@ -120,7 +120,7 @@ describe("deriveCounts", () => {
     const m = mkManifest([hardFail("a"), hardFail("b"), hardFail("c")])
     const d = deriveCounts(m)
     expect(d).toMatchObject({ ok: 0, warn: 0, fail: 3, flagged: 3 })
-    // D3 only counts WARN+FAIL on succeeded creatives, so the manifest's
+    // The canonical invariant only counts WARN+FAIL on succeeded creatives, so the manifest's
     // own `flagged` is 0 here. The helper's `flagged` is the visible
     // total (warn+fail) — the WARN tooltip surfaces this number.
     expect(m.counts.flagged).toBe(0)

@@ -1,5 +1,5 @@
 /**
- * Manifest invariants (D3).
+ * Manifest invariants.
  *
  *   counts.generated + counts.reused === counts.succeeded
  *   counts.flagged counts WARN+FAIL on succeeded only
@@ -65,7 +65,7 @@ function mkManifest(overrides: Partial<Manifest> = {}): Manifest {
         market: "us-en",
         ratio: "1x1",
         source: "genai",
-        path: null, // failed at compose; compliance omitted (D19)
+        path: null, // failed at compose; compliance omitted
       },
     ],
     errors: [

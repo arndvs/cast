@@ -9,9 +9,7 @@
  * State machine:
  *   editing → running → (complete | failed)
  *               ↑___________________________|   (retry)
- *
- * V2 only ships the `editing` slice. `running`, `complete`, `failed`,
- * `detailOpen`, and `pipeline-event` land in V4/V5.
+
  */
 
 import { ALL_RATIOS, type AspectRatio } from "@/lib/cast/ratios"
@@ -65,10 +63,10 @@ export interface ClientLogoVariant {
 }
 
 /**
- * In-memory upload preview for V2.
+ * In-memory upload preview.
  *
- * V2 has no upload route — the dropzone holds an object-URL preview in this
- * map. V3 swaps the preview for a real `/api/upload` POST and replaces the
+ * The dropzone holds an object-URL preview in this
+ * map. The upload route replaces the
  * `objectUrl` with a `savedAs` path returned by the server.
  *
  * The object URL must be revoked on remove (handled in the dropzone unmount /
@@ -92,7 +90,7 @@ export interface CastAppState {
   uploads: Record<string, UploadPreview>
   /** Sidebar logo-variant picker — surfaces as `brief.logoVariant` on submit. */
   logoVariant: LogoVariantId
-  /** NDJSON event tape from `/api/generate` (V4). S2 renders this. */
+  /** NDJSON event tape from `/api/generate`. The pipeline run view renders this. */
   events: PipelineEvent[]
   /** Final run manifest — set when the terminal `complete` event arrives. */
   manifest: Manifest | null
@@ -103,8 +101,8 @@ export interface CastAppState {
   /** Which screen is mounted. Default `"brief-editor"`. */
   screen: AppScreen
   /**
-   * S3 detail dialog target. `null` when closed. The reducer owns the
-   * open/close transitions; the dialog itself lands in V5e.
+   * Detail dialog target. `null` when closed. The reducer owns the
+   * open/close transitions.
    */
   detailOpen: Creative | null
 }
@@ -168,8 +166,8 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
       const markets = has
         ? state.brief.markets.filter((m) => m !== code)
         : [...state.brief.markets, code]
-      // Seed an empty message slot for any newly added language (D11 — locale
-      // completeness is enforced by the schema; prefill keeps the UI honest).
+      // Seed an empty message slot for any newly added language — locale
+      // completeness is enforced by the schema; prefill keeps the UI honest.
       const message = { ...state.brief.message }
       if (!has) {
         const lang = getMarket(code)?.language ?? code.split("-").pop()

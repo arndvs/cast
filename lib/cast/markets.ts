@@ -1,8 +1,7 @@
 /**
- * Market catalog used by the S1 typeahead and locale derivation.
+ * Market catalog used by the brief editor typeahead and locale derivation.
  *
- * V2 inlines this list; in production it would be loaded from a config file
- * or extended per-locale. The schema only enforces the `xx-yy` shape — this
+ * The schema only enforces the `xx-yy` shape — this
  * list is editorial (which markets are *suggested* in the typeahead).
  */
 
@@ -29,7 +28,7 @@ export function getMarket(code: string): Market | undefined {
 
 /**
  * Active languages for a set of markets, in order of first appearance, deduped.
- * Used by S1 to render one headline row per language (D11, Story 1).
+ * Used by the brief editor to render one headline row per language.
  *
  * `MARKET_RE` lets users add custom markets the catalog doesn't know about
  * (e.g. `jp-ja`); we still need a headline row for those, so fall back to the

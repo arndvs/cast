@@ -6,14 +6,14 @@ import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-sta
 import { pipelineEventSchema } from "@/lib/cast/events"
 
 /**
- * D30 — stream idle abort threshold. The server's `start` callback may pause
+ * Stream idle abort threshold. The server's `start` callback may pause
  * for tens of seconds during dall-e-3 generation, so the threshold has to be
  * generous. 90 s matches the spec.
  */
 const IDLE_TIMEOUT_MS = 90_000
 
 /**
- * V4 run controller.
+ * Run controller hook.
  *
  * Watches `state.runState`. When it transitions to `running`, POSTs the
  * current brief to `/api/generate`, decodes the NDJSON response line-by-line,
@@ -22,7 +22,7 @@ const IDLE_TIMEOUT_MS = 90_000
  *   - non-2xx responses                  → stage = "validation" (server
  *                                          returned JSON `{ errors: [...] }`)
  *   - non-NDJSON content type            → stage = "stream"
- *   - `IDLE_TIMEOUT_MS` between chunks   → stage = "stream" (D30)
+ *   - `IDLE_TIMEOUT_MS` between chunks   → stage = "stream"
  *   - JSON.parse failure on a line       → stage = "stream"
  *   - fetch/network error                → stage = "stream"
  *

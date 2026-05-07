@@ -8,8 +8,8 @@ export const runtime = "nodejs"
 /**
  * GET /api/detected-assets?slugs=brisa-citrus,brisa-berry
  *
- * Returns [{ slug, foundFile | null }] for the Detected Assets panel on S1.
- * Resolver lookup order: png, jpg, jpeg, webp (first hit wins, per D4).
+ * Returns [{ slug, foundFile | null }] for the Detected Assets panel.
+ * Resolver lookup order: png, jpg, jpeg, webp (first hit wins).
  *
  * Every slug is SLUG_RE-validated before any filesystem call. Lookups go
  * through safeJoin('inputs', 'assets', ...).

@@ -1,10 +1,10 @@
 /**
- * Brand profile loader — D11, D27, D28.
+ * Brand profile loader — reads brand, voice, logo, and banned-words fixtures.
  *
  * Reads `inputs/brands/[slug]/{brand,voice,banned-words}.json` + `logos/logos.json`,
  * validates against `brandProfileSchema`, returns a hydrated `BrandProfile`.
  *
- * - 90 s in-process Map cache, no mtime invalidation (per system-map / D11).
+ * - 90 s in-process Map cache, no mtime invalidation.
  * - Throws `BrandNotFoundError` / `BrandIncompleteError` / `BrandInvalidError`;
  *   route handlers map `BrandNotFoundError` to 404 and the other two to 400,
  *   each with a structured `{ errors: [...] }` body.

@@ -10,9 +10,7 @@ export interface TopbarProps extends React.HTMLAttributes<HTMLElement> {
 
 /**
  * Cast topbar — wordmark + studio tagline on the left, mono crumb on
- * the right. The GenAI mode badge that previously sat on the right was
- * removed alongside the rest of D32; the env still drives server-side
- * mode selection but no client-side badge surfaces it.
+ * the right.
  */
 export function Topbar({ crumb, className, ...props }: TopbarProps) {
   return (

@@ -61,7 +61,7 @@ export const briefSchema = z
     ratios: z.array(ratioSchema).min(1),
     // Optional logo variant id; cross-validated against the loaded brand
     // at /api/generate entry (briefSchema alone has no brand state). When
-    // omitted, the orchestrator falls back to `brandProfile.defaultLogoId` (D27).
+    // omitted, the orchestrator falls back to `brandProfile.defaultLogoId`.
     logoVariant: z.string().regex(SLUG_RE).optional(),
   })
   .superRefine((brief, ctx) => {
@@ -104,7 +104,7 @@ export const briefSchema = z
 export type Brief = z.infer<typeof briefSchema>
 
 // ---------------------------------------------------------------------------
-// Brand profile (D11)
+// Brand profile
 // ---------------------------------------------------------------------------
 
 export const brandColorsSchema = z.object({
@@ -218,7 +218,7 @@ export const creativeSchema = z.object({
   market: z.string().regex(MARKET_RE),
   ratio: ratioSchema,
   source: z.enum(["local", "genai"]),
-  path: z.string().nullable(), // null on failure (D19)
+  path: z.string().nullable(), // null on failure (write stage skips compliance)
   compliance: complianceSchema.optional(),
 })
 
