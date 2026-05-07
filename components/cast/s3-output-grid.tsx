@@ -145,11 +145,18 @@ function S3OutputGridInner({
             variant="outline"
             size="sm"
             onClick={async () => {
-              const res = await revealOutputFolder({ campaign: brief.campaign })
-              if (res.ok) {
-                toast.success("Folder revealed")
-              } else {
-                toast.error(res.error)
+              try {
+                const res = await revealOutputFolder({ campaign: brief.campaign })
+                if (res.ok) {
+                  toast.success("Folder revealed")
+                } else {
+                  toast.error(res.error)
+                }
+              } catch (err) {
+                // The server action's contract is to never throw, but a
+                // network or runtime failure on the action transport itself
+                // would surface here — surface it instead of swallowing.
+                toast.error(err instanceof Error ? err.message : "Failed to reveal folder")
               }
             }}
           >

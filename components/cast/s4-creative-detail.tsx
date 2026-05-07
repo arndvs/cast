@@ -103,7 +103,7 @@ function S4Body({
     : null
 
   return (
-    <DialogContent className="max-w-3xl">
+    <DialogContent className="sm:max-w-3xl">
       <DialogHeader>
         <DialogTitle className="font-mono text-sm">
           {creative.product}{" "}
