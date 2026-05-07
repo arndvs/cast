@@ -10,7 +10,6 @@ import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-sta
 import { JobVariantRow } from "@/components/cast/job-variant-row"
 import { PipelineLogLine } from "@/components/cast/pipeline-log-line"
 import { PipelineRunStatusBadge } from "@/components/cast/pipeline-run-status-badge"
-import { Wordmark } from "@/components/cast/wordmark"
 import { formatRunTime } from "@/lib/cast/format-run-time"
 import { deriveCreativeStatuses, groupByProduct, countTerminal } from "@/lib/cast/derive-creative-statuses"
 
@@ -30,7 +29,28 @@ interface JobRunnerViewProps {
  */
 export function JobRunnerView({ state, dispatch, cancelRef }: JobRunnerViewProps) {
   const { brief, brandSlug, runState, events, runError, runStartedAt } = state
-  const [logOpen, setLogOpen] = React.useState(false)
+  const [logOpen, setLogOpen] = React.useState(true)
+
+  // Track when the run completed for the "done" timestamp.
+  const [completedAt, setCompletedAt] = React.useState<Date | null>(null)
+  React.useEffect(() => {
+    if (runState === "complete" || runState === "failed") {
+      setCompletedAt((prev) => prev ?? new Date())
+    } else {
+      setCompletedAt(null)
+    }
+  }, [runState])
+
+  // Live elapsed seconds while running.
+  const [elapsed, setElapsed] = React.useState(0)
+  React.useEffect(() => {
+    if (runState !== "running") return
+    setElapsed(0)
+    const id = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - runStartedAt.getTime()) / 1000))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [runState, runStartedAt])
 
   // Derive structured statuses from the live event tape.
   const statusMap = React.useMemo(() => deriveCreativeStatuses(events, brief), [events, brief])
@@ -52,8 +72,6 @@ export function JobRunnerView({ state, dispatch, cancelRef }: JobRunnerViewProps
       {/* Header */}
       <Card className="overflow-hidden p-0">
         <div className="flex flex-wrap items-center gap-3 border-b border-border p-4">
-          <Wordmark className="text-lg" />
-          <span className="text-fg-3">·</span>
           <span className="text-sm text-fg-2">{brandSlug}</span>
           <span className="text-fg-3">/</span>
           <span className="font-mono text-sm text-fg-1">{brief.campaign}</span>
@@ -61,6 +79,8 @@ export function JobRunnerView({ state, dispatch, cancelRef }: JobRunnerViewProps
           <div className="grow" />
           <span className="font-mono text-xs text-fg-3">
             started {formatRunTime(runStartedAt)}
+            {runState === "running" && ` · ${formatElapsed(elapsed)}`}
+            {completedAt && ` · done ${formatRunTime(completedAt)}`}
           </span>
         </div>
 
@@ -197,4 +217,10 @@ export function JobRunnerView({ state, dispatch, cancelRef }: JobRunnerViewProps
       </Card>
     </div>
   )
+}
+
+function formatElapsed(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return m > 0 ? `${m}m ${s}s` : `${s}s`
 }
