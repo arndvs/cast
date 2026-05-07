@@ -99,7 +99,7 @@ export function S1Shell({
   // `brandLoadable`.
   const bannedList = React.useMemo<readonly string[]>(
     () => brand?.bannedWords ?? getDefaultBannedWords(),
-    [brand?.bannedWords],
+    [brand?.bannedWords]
   )
   // The editor and the summary strip both read from the same list above:
   // the strip via `bannedHits`, the editor via the `bannedList` prop. This
