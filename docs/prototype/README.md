@@ -72,4 +72,4 @@ The prototype is the visual spec for the production app under [working/b_KLVLM7A
 
 ## Background
 
-Built slice-by-slice against the [requirements](../attributes-screen-requirements.md), [user stories](../user-stories.md), [system map](../system-map.md), and [flow diagrams](../flow-diagrams.md). The earlier static HTML mockup lives at [../mockups.html](../mockups.html).
+Built slice-by-slice against the [requirements](../attributes-screen-requirements.md), [user stories](../user-stories.md), [system map](../system-map.md), and [flow diagrams](../flow-diagrams.md). The earlier static HTML mockup lives at [../mockup.html](../mockup.html).
