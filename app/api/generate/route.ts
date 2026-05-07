@@ -212,6 +212,7 @@ class StageError extends Error {
 
 export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
   const { brief, brand, logoPath, mode, emit } = args
+  const pipelineStartedAt = new Date().toISOString()
 
   const creatives: Creative[] = []
   const errors: ManifestError[] = []
@@ -304,6 +305,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
       await Promise.all(
         brief.ratios.map(async (ratio) => {
           const slot: Slot = { product: productSlug, market, ratio }
+          const slotStart = Date.now()
           let failedAt: FailedAt | null = null
           let compliance: ReturnType<typeof runCompliance> | null = null
           let outputPath: string | null = null
@@ -417,6 +419,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
               ratio,
               source: resolved.source,
               path: null,
+              duration: (Date.now() - slotStart) / 1000,
               ...(failedAt.stage === "write" && compliance
                 ? { compliance: toComplianceField(compliance) }
                 : {}),
@@ -429,6 +432,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
               ratio,
               source: resolved.source,
               path: outputPath,
+              duration: (Date.now() - slotStart) / 1000,
               ...(compliance ? { compliance: toComplianceField(compliance) } : {}),
             })
           }
@@ -441,7 +445,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
   creatives.sort(byCreative)
   errors.sort(byError)
 
-  return buildManifest(brief, creatives, errors)
+  return buildManifest(brief, creatives, errors, pipelineStartedAt, new Date().toISOString())
 }
 
 // ---------------------------------------------------------------------------

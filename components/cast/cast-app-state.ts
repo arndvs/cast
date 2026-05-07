@@ -20,6 +20,7 @@ import {
   type ErrorStage,
   type Manifest,
 } from "@/lib/cast/schemas"
+import { getDefaultBrief } from "@/lib/cast/seed-brands"
 import type { PipelineEvent } from "@/lib/cast/events"
 import type {
   AppScreen,
@@ -74,7 +75,7 @@ export interface CastAppState {
 // ---------------------------------------------------------------------------
 
 export type CastAppAction =
-  | { type: "setBrand"; slug: string; brief: Brief }
+  | { type: "setBrand"; slug: string }
   | { type: "setField"; field: "campaign" | "audience"; value: string }
   | { type: "setLocaleMessage"; lang: string; value: string }
   | { type: "toggleMarket"; code: string }
@@ -84,13 +85,14 @@ export type CastAppAction =
   | { type: "setLogoVariant"; id: string }
   | { type: "upload"; productSlug: string; preview: UploadPreview }
   | { type: "removeUpload"; productSlug: string }
-  | { type: "replaceBrief"; brief: Brief }
   | { type: "generate" }
   | { type: "pipeline-event"; event: PipelineEvent }
   | { type: "run-error"; stage: RunErrorStage; message: string }
   | { type: "goto-run" }
   | { type: "goto-grid" }
   | { type: "goto-edit" }
+  | { type: "set-screen"; screen: AppScreen }
+  | { type: "replaceBrief"; brief: Brief }
   | { type: "open-detail"; creative: Creative }
   | { type: "close-detail" }
 
@@ -100,19 +102,44 @@ export type CastAppAction =
 
 export function castAppReducer(state: CastAppState, action: CastAppAction): CastAppState {
   switch (action.type) {
-    case "setBrand":
-      // Brand swap discards uploads — different products, different slugs.
-      // Normalize `brief.brand` to the selected slug so the JSON mirror and a
-      // submitted brief never disagree with `brandSlug`.
-      // Reset logo selection so a variant from the previous brand cannot
-      // survive the swap and fail server-side validation.
+    case "setBrand": {
+      // No-op when re-clicking the already-active brand — avoids accidental
+      // data loss on a misclick.
+      if (action.slug === state.brandSlug) return state
+
+      // Brand swap replaces the entire brief with brand-appropriate defaults.
+      // Products, audience, headlines, markets all reset — only ratios carry
+      // over (format choice is brand-agnostic).
+      // Uploads are revoked (different products → different slugs) and logo
+      // variant is cleared so a previous brand's variant can't leak through.
+      const fresh = getDefaultBrief(action.slug)
+      const nextBrief: Brief = fresh
+        ? {
+            ...fresh,
+            brand: action.slug,
+            products: [...fresh.products],
+            markets: [...fresh.markets],
+            message: { ...fresh.message },
+            ratios: [...state.brief.ratios],
+            logoVariant: undefined,
+          }
+        : { ...state.brief, brand: action.slug, logoVariant: undefined }
       return {
         ...state,
         brandSlug: action.slug,
         logoVariant: "",
-        brief: { ...action.brief, brand: action.slug, logoVariant: undefined },
+        brief: nextBrief,
         uploads: revokeAll(state.uploads),
         runState: "editing",
+      }
+    }
+    case "replaceBrief":
+      return {
+        ...state,
+        brandSlug: action.brief.brand,
+        brief: action.brief,
+        logoVariant: action.brief.logoVariant ?? "",
+        uploads: revokeAll(state.uploads),
       }
     case "setField":
       return { ...state, brief: { ...state.brief, [action.field]: action.value } }
@@ -205,8 +232,7 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
       void _drop
       return { ...state, uploads: rest }
     }
-    case "replaceBrief":
-      return { ...state, brief: action.brief }
+
     case "generate":
     case "goto-run":
       // Flip to running and clear any previous run's artifacts. The
@@ -227,6 +253,12 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
       // otherwise so a stray dispatch can't strand the user on an empty grid.
       if (state.runState !== "complete") return state
       return { ...state, screen: "output-grid" }
+    case "set-screen":
+      // Non-destructive screen switch — only changes which screen is mounted.
+      // Guards prevent navigating to screens that aren't valid yet.
+      if (action.screen === "output-grid" && state.runState !== "complete") return state
+      if (action.screen === "pipeline-run" && state.runState === "editing") return state
+      return { ...state, screen: action.screen }
     case "goto-edit":
       // Discard the prior run's artifacts and return the editor to the
       // initial `editing` state. Brief, brand, uploads stay intact.
@@ -245,7 +277,8 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
     case "close-detail":
       return { ...state, detailOpen: null }
     case "pipeline-event": {
-      const events = [...state.events, action.event]
+      const stamped = { ...action.event, receivedAt: Date.now() }
+      const events = [...state.events, stamped]
       if (action.event.type === "complete") {
         return {
           ...state,

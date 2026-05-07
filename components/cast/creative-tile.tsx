@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { Check, Download, ExternalLink } from "lucide-react"
 
 import { ComplianceBadgePill } from "@/components/cast/compliance-badge-pill"
 import { CreativeSourcePill } from "@/components/cast/creative-source-pill"
@@ -13,6 +14,8 @@ interface CreativeTileProps {
   creative: Creative
   campaign: string
   onClick: () => void
+  selected?: boolean
+  onSelect?: () => void
 }
 
 /**
@@ -28,7 +31,7 @@ interface CreativeTileProps {
  * (which whitelists `.png` and reads from `outputs/` outside the static
  * tree). `loading="lazy"` keeps the initial paint cheap for large grids.
  */
-export function CreativeTile({ creative, campaign, onClick }: CreativeTileProps) {
+export function CreativeTile({ creative, campaign, onClick, selected, onSelect }: CreativeTileProps) {
   const aspectClass = aspectClassForRatio(creative.ratio)
 
   const failed = creative.path === null
@@ -40,52 +43,107 @@ export function CreativeTile({ creative, campaign, onClick }: CreativeTileProps)
     : buildCreativeProxyUrl(campaign, creative.market, creative.product, creative.ratio)
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex flex-col gap-2 rounded-xl border border-border bg-card p-2 text-left transition hover:border-fg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      aria-label={`${creative.product} · ${creative.market} · ${creative.ratio}`}
+    <div
+      className={cn(
+        "group relative flex flex-col gap-2 rounded-xl border bg-card p-2 transition",
+        selected ? "border-primary" : "border-border hover:border-fg-3",
+      )}
     >
-      <div
-        className={cn(
-          "relative w-full overflow-hidden rounded-lg bg-muted",
-          aspectClass,
-        )}
+      {/* Selection checkbox */}
+      {onSelect && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onSelect()
+          }}
+          className={cn(
+            "absolute left-3 top-3 z-10 flex h-5 w-5 items-center justify-center rounded border transition-all",
+            selected
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-white/70 bg-black/30 opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+          )}
+          aria-label={selected ? `Deselect ${creative.product}` : `Select ${creative.product}`}
+          role="checkbox"
+          aria-checked={!!selected}
+        >
+          {selected && <Check className="h-3 w-3" />}
+        </button>
+      )}
+
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex w-full flex-col gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label={`${creative.product} · ${creative.market} · ${creative.ratio}`}
       >
-        {src ? (
-          // eslint-disable-next-line @next/next/no-img-element -- proxy serves dynamic per-run PNGs; next/image static analysis isn't useful here
-          <img
-            src={src}
-            alt={`${creative.product} ${creative.market} ${creative.ratio}`}
-            loading="lazy"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div
-            className="flex h-full w-full items-center justify-center"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(45deg, var(--bad) 0 8px, transparent 8px 16px)",
-              backgroundColor: "color-mix(in oklab, var(--bad) 8%, transparent)",
-            }}
-          >
-            <span className="rounded bg-card/90 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-bad">
-              failed
-            </span>
+        <div
+          className={cn(
+            "relative w-full overflow-hidden rounded-lg bg-muted",
+            aspectClass,
+          )}
+        >
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element -- proxy serves dynamic per-run PNGs; next/image static analysis isn't useful here
+            <img
+              src={src}
+              alt={`${creative.product} ${creative.market} ${creative.ratio}`}
+              loading="lazy"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div
+              className="flex h-full w-full items-center justify-center"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(45deg, var(--bad) 0 8px, transparent 8px 16px)",
+                backgroundColor: "color-mix(in oklab, var(--bad) 8%, transparent)",
+              }}
+            >
+              <span className="rounded bg-card/90 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-bad">
+                failed
+              </span>
+            </div>
+          )}
+          <div className="absolute right-1 top-1">
+            <ComplianceBadgePill badge={badge} />
           </div>
-        )}
-        <div className="absolute right-1 top-1">
-          <ComplianceBadgePill badge={badge} />
+
         </div>
-      </div>
-      <div className="flex items-center gap-2 px-1 text-xs">
-        <span className="truncate font-medium text-fg-1">{creative.product}</span>
-        <CreativeSourcePill source={creative.source} />
-        <span className="grow" />
-        <span className="font-mono text-[10px] text-fg-3">
-          {creative.market} · {creative.ratio}
-        </span>
-      </div>
-    </button>
+        <div className="flex items-center gap-2 px-1 text-xs">
+          <span className="truncate font-medium text-fg-1">{creative.product}</span>
+          <CreativeSourcePill source={creative.source} />
+          <span className="grow" />
+          <span className="font-mono text-[10px] text-fg-3">
+            {creative.market} · {creative.ratio}
+          </span>
+        </div>
+      </button>
+
+      {/* Hover overlay with actions — outside the button to avoid nested interactive elements */}
+      {src && (
+        <div className="pointer-events-none absolute inset-x-2 top-2 flex items-center justify-center gap-2 rounded-lg bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100" style={{ bottom: "calc(0.5rem + 1.5rem + 0.5rem)" }}>
+          <a
+            href={src}
+            download
+            onClick={(e) => e.stopPropagation()}
+            className="pointer-events-auto rounded-full bg-white/90 p-2 text-black transition hover:bg-white dark:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={`Download ${creative.product}`}
+            tabIndex={-1}
+          >
+            <Download className="h-4 w-4" />
+          </a>
+          <button
+            type="button"
+            onClick={onClick}
+            className="pointer-events-auto rounded-full bg-white/90 p-2 text-black transition hover:bg-white dark:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={`Open details for ${creative.product}`}
+            tabIndex={-1}
+          >
+            <ExternalLink className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

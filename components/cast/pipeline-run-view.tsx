@@ -63,7 +63,7 @@ export function PipelineRunView({ state, dispatch, cancelRef }: PipelineRunViewP
       {/* Status header */}
       <Card className="flex flex-col gap-3 p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <Wordmark className="text-lg" />
+          <Wordmark className="text-lg" generating={runState === "running"} />
           <span className="text-fg-3">·</span>
           <span className="text-sm text-fg-2">{brandSlug}</span>
           <span className="text-fg-3">/</span>

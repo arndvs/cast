@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { DM_Sans, Geist_Mono, Outfit } from "next/font/google"
+import Script from "next/script"
 
 import { Toaster } from "@/components/ui/sonner"
 
@@ -35,10 +36,19 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable}`}
+      suppressHydrationWarning
     >
       <body>
         {children}
         <Toaster richColors closeButton position="bottom-right" />
+        {process.env.NEXT_PUBLIC_DROPBOX_APP_KEY && (
+          <Script
+            src="https://www.dropbox.com/static/api/2/dropins.js"
+            data-app-key={process.env.NEXT_PUBLIC_DROPBOX_APP_KEY}
+            strategy="lazyOnload"
+            id="dropboxjs"
+          />
+        )}
       </body>
     </html>
   )

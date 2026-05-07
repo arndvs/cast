@@ -32,6 +32,8 @@ interface UseBrandProfileArgs {
   audience: string
   /** Brief locale→message map — checked against banned words. */
   message: Record<string, string>
+  /** Fires after a brand profile is fetched — use to auto-select the default logo. */
+  onBrandLoaded?: (brand: BrandSnapshot) => void
 }
 
 interface UseBrandProfileResult {
@@ -58,7 +60,15 @@ export function useBrandProfile({
   initialSlug,
   audience,
   message,
+  onBrandLoaded,
 }: UseBrandProfileArgs): UseBrandProfileResult {
+  // Store callback in a ref so the fetch effect only re-runs on brandSlug
+  // changes, not when the caller passes a new function identity.
+  const onBrandLoadedRef = React.useRef(onBrandLoaded)
+  React.useEffect(() => {
+    onBrandLoadedRef.current = onBrandLoaded
+  })
+
   const [activeBrand, setActiveBrand] = React.useState(initialBrand)
   const [activeBrandLoadError, setActiveBrandLoadError] =
     React.useState<BrandLoadErrorInfo | null>(initialBrandLoadError)
@@ -127,19 +137,22 @@ export function useBrandProfile({
               id: string
               displayName: string
               theme?: "light" | "dark"
+              url?: string
             }>
           }
         }
         if (cancelled) return
-        setActiveBrand({
+        const snapshot: BrandSnapshot = {
           defaultLogoId: data.logos.default,
           logoVariants: data.logos.variants.map(
-            ({ id, displayName, theme }) => ({ id, displayName, theme }),
+            ({ id, displayName, theme, url }) => ({ id, displayName, theme, url }),
           ),
           bannedWords: data.bannedWords,
-        })
+        }
+        setActiveBrand(snapshot)
         setActiveBrandLoadError(null)
         setLoadedSlug(brandSlug)
+        onBrandLoadedRef.current?.(snapshot)
       })
       .catch((err: unknown) => {
         if ((err as { name?: string })?.name === "AbortError") return

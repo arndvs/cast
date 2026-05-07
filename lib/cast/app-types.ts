@@ -23,6 +23,8 @@ export interface ClientLogoVariant {
   id: string
   displayName: string
   theme?: "light" | "dark"
+  /** Proxy URL that serves the logo PNG — e.g. `/api/brands/{slug}/logos/{id}`. */
+  url?: string
 }
 
 /**
