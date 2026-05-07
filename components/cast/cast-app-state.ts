@@ -88,7 +88,6 @@ export type CastAppAction =
   | { type: "generate" }
   | { type: "pipeline-event"; event: PipelineEvent }
   | { type: "run-error"; stage: RunErrorStage; message: string }
-  | { type: "run-reset" }
   | { type: "goto-run" }
   | { type: "goto-grid" }
   | { type: "goto-edit" }
@@ -259,14 +258,6 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
         ...state,
         runState: "failed",
         runError: { stage: action.stage, message: action.message },
-      }
-    case "run-reset":
-      return {
-        ...state,
-        runState: "editing",
-        events: [],
-        manifest: null,
-        runError: null,
       }
     default: {
       const _exhaustive: never = action

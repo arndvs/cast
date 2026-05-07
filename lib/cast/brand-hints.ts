@@ -28,21 +28,6 @@ export const BRAND_HINTS = {
 } as const
 
 /**
- * Map a `BrandLoadError` to its canonical operator-facing hint. Always
- * returns one of the three `BRAND_HINTS` strings — the input type is a
- * closed union, so the exhaustiveness check guarantees coverage.
- */
-export function brandHintFor(error: BrandLoadError): string {
-  if (error instanceof BrandNotFoundError) return BRAND_HINTS.notFound
-  if (error instanceof BrandIncompleteError) return BRAND_HINTS.incomplete
-  if (error instanceof BrandInvalidError) return BRAND_HINTS.invalid
-  // Exhaustiveness check — BrandLoadError is a closed union.
-  const _exhaustive: never = error
-  void _exhaustive
-  return BRAND_HINTS.invalid
-}
-
-/**
  * Serialization-safe descriptor for a brand-load failure. The thrown
  * `BrandLoadError` instances carry runtime-only state (Error stack, class
  * identity) that React refuses to serialize across the server→client
@@ -83,8 +68,4 @@ export function toBrandLoadErrorInfo(error: BrandLoadError): BrandLoadErrorInfo 
   const _exhaustive: never = error
   void _exhaustive
   throw new Error("unreachable")
-}
-
-export function brandHintForKind(kind: BrandLoadErrorInfo["kind"]): string {
-  return BRAND_HINTS[kind]
 }
