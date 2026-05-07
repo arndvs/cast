@@ -27,7 +27,6 @@ export default async function Page() {
     <div className="flex min-h-svh flex-col">
       <CastAppShell
         initialBrief={brief}
-        crumb={`${brief.brand} · ${brief.campaign}`}
         brand={
           brand.ok
             ? {
@@ -40,6 +39,7 @@ export default async function Page() {
                   id: variant.id,
                   displayName: variant.displayName,
                   theme: variant.theme,
+                  url: `/api/brands/${brief.brand}/logos/${variant.id}`,
                 })),
                 // The banned-word list the server's compliance pass
                 // will use (default floor ∪ brand fixture, deduped +

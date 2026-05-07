@@ -64,7 +64,7 @@ export function BriefEditorSidebar({
                 key={slug}
                 type="button"
                 onClick={() =>
-                  dispatch({ type: "setBrand", slug, brief: state.brief })
+                  dispatch({ type: "setBrand", slug })
                 }
                 className={cn(
                   "flex items-center gap-3 rounded-md border border-border bg-card p-3 text-left transition-colors",
@@ -146,15 +146,32 @@ export function BriefEditorSidebar({
                   )}
                 >
                   <div
-                    className="flex h-10 w-full items-center justify-center rounded font-display text-base font-bold"
+                    className="flex h-10 w-full items-center justify-center overflow-hidden rounded"
                     style={{
                       background: isLight ? "#ffffff" : "#222",
-                      color: isLight
-                        ? (brand?.colors.primary ?? "currentColor")
-                        : "#ffffff",
                     }}
                   >
-                    {(brand?.displayName ?? state.brandSlug).slice(0, 1)}
+                    {variant.url ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={variant.url}
+                        alt={variant.displayName}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-contain p-1"
+                      />
+                    ) : (
+                      <span
+                        className="font-display text-base font-bold"
+                        style={{
+                          color: isLight
+                            ? (brand?.colors.primary ?? "currentColor")
+                            : "#ffffff",
+                        }}
+                      >
+                        {(brand?.displayName ?? state.brandSlug).slice(0, 1)}
+                      </span>
+                    )}
                   </div>
                   <div className="text-[0.625rem] leading-tight text-muted-foreground">
                     {variant.displayName}
