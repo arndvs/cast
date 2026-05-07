@@ -36,27 +36,33 @@ interface S1BriefEditorProps {
   dispatch: React.Dispatch<S1Action>
   /** Logo variants from the loaded brand profile. Empty when no brand on disk. */
   logoVariants: readonly EditorLogoVariant[]
+  /**
+   * Banned-word list to match against (D29). Supplied by the shell so the
+   * inline ⚠ badge and the Generate gate read from the same merged source
+   * (default floor ∪ brand fixture). Falls back to the universal floor when
+   * omitted (e.g. unit tests rendering the editor in isolation).
+   */
+  bannedList?: readonly string[]
 }
 
-export function S1BriefEditor({ state, dispatch, logoVariants }: S1BriefEditorProps) {
+export function S1BriefEditor({ state, dispatch, logoVariants, bannedList }: S1BriefEditorProps) {
   const [jsonMode, setJsonMode] = React.useState(false)
   const brand = getDemoBrand(state.brandSlug)
 
   // Banned-word check across the audience field + every locale message.
-  // Uses the union of the default list and the current brand's list — this
-  // matches what `/api/generate` will do at compliance time (D29 parity).
-  const bannedList = React.useMemo(() => {
-    const merged = new Set<string>()
-    for (const w of getDefaultBannedWords()) merged.add(w.toLowerCase())
-    for (const w of brand?.bannedWords ?? []) merged.add(w.toLowerCase())
-    return [...merged]
-  }, [brand])
+  // Prefer the shell-supplied `bannedList` (default floor ∪ brand fixture
+  // from `loadBrandProfile`, the *exact* list `/api/generate` compliance
+  // uses). Falls back to the universal floor when the prop isn't supplied.
+  const effectiveBannedList = React.useMemo<readonly string[]>(
+    () => bannedList ?? getDefaultBannedWords(),
+    [bannedList],
+  )
 
   const haystack = [
     state.brief.audience,
     ...Object.values(state.brief.message),
   ].join(" ")
-  const bannedHits = containsBannedWord(haystack, bannedList)
+  const bannedHits = containsBannedWord(haystack, effectiveBannedList)
   const slugInvalid = !SLUG_RE.test(state.brief.campaign || "")
 
   if (!brand) {
@@ -103,7 +109,7 @@ export function S1BriefEditor({ state, dispatch, logoVariants }: S1BriefEditorPr
             state={state}
             dispatch={dispatch}
             brand={brand}
-            bannedList={bannedList}
+            bannedList={effectiveBannedList}
             slugInvalid={slugInvalid}
           />
         )}

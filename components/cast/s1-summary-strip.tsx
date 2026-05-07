@@ -18,13 +18,15 @@ interface S1SummaryStripProps {
    */
   brandLoadable?: boolean
   /**
-   * Banned-list hits across audience + every locale message. Computed once
-   * in the shell using the same matcher + merged list (`getDefaultBannedWords`
-   * unioned with the brand's `bannedWords`) the server's compliance pass
-   * uses (D29). When non-empty, Generate is disabled — failing closed at S1
-   * prevents the "generation succeeded, compliance FAILED, demo wasted"
-   * loop where the operator only learns the brief was non-compliant after
-   * the API spend has already happened.
+   * Precomputed banned-list hits across audience + every locale message,
+   * supplied by the shell. The shell builds its list from
+   * `BrandProfile.bannedWords` (default floor ∪ brand fixture, dedup +
+   * lowercased on the server in `loadBrandProfile`) so this gate uses the
+   * same list `/api/generate`'s compliance pass uses (D29). When non-empty,
+   * Generate is disabled — failing closed at S1 prevents the "generation
+   * succeeded, compliance FAILED, demo wasted" loop where the operator
+   * only learns the brief was non-compliant after the API spend has
+   * already happened.
    */
   bannedHits?: readonly string[]
 }

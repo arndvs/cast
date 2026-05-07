@@ -15,7 +15,6 @@ import type { Brief } from "@/lib/cast/schemas"
 import type { ClientLogoVariant } from "@/components/cast/s1-state"
 import type { BrandLoadErrorInfo } from "@/lib/cast/brand-hints"
 import { containsBannedWord, getDefaultBannedWords } from "@/lib/cast/banned-words"
-import { getDemoBrand } from "@/lib/cast/demo-brands"
 
 interface S1ShellProps {
   /** Server-loaded, schema-validated brief — feeds the reducer's initial state. */
@@ -25,8 +24,13 @@ interface S1ShellProps {
    * server component is responsible for loading these via `loadBrandProfile`.
    * `null` when the brand fixture is missing or invalid — the editor renders
    * without the logo grid in that case and a `MissingBrandBanner` appears.
+   *
+   * `bannedWords` is the server-merged union of `getDefaultBannedWords()` +
+   * `inputs/brands/[slug]/banned-words.json` (deduped, lowercased) — the
+   * exact list `/api/generate`'s compliance pass will run against. The shell
+   * uses it to pre-flight the brief and gate Generate before any spend.
    */
-  brand: { defaultLogoId: string; logoVariants: readonly ClientLogoVariant[] } | null
+  brand: { defaultLogoId: string; logoVariants: readonly ClientLogoVariant[]; bannedWords: readonly string[] } | null
   /**
    * Serialization-safe descriptor of the brand-load failure (when `brand`
    * is `null`). Drives the banner rendered above the editor and gates the
@@ -75,22 +79,28 @@ export function S1Shell({
 
   const brandLoadable = brandLoadError == null
 
-  // D29 — same matcher + same merged list the server's compliance pass
-  // will use. Computed here so both the editor (for the inline ⚠ badge)
-  // and the summary strip (for the Generate gate) read the same hits.
-  // Failing closed at S1 prevents the "generation succeeded, compliance
-  // FAILED, demo wasted on a banned word" loop.
+  // D29 — single source of truth for the banned-word list. The server
+  // already merges `getDefaultBannedWords()` with the brand fixture at
+  // `inputs/brands/[slug]/banned-words.json` inside `loadBrandProfile`,
+  // so we just forward `brand.bannedWords` here. When the brand fixture
+  // failed to load, fall back to the universal floor so the gate still
+  // catches obvious hits even though Generate is already blocked by
+  // `brandLoadable`.
+  const bannedList = React.useMemo<readonly string[]>(
+    () => brand?.bannedWords ?? getDefaultBannedWords(),
+    [brand?.bannedWords],
+  )
+  // The editor and the summary strip both read from the same list above:
+  // the strip via `bannedHits`, the editor via the `bannedList` prop. This
+  // keeps the inline ⚠ badge and the Generate gate consistent and prevents
+  // the "generation succeeded, compliance FAILED, demo wasted" loop.
   const bannedHits = React.useMemo(() => {
-    const brand = getDemoBrand(state.brandSlug)
-    const merged = new Set<string>()
-    for (const w of getDefaultBannedWords()) merged.add(w.toLowerCase())
-    for (const w of brand?.bannedWords ?? []) merged.add(w.toLowerCase())
     const haystack = [
       state.brief.audience,
       ...Object.values(state.brief.message),
     ].join(" ")
-    return containsBannedWord(haystack, [...merged])
-  }, [state.brandSlug, state.brief.audience, state.brief.message])
+    return containsBannedWord(haystack, bannedList)
+  }, [bannedList, state.brief.audience, state.brief.message])
 
   return (
     <>
@@ -108,6 +118,7 @@ export function S1Shell({
                 state={state}
                 dispatch={dispatch}
                 logoVariants={brand?.logoVariants ?? []}
+                bannedList={bannedList}
               />
             </>
           )}
