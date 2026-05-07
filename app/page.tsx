@@ -27,7 +27,6 @@ export default async function Page() {
     <div className="flex min-h-svh flex-col">
       <CastAppShell
         initialBrief={brief}
-        crumb={`${brief.brand} · ${brief.campaign}`}
         brand={
           brand.ok
             ? {
