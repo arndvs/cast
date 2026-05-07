@@ -141,4 +141,21 @@ describe("deriveCounts", () => {
     const d = deriveCounts(m)
     expect(d).toMatchObject({ ok: 1, warn: 0, fail: 3, flagged: 3 })
   })
+
+  it("succeeded creative with omitted compliance counts as OK (matches UI fallback)", () => {
+    // The schema marks `compliance` optional and `CreativeTile` / status
+    // filter both fall back to "OK" when absent. The helper must agree so
+    // ok + warn + fail === requested holds and summary cards don't undercount.
+    const noBadge: Creative = {
+      product: "a",
+      market: "us-en",
+      ratio: "1x1",
+      source: "local",
+      path: "outputs/test-campaign/us-en/a/1x1.png",
+    }
+    const m = mkManifest([noBadge, ok("b"), warn("c"), hardFail("d")])
+    const d = deriveCounts(m)
+    expect(d).toMatchObject({ ok: 2, warn: 1, fail: 1 })
+    expect(d.ok + d.warn + d.fail).toBe(m.counts.requested)
+  })
 })
