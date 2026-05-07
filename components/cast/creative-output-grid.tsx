@@ -166,10 +166,13 @@ function CreativeOutputGridContent({
               }
               const files = manifest.creatives
                 .filter((c) => c.path)
-                .map((c) => ({
-                  url: `${window.location.origin}/api/outputs/${c.path}`,
-                  filename: c.path!,
-                }))
+                .map((c) => {
+                  const rel = c.path!.replace(/^outputs\//, "")
+                  return {
+                    url: `${window.location.origin}/api/outputs/${rel}`,
+                    filename: rel,
+                  }
+                })
               if (files.length === 0) {
                 toast.error("No output files to export")
                 return

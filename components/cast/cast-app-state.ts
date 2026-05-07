@@ -91,6 +91,8 @@ export type CastAppAction =
   | { type: "goto-run" }
   | { type: "goto-grid" }
   | { type: "goto-edit" }
+  | { type: "set-screen"; screen: AppScreen }
+  | { type: "replaceBrief"; brief: Brief }
   | { type: "open-detail"; creative: Creative }
   | { type: "close-detail" }
 
@@ -131,6 +133,14 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
         runState: "editing",
       }
     }
+    case "replaceBrief":
+      return {
+        ...state,
+        brandSlug: action.brief.brand,
+        brief: action.brief,
+        logoVariant: action.brief.logoVariant ?? "",
+        uploads: revokeAll(state.uploads),
+      }
     case "setField":
       return { ...state, brief: { ...state.brief, [action.field]: action.value } }
     case "setLocaleMessage":
@@ -243,6 +253,12 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
       // otherwise so a stray dispatch can't strand the user on an empty grid.
       if (state.runState !== "complete") return state
       return { ...state, screen: "output-grid" }
+    case "set-screen":
+      // Non-destructive screen switch — only changes which screen is mounted.
+      // Guards prevent navigating to screens that aren't valid yet.
+      if (action.screen === "output-grid" && state.runState !== "complete") return state
+      if (action.screen === "pipeline-run" && state.runState === "editing") return state
+      return { ...state, screen: action.screen }
     case "goto-edit":
       // Discard the prior run's artifacts and return the editor to the
       // initial `editing` state. Brief, brand, uploads stay intact.
@@ -261,7 +277,8 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
     case "close-detail":
       return { ...state, detailOpen: null }
     case "pipeline-event": {
-      const events = [...state.events, action.event]
+      const stamped = { ...action.event, receivedAt: Date.now() }
+      const events = [...state.events, stamped]
       if (action.event.type === "complete") {
         return {
           ...state,
