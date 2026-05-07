@@ -1,6 +1,5 @@
 import * as React from "react"
 
-import { Badge } from "@/components/ui/badge"
 import { Wordmark } from "@/components/cast/wordmark"
 import { cn } from "@/lib/utils"
 
@@ -10,13 +9,12 @@ export interface TopbarProps extends React.HTMLAttributes<HTMLElement> {
 }
 
 /**
- * Cast topbar — wordmark on the left, mono crumb in the middle,
- * GenAI mode badge on the right. Mode reads from
- * NEXT_PUBLIC_CAST_GENAI_MODE at build time (default: "default").
+ * Cast topbar — wordmark + studio tagline on the left, mono crumb on
+ * the right. The GenAI mode badge that previously sat on the right was
+ * removed alongside the rest of D32; the env still drives server-side
+ * mode selection but no client-side badge surfaces it.
  */
 export function Topbar({ crumb, className, ...props }: TopbarProps) {
-  const mode = process.env.NEXT_PUBLIC_CAST_GENAI_MODE ?? "default"
-
   return (
     <header
       className={cn(
