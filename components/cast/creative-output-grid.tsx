@@ -91,7 +91,7 @@ function CreativeOutputGridContent({
   const grouped = React.useMemo(() => groupCreativesByMarket(filtered), [filtered])
 
   const filteredKeys = React.useMemo(() => new Set(filtered.map(creativeKey)), [filtered])
-  const isAllSelected = filteredKeys.size > 0 && filteredKeys.size === selected.size && [...filteredKeys].every((k) => selected.has(k))
+  const isAllSelected = filteredKeys.size > 0 && [...filteredKeys].every((k) => selected.has(k))
 
   const toggleSelect = React.useCallback((key: string) => {
     setSelected((prev) => {

@@ -42,6 +42,7 @@ export function ResultsListView({
               <button
                 type="button"
                 onClick={onSelectAll}
+                aria-label={isAllSelected ? "Deselect all" : "Select all"}
                 className={cn(
                   "flex h-4 w-4 items-center justify-center rounded border transition-colors",
                   isAllSelected
@@ -83,6 +84,7 @@ export function ResultsListView({
                   <button
                     type="button"
                     onClick={() => onToggleSelect(key)}
+                    aria-label={isSelected ? `Deselect ${creative.product} ${creative.market} ${creative.ratio}` : `Select ${creative.product} ${creative.market} ${creative.ratio}`}
                     className={cn(
                       "flex h-4 w-4 items-center justify-center rounded border transition-colors",
                       isSelected
@@ -132,6 +134,7 @@ export function ResultsListView({
                   <button
                     type="button"
                     className="rounded p-1 hover:bg-muted"
+                    aria-label={`Open details for ${creative.product} ${creative.market} ${creative.ratio}`}
                     onClick={() => onOpenDetail(creative)}
                   >
                     <MoreHorizontal className="h-4 w-4 text-muted-foreground" />

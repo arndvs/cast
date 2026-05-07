@@ -76,6 +76,7 @@ export function ResultsToolbar({
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder="Search creatives..."
+            aria-label="Search creatives"
             className="pl-9"
           />
         </div>

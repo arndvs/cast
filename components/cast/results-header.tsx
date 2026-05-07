@@ -15,7 +15,6 @@ import { toast } from "sonner"
 import { revealOutputFolder } from "@/app/actions/reveal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Wordmark } from "@/components/cast/wordmark"
 import type { CastAppAction } from "@/components/cast/cast-app-state"
 import { downloadJson } from "@/lib/cast/download-json"
 import type { Brief, Manifest } from "@/lib/cast/schemas"
@@ -174,6 +173,14 @@ export function ResultsHeader({
           <CloudUpload className="mr-1 h-3 w-3" />
           Export to Dropbox
         </Button>
+      </div>
+
+      {/* Progress bar */}
+      <div className="h-1 w-full bg-muted">
+        <div
+          className={`h-full transition-all ${failCount > 0 ? "bg-amber-500 dark:bg-amber-400" : "bg-ok"}`}
+          style={{ width: `${totalCount > 0 ? (successCount / totalCount) * 100 : 0}%` }}
+        />
       </div>
     </header>
   )

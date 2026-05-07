@@ -43,7 +43,12 @@ export function CreativeTile({ creative, campaign, onClick, selected, onSelect }
     : buildCreativeProxyUrl(campaign, creative.market, creative.product, creative.ratio)
 
   return (
-    <div className="relative">
+    <div
+      className={cn(
+        "group relative flex flex-col gap-2 rounded-xl border bg-card p-2 transition",
+        selected ? "border-primary" : "border-border hover:border-fg-3",
+      )}
+    >
       {/* Selection checkbox */}
       {onSelect && (
         <button
@@ -58,6 +63,7 @@ export function CreativeTile({ creative, campaign, onClick, selected, onSelect }
               ? "border-primary bg-primary text-primary-foreground"
               : "border-white/70 bg-black/30 opacity-0 group-hover:opacity-100",
           )}
+          aria-label={selected ? `Deselect ${creative.product}` : `Select ${creative.product}`}
         >
           {selected && <Check className="h-3 w-3" />}
         </button>
@@ -66,10 +72,7 @@ export function CreativeTile({ creative, campaign, onClick, selected, onSelect }
       <button
         type="button"
         onClick={onClick}
-        className={cn(
-          "group flex w-full flex-col gap-2 rounded-xl border bg-card p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          selected ? "border-primary" : "border-border hover:border-fg-3",
-        )}
+        className="flex w-full flex-col gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-label={`${creative.product} · ${creative.market} · ${creative.ratio}`}
       >
         <div
@@ -104,35 +107,6 @@ export function CreativeTile({ creative, campaign, onClick, selected, onSelect }
             <ComplianceBadgePill badge={badge} />
           </div>
 
-          {/* Hover overlay with actions */}
-          {src && (
-            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-              <a
-                href={src}
-                download
-                onClick={(e) => e.stopPropagation()}
-                className="rounded-full bg-white/90 p-2 text-black transition hover:bg-white dark:bg-white/80"
-                aria-label="Download"
-              >
-                <Download className="h-4 w-4" />
-              </a>
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onClick()
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") onClick()
-                }}
-                className="rounded-full bg-white/90 p-2 text-black transition hover:bg-white dark:bg-white/80"
-                aria-label="Open detail"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </span>
-            </div>
-          )}
         </div>
         <div className="flex items-center gap-2 px-1 text-xs">
           <span className="truncate font-medium text-fg-1">{creative.product}</span>
@@ -143,6 +117,29 @@ export function CreativeTile({ creative, campaign, onClick, selected, onSelect }
           </span>
         </div>
       </button>
+
+      {/* Hover overlay with actions — outside the button to avoid nested interactive elements */}
+      {src && (
+        <div className="pointer-events-none absolute inset-x-2 top-2 flex items-center justify-center gap-2 rounded-lg bg-black/40 opacity-0 transition-opacity group-hover:opacity-100" style={{ bottom: "calc(0.5rem + 1.5rem + 0.5rem)" }}>
+          <a
+            href={src}
+            download
+            onClick={(e) => e.stopPropagation()}
+            className="pointer-events-auto rounded-full bg-white/90 p-2 text-black transition hover:bg-white dark:bg-white/80"
+            aria-label={`Download ${creative.product}`}
+          >
+            <Download className="h-4 w-4" />
+          </a>
+          <button
+            type="button"
+            onClick={onClick}
+            className="pointer-events-auto rounded-full bg-white/90 p-2 text-black transition hover:bg-white dark:bg-white/80"
+            aria-label={`Open details for ${creative.product}`}
+          >
+            <ExternalLink className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
