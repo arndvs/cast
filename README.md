@@ -155,11 +155,11 @@ inputs/brands/[brand-slug]/
 ├── brand.json          # primary/accent colors (hex), tokens
 ├── voice.json          # tone, do/don't lists, prompt fragments
 ├── logos/              # corner-composited logo variants (four per brand: primary-on-light/dark, mono-white/black)
+│   ├── logos.json      # { default: variantId, variants: [{ id, displayName, file }] }
 │   ├── primary-on-light.png
 │   ├── primary-on-dark.png
 │   ├── mono-white.png
 │   └── mono-black.png
-├── logos.json          # { default: variantId, variants: [{ id, displayName, file }] }
 ├── font.ttf            # OFL display font
 └── banned-words.json?  # optional brand-specific terms (added on top of lib defaults — union, never replacement)
 ```

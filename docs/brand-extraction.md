@@ -32,13 +32,13 @@ Brisa and Volt are the only two brands that need extraction. Onboarding a real c
 | Secondary / accent color (hex)               | `colors.accent`      | hex `#RRGGBB` | Same. |
 | Light/background color (hex, if specified)   | `colors.background?` | hex `#RRGGBB` | Optional. Used for compositor surface choice in mono modes. |
 | Body text color (hex, if specified)          | `colors.text?`       | hex `#RRGGBB` | Optional. Used for compositor text fill when contrast against the hero requires it. |
-| (everything else)                            | `tokens?`            | `Record<string, string>` | Optional escape hatch for brand-specific design tokens an implementer wants to thread through `buildPrompt` or the compositor without expanding the schema. Stay sparing. |
+| (everything else)                            | `tokens?`            | `Record<string, string>` | Optional escape hatch for brand-specific design tokens an implementer wants to thread through `buildPromptPreview` or the compositor without expanding the schema. Stay sparing. |
 
 ### `voice.json`
 
 | HTML source | JSON path | Type | Notes |
 | --- | --- | --- | --- |
-| Voice / tone summary section                  | `tone`              | string (one paragraph) | Concise. Read into the GenAI prompt by `buildPrompt` ([prompt construction](flow-diagrams.md#prompt-construction)). |
+| Voice / tone summary section                  | `tone`              | string (one paragraph) | Concise. Read into the GenAI prompt by `buildPromptPreview` ([prompt construction](flow-diagrams.md#prompt-construction)). |
 | Voice "Do" list                               | `do[]`              | string array | Each entry is one rule, imperative voice. Joined into the prompt as positive guidance. |
 | Voice "Don't" list                            | `dont[]`            | string array | Each entry is one rule. **Distinct from `banned-words.json`:** `dont[]` is high-level voice direction ("avoid macho swagger"); `banned-words.json` is literal substring matching. |
 | Imagery / mood / visual language sections     | `promptFragments[]` | string array | Synthesized from the brand's visual guidelines — concrete phrases the prompt builder concatenates onto the OpenAI image prompt. Examples: `"soft natural lighting"`, `"citrus tones"`, `"condensation on glass"`. Each fragment must be defensible from a specific HTML section; no free invention. Lift manually per brand. |
@@ -51,11 +51,11 @@ A flat array of lowercase terms. Per-brand HTML organizes these into categories 
 2. Lowercase, trim whitespace, dedupe.
 3. Write the resulting array to `inputs/brands/[brand]/banned-words.json`.
 
-`loadBrandProfile` then **unions** this list with `getDefaultBannedWords()` from `lib/banned-words.ts` (universal floor: violence, hate, NSFW, weapons, drugs, self-harm) — see [flow-diagrams.md "Banned-words composition"](flow-diagrams.md#brand-profile-schema-contract). Defaults always apply; the brand file is purely additive.
+`loadBrandProfile` then **unions** this list with `getDefaultBannedWords()` from `lib/cast/banned-words.ts` (universal floor: violence, hate, NSFW, weapons, drugs, self-harm) — see [flow-diagrams.md "Banned-words composition"](flow-diagrams.md#brand-profile-schema-contract). Defaults always apply; the brand file is purely additive.
 
 > A brand HTML may surface 20–40+ banned terms grouped across 3+ categories. The runtime list is the flattened union of every category — no category metadata is preserved at runtime. If category-aware reporting becomes useful (e.g. compliance UI grouping), that's a v2 schema extension, not a POC concern.
 
-### `logos/` + `logos.json`
+### `logos/` (variants + `logos.json`)
 
 POC logos are **screenshots from the brand HTML guidelines**, not extracted SVGs. Per the [logo variants convention](flow-diagrams.md#per-brand-profile), each brand ships exactly four variants:
 
@@ -66,7 +66,7 @@ POC logos are **screenshots from the brand HTML guidelines**, not extracted SVGs
 | `mono-white`        | Photographic / busy hero backgrounds, dark dominant.       | Screenshot of white-only logo treatment        |
 | `mono-black`        | Photographic / busy hero backgrounds, light dominant.      | Screenshot of black-only logo treatment        |
 
-Files land in `inputs/brands/[brand]/logos/[variant-id].png`. `logos.json` declares the default variant and the manifest:
+Files land in `inputs/brands/[brand]/logos/[variant-id].png`. `logos/logos.json` declares the default variant and the manifest:
 
 ```json
 {
@@ -112,7 +112,7 @@ The README's "Onboard a new brand" section promises a directory drop with no cod
 2. Pull `displayName`, `colors.primary`, `colors.accent` (and optional `colors.background`, `colors.text`) into `brand.json`.
 3. Pull tone, do, don't, and synthesized visual `promptFragments[]` into `voice.json`.
 4. Flatten the brand's banned-words / no-fly list into `banned-words.json` (lowercase, deduped). Skip if the brand has no specific terms — defaults still apply.
-5. Capture or export the four logo variants per the [logo variants convention](flow-diagrams.md#per-brand-profile) into `logos/`. Write `logos.json`.
+5. Capture or export the four logo variants per the [logo variants convention](flow-diagrams.md#per-brand-profile) into `logos/`. Write `logos/logos.json`.
 6. Drop the OFL display font as `font.ttf` or `font.otf`.
 7. Restart `next dev` (the brand-profile cache TTL is 90 s; restart is faster than waiting). Brand appears in the brand selector on next page load.
 

@@ -115,7 +115,7 @@ graph TB
         end
 
         subgraph Actions["Server actions"]
-            RevealAction["revealOutputFolder(absPath)<br/>execFile · path-validated against ROOTS.outputs"]
+            RevealAction["revealOutputFolder({ campaign })<br/>execFile · path derived via safeJoin"]
         end
 
         subgraph Engine["Pipeline Engine"]
@@ -240,7 +240,7 @@ sequenceDiagram
     Rep-->>Log: complete event { manifest }
     Log-->>User: grid hydrates from manifest (no second FS read)
     opt user clicks Reveal in folder
-        User->>Orc: invoke server action revealOutputFolder(absPath)
+        User->>Orc: invoke server action revealOutputFolder({ campaign })
         Orc-->>Log: opens outputs/[campaign] in OS shell
     end
     alt run-level failure (uncaught throw outside per-creative tries)

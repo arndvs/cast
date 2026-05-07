@@ -231,7 +231,7 @@ POST /api/upload
 Content-Type: multipart/form-data
 Fields: productSlug=brisa-citrus, file=<binary>
 
-Response: { "ok": true, "path": "inputs/assets/brisa-citrus.png" }
+Response: { "ok": true, "productSlug": "brisa-citrus", "savedAs": "inputs/assets/brisa-citrus.png", "size": 204800 }
 
 Constraints (enforced server-side, single source of truth):
   - productSlug must match SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/ → else 400
@@ -260,15 +260,16 @@ Body: <brief JSON> (validated against briefSchema — single Zod schema
   shared between client editor validation and server entry)
 
 Response: text/x-ndjson  (streamed)
-  { "type": "step", "message": "run started" }
-  { "type": "asset_resolved", "product": "brisa-citrus", "source": "local" }
-  { "type": "creative_ready", "product": "brisa-citrus", "market": "us-en", "ratio": "1x1", "path": "outputs/..." }
-  { "type": "compliance_result", "product": "brisa-citrus", "market": "us-en", "ratio": "1x1", "badge": "OK", "checks": {...} }
+  { "type": "step", "stage": "resolve", "slot": { "product": "brisa-citrus", "market": "us-en", "ratio": "1x1" }, "message": "resolving asset" }
+  { "type": "asset_resolved", "product": "brisa-citrus", "source": "local", "file": "inputs/assets/brisa-citrus.png" }
+  { "type": "creative_ready", "slot": { "product": "brisa-citrus", "market": "us-en", "ratio": "1x1" }, "path": "outputs/...", "source": "local" }
+  { "type": "compliance_result", "slot": { "product": "brisa-citrus", "market": "us-en", "ratio": "1x1" }, "badge": "OK", "bannedWords": [] }
+  { "type": "error", "stage": "genai", "slot": { "product": "brisa-berry", "market": "us-en", "ratio": "1x1" }, "message": "OpenAI request timed out" }
   ...
   { "type": "complete", "manifest": { "campaign": "...", "brand": "...", "outputDir": "/abs/path/outputs/...", "creatives": [...] } }
 ```
 
-**Error-transport contract.** Validation errors that fire **before** the stream opens (briefSchema rejection, brand-profile load failures — `BrandNotFoundError` / `BrandIncompleteError` / `BrandInvalidError`, `briefSchema` `superRefine` violations including unknown `logoVariant`) return `application/json` with a `400` status and a `{ errors: [{ path, message }] }` body. Once the first NDJSON byte ships, all subsequent failures emit `{ "type": "error", "stage": ..., "message": ... }` events on the stream and the run continues per failure semantics — the response code stays `200`. Clients distinguish by HTTP status code and the `Content-Type` response header (`400 application/json` vs `200 application/x-ndjson`).
+**Error-transport contract.** Validation errors that fire **before** the stream opens (briefSchema rejection, brand-profile load failures — `BrandNotFoundError` / `BrandIncompleteError` / `BrandInvalidError`, `briefSchema` `superRefine` violations including unknown `logoVariant`) return `application/json` with a `4xx` status and a `{ errors: [{ path, message }] }` body. `BrandNotFoundError` returns `404`; all other pre-stream errors return `400`. Once the first NDJSON byte ships, all subsequent failures emit `{ "type": "error", "stage": ..., "message": ... }` events on the stream and the run continues per failure semantics — the response code stays `200`. Clients distinguish by HTTP status code and the `Content-Type` response header (`400 application/json` vs `200 application/x-ndjson`).
 
 **Stream idle timeout.** The S2 client wraps the NDJSON `fetch` in an `AbortController` and resets a 90-second idle timer on every received event. If 90 s pass with no event — no `step`, no `creative_ready`, no `error`, no `complete` — the client aborts the request and synthesizes a terminal `{ type: 'error', stage: 'stream', message: 'stream idle for 90s — aborted' }` event so the state machine cleanly transitions `Running → Failed (S2′)`. Without this guard, a hung GenAI call or a server crash mid-stream would leave the UI spinning forever with no way to retry. 90 s is calibrated above the worst-case observed `dall-e-3` latency (≈45 s) but well below user-abandonment.
 
@@ -329,6 +330,14 @@ export const briefSchema = z
     const seen = new Map<string, number>();
     brief.products.forEach((p, i) => {
       const slug = slugify(p.name);
+      if (slug.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["products", i, "name"],
+          message: `product name "${p.name}" slugs to an empty string; need at least one [a-z0-9] character`,
+        });
+        return;
+      }
       if (seen.has(slug)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -442,12 +451,12 @@ inputs/brands/[brand-slug]/
 ├── brand.json          # primary/accent colors (hex), tokens
 ├── voice.json          # tone, do/don't lists, prompt fragments
 ├── logos/              # corner-composited logo variants (PNG with alpha)
+│   ├── logos.json      # { default: variantId, variants: [{ id, displayName, file }] }
 │   ├── primary-on-light.png
 │   ├── primary-on-dark.png
 │   ├── mono-white.png
 │   └── mono-black.png
-├── logos.json          # { default: variantId, variants: [{ id, displayName, file }] }
-├── font.ttf            # OFL-licensed display font for text overlay
+├── font.ttf            # OFL-licensed display font for text overlay (or font.otf — loader accepts either)
 └── banned-words.json?  # additive layer — merged with library defaults at load time
 ```
 
@@ -468,16 +477,19 @@ GET /api/brands/[slug]
 Response: {
   "slug": "brisa",
   "displayName": "Brisa",
+  "colors": { "primary": "#...", "accent": "#...", "background?": "#...", "text?": "#..." },
+  "tokens": { /* optional brand-specific design tokens */ },
+  "voice": { "tone": "...", "do": [...], "dont": [...], "promptFragments": [...] },
   "bannedWords": [
-    /* union: lib defaults from `lib/banned-words.ts` (`getDefaultBannedWords()`)
+    /* union: lib defaults from `lib/cast/banned-words.ts` (`getDefaultBannedWords()`)
        + brand-specific terms from `inputs/brands/[brand]/banned-words.json`,
        deduped, lowercased. Defaults always apply — even when the brand file is absent. */
   ],
   "logos": {
     "default": "primary-on-light",
     "variants": [
-      { "id": "primary-on-light", "displayName": "Primary · on light", "url": "/api/brands/brisa/logos/primary-on-light" },
-      { "id": "primary-on-dark",  "displayName": "Primary · on dark",  "url": "/api/brands/brisa/logos/primary-on-dark"  },
+      { "id": "primary-on-light", "displayName": "Primary · on light", "theme": "light", "url": "/api/brands/brisa/logos/primary-on-light" },
+      { "id": "primary-on-dark",  "displayName": "Primary · on dark",  "theme": "dark",  "url": "/api/brands/brisa/logos/primary-on-dark"  },
       { "id": "mono-white",       "displayName": "Mono · white",       "url": "/api/brands/brisa/logos/mono-white"       },
       { "id": "mono-black",       "displayName": "Mono · black",       "url": "/api/brands/brisa/logos/mono-black"       }
     ]
@@ -493,8 +505,8 @@ The **list** handler enumerates `inputs/brands/*/`, validates each subdirectory'
 
 **Brand existence + integrity check (server-side at `/api/generate` entry).** `briefSchema` validates the slug shape, not its presence on disk. Before the run starts, the orchestrator calls `loadBrandProfile(brief.brand)` which:
 
-- Verifies `inputs/brands/[brand]/` exists → else throws `BrandNotFoundError` → mapped to `400 { errors: [{ path: ['brand'], message: 'unknown brand: ...' }] }`.
-- Verifies required files exist (`brand.json`, `voice.json`, `logos.json`, at least one PNG referenced by `logos.json` `variants[].file` under `logos/`, `font.ttf`) → else throws `BrandIncompleteError` → mapped to `400 { errors: [{ path: ['brand', '<missing-file>'], message: '...' }] }`.
+- Verifies `inputs/brands/[brand]/` exists → else throws `BrandNotFoundError` → mapped to `404 { errors: [{ path: ['brand'], message: 'unknown brand: ...' }] }`.
+- Verifies required files exist (`brand.json`, `voice.json`, `logos/logos.json`, at least one PNG referenced by `logos.json` `variants[].file` under `logos/`, `font.ttf` or `font.otf`) → else throws `BrandIncompleteError` → mapped to `400 { errors: [{ path: ['brand', '<missing-file>'], message: '...' }] }`.
 - Validates each file against the matching sub-schema of `brandProfileSchema` (see [Brand profile schema](#brand-profile-schema-contract)) — `brand.json` against `brandJsonSchema`, `voice.json` against `voiceJsonSchema`, `banned-words.json` (when present) against `bannedWordsSchema`, `logos.json` against `logosManifestSchema`. `font.ttf` is existence-checked only (no parse). Any failure throws `BrandInvalidError` → mapped to `400` with the Zod issue path.
 - On success, returns the parsed `BrandProfile` and caches it in-process for 90 s (cheap reads on repeat runs in the same `next dev` session). **The cache is keyed on slug with a fixed 90 s TTL; there is no mtime invalidation.** Edits to `inputs/brands/[brand]/*` mid-session may not take effect until the cache expires — accepted POC behavior, documented in the README assumptions. Restart `next dev` to force-refresh.
 
@@ -535,6 +547,7 @@ export const logoVariantSchema = z.object({
   id: z.string().regex(SLUG_RE),
   displayName: z.string().min(1),
   file: z.string().regex(/^[a-z0-9-]+\.png$/), // safeJoin-resolved against logos/
+  theme: z.enum(["light", "dark"]).optional(), // swatch hint for the editor preview
 });
 
 export const logosManifestSchema = z
@@ -579,15 +592,15 @@ export type BrandProfile = {
   brand: z.infer<typeof brandJsonSchema>;
   voice: z.infer<typeof voiceJsonSchema>;
   bannedWords: string[]; // union: lib defaults + brand file (deduped, lowercased)
-  logoVariants: { id: string; displayName: string; path: string }[]; // each path safeJoin-validated
+  logoVariants: { id: string; displayName: string; path: string; theme?: "light" | "dark" }[]; // each path safeJoin-validated
   defaultLogoId: string;
   fontPath: string; // absolute, safeJoin-validated
 };
 ```
 
-**Banned-words composition.** `loadBrandProfile` always returns the **union** of (a) `getDefaultBannedWords()` from `lib/banned-words.ts` — the universal floor covering violence, hate, NSFW, weapons, drugs, self-harm — and (b) the brand-specific terms in `inputs/brands/[brand]/banned-words.json` (when present). The list is deduped and lowercased. Both pre-flight (S1, via `GET /api/brands/[slug]`) and per-creative server-side checks operate on this union; defaults always apply.
+**Banned-words composition.** `loadBrandProfile` always returns the **union** of (a) `getDefaultBannedWords()` from `lib/cast/banned-words.ts` — the universal floor covering violence, hate, NSFW, weapons, drugs, self-harm — and (b) the brand-specific terms in `inputs/brands/[brand]/banned-words.json` (when present). The list is deduped and lowercased. Both pre-flight (S1, via `GET /api/brands/[slug]`) and per-creative server-side checks operate on this union; defaults always apply.
 
-**Missing `banned-words.json`** is allowed and means "no brand-specific additions" — **not** "checks disabled." The loader emits a `step` event — `{ \"type\": \"step\", \"message\": \"no brand-specific banned-words for X — running default list only\" }` — and the run proceeds with only the lib defaults. Optional means optional on the brand layer, not on the floor.
+**Missing `banned-words.json`** is allowed and means "no brand-specific additions" — **not** "checks disabled." The loader silently proceeds with only the lib defaults. Optional means optional on the brand layer, not on the floor.
 
 ### GenAI provider
 
@@ -606,24 +619,24 @@ Three-layer assembly, deterministic, no LLM-on-LLM:
 
 1. Brand layer — read `inputs/brands/[brand]/voice.json` for tone, mood, banned imagery.
 2. Product layer — merge per-product `promptOverrides` from the brief (environment, mood adjectives).
-3. Template fn — a pure function `buildPrompt({ brandVoice, product, market, ratio })` returns the final string.
+3. Template fn — a pure function `buildPromptPreview({ brand, product, market, ratio })` returns the final string.
 
 S1 renders the assembled prompt read-only beneath each missing product so the user sees what will hit the API before clicking Generate.
 
 ### Storage abstraction
 
-One interface, one POC implementation:
+Standalone functions in `lib/cast/server/storage.ts`, all resolving paths against `ROOTS = { inputs, outputs }` via `safeJoin`:
 
-```ts
-interface Storage {
-  read(key: string): Promise<Buffer>;
-  write(key: string, data: Buffer): Promise<void>;
-  list(prefix: string): Promise<string[]>;
-  exists(key: string): Promise<boolean>;
-}
-```
+| Function | Purpose |
+| --- | --- |
+| `findLocalAsset(productSlug)` | Scan `inputs/assets/` for a product photo; returns repo-relative path or `null` |
+| `readAsset(repoRelativePath)` | Read an asset file into a `Buffer` |
+| `clearCampaignOutput(campaign)` | Recursively delete `outputs/[campaign]/` at run start |
+| `writeCreative(campaign, market, product, ratio, data)` | Write a single output PNG |
+| `writeBriefSnapshot(campaign, brief)` | Write `brief.json` to the campaign output directory |
+| `writeReport(campaign, manifest)` | Write `report.json` to the campaign output directory |
 
-POC ships `LocalFsStorage` resolving keys against `ROOTS = { inputs, outputs }` via `safeJoin`. S3 / Azure / Dropbox are single-class swaps documented as v2.
+No `interface` or class — each function stands alone. S3 / Azure / Dropbox are single-module swaps documented as v2.
 
 ### Path safety primitives
 
@@ -637,12 +650,12 @@ POC ships `LocalFsStorage` resolving keys against `ROOTS = { inputs, outputs }` 
 
 Banned words are checked twice, both passes operating on the same union list (lib defaults + brand file) returned by `loadBrandProfile`:
 
-- **Client-side, pre-flight** — the editor in S1 fetches the brand's union list via `GET /api/brands/[slug]` on selection and cross-references the brief's message strings using `containsBannedWord(text, list)` from `lib/banned-words.ts`. Hits disable the Generate button with an inline warning.
+- **Client-side, pre-flight** — the editor in S1 fetches the brand's union list via `GET /api/brands/[slug]` on selection and cross-references the brief's message strings using `containsBannedWord(text, list)` from `lib/cast/banned-words.ts`. Hits disable the Generate button with an inline warning.
 - **Server-side, post locale-resolution** — for each `(market, ratio)` the compliance checker re-checks the **resolved overlay string** (the exact string the compositor will draw, after locale lookup) against the same union list. Hits flag the creative with `WARN` (or `FAIL` for high-severity terms) and append to `report.json`'s `errors[]`.
 
 This is a string check, not OCR — the server composited the text itself, so OCR'ing the rendered PNG would be redundant and unreliable on stylized fonts. Catches both authoring mistakes (early) and locale-map errors that slip past pre-flight (late).
 
-**Single-source rule.** Both passes import the same `containsBannedWord(text, list)` symbol from `lib/banned-words.ts`. Route handlers (`/api/brands/[slug]`, `/api/generate`) and the S1 client must not re-implement substring matching, normalization, or the union composition — they call the shared symbol against the union list returned by `loadBrandProfile`. Drift between client pre-flight and server compliance produces the worst possible UX: “S1 said clean, the badge says flagged” (or vice versa). A parity test enforces the import path.
+**Single-source rule.** Both passes import the same `containsBannedWord(text, list)` symbol from `lib/cast/banned-words.ts`. Route handlers (`/api/brands/[slug]`, `/api/generate`) and the S1 client must not re-implement substring matching, normalization, or the union composition — they call the shared symbol against the union list returned by `loadBrandProfile`. Drift between client pre-flight and server compliance produces the worst possible UX: “S1 said clean, the badge says flagged” (or vice versa). A parity test enforces the import path.
 
 ---
 
@@ -705,7 +718,7 @@ With screens + flow + states + API contract locked, the next step (wireframes) h
 
 - **One Next.js route** (`/`) handling four states: `Editing`, `Running`, `Complete`, `Failed`.
 - **One modal/drawer** for `DetailOpen` (S4).
-- **One server action** for S5 — `revealOutputFolder(absPath)` reveals the generated output folder via the OS (`explorer.exe` on Windows / `open` on macOS / `xdg-open` on Linux). `absPath` must be normalized and validated to remain within the expected outputs directory before invocation. Do **not** build the command via string interpolation or shell concatenation of untrusted input; use a `spawn`/`execFile`-style API with explicit args. Fallback: copyable absolute path on screen.
+- **One server action** for S5 — `revealOutputFolder({ campaign })` reveals the generated output folder via the OS (`explorer.exe` on Windows / `open` on macOS / `xdg-open` on Linux). The campaign slug is validated against `SLUG_RE` and the absolute path is derived internally via `safeJoin("outputs", campaign)`, verified to remain within the outputs root before invocation. Do **not** build the command via string interpolation or shell concatenation of untrusted input; use a `spawn`/`execFile`-style API with explicit args. Fallback: copyable absolute path on screen.
 - **Per-product drop zone** on S1 → `POST /api/upload` (multipart, `productSlug` + `file`) writes to `inputs/assets/[slug].ext`.
 - **Asset preview read** — `GET /api/detected-assets?slugs=...` on S1 mount (immediate), on brief change (300 ms debounced), and after each upload (immediate). Returns `[{ slug, foundFile | null }]` for the Detected Assets panel.
 - **Streaming generate** — `POST /api/generate` returns NDJSON; terminal `complete` event carries the full manifest. S2 reads the stream; S3 hydrates from the manifest. **No separate output-read endpoint.**

@@ -66,16 +66,16 @@ Loaded by `loadBrandProfile(brand)` at `/api/generate` entry; validated against 
 - slug (matches `brief.brand`)
 - brand (`brand.json` — `displayName`, `colors`, optional `tokens`)
 - voice (`voice.json` — `tone`, `do`, `dont`, `promptFragments`)
-- bannedWords — **union** of `lib/banned-words.ts` defaults (`getDefaultBannedWords()`) and `inputs/brands/[brand]/banned-words.json` (when present); deduped, lowercased. Defaults always apply. Missing brand file emits a `step` event noting only brand-specific additions are skipped — the floor remains in force.
-- logoVariants[] (`logos.json` — each `{ id, displayName, path }`; `path` resolved via `safeJoin` against `inputs/brands/[brand]/logos/`)
+- bannedWords — **union** of `lib/cast/banned-words.ts` defaults (`getDefaultBannedWords()`) and `inputs/brands/[brand]/banned-words.json` (when present); deduped, lowercased. Defaults always apply. Missing brand file is silently skipped — the floor remains in force.
+- logoVariants[] (`logos/logos.json` — each `{ id, displayName, path, theme? }`; `path` resolved via `safeJoin` against `inputs/brands/[brand]/logos/`; `theme` is `"light" | "dark"` when present)
 - defaultLogoId (`logos.json` `default` — used when `brief.logoVariant` is absent)
 - fontPath (absolute, `safeJoin`-validated)
 
-Cached in-process for 90 s. Missing directory → `BrandNotFoundError` → `400`. Missing required file → `BrandIncompleteError` → `400`. Schema violation → `BrandInvalidError` → `400`.
+Cached in-process for 90 s. Missing directory → `BrandNotFoundError` → `404`. Missing required file → `BrandIncompleteError` → `400`. Schema violation → `BrandInvalidError` → `400`.
 
 ### Run Log
 
-- steps (array of: type, message, timestamp)
+- steps (array of: type, stage, slot, message)
 - event types: `step`, `asset_resolved`, `creative_ready`, `compliance_result`, `error`, `complete`
 
 ### Report (report.json)
@@ -109,7 +109,7 @@ Using the Inform → Engage → Invite framework.
   - missing: no asset found — will generate via GenAI
 - Logo picker — radio grid beneath the brand selector, populated from `GET /api/brands/[slug]` `logos.variants[]`. Each option renders the variant PNG (served by `GET /api/brands/[slug]/logos/[id]`) on a checkered alpha background plus its `displayName`. Default selected = `logos.default`. Selection writes `brief.logoVariant`. One choice per campaign — used by every creative the run produces. Auto-selection by hero luminance is v2 ([flow-diagrams.md §8](flow-diagrams.md#8-future-scope-v2--explicitly-out-of-poc)).
 - Read-only prompt preview — shows the prompt that will hit OpenAI per missing product (assembled from brand `voice.json` + product overrides)
-- Pre-flight banned-words check — always active. The selected brand's union list (`lib/banned-words.ts` defaults + `inputs/brands/[brand]/banned-words.json` if present) is fetched via `GET /api/brands/[slug]`; if any locale's `message` contains a banned word, the Generate button is disabled with an inline warning naming the term and locale. The defaults floor (violence, hate, NSFW, weapons, drugs, self-harm) applies to every brand — a brand without `banned-words.json` still gets the floor; the indicator does not have a "checks skipped" state. Pre-flight (S1) and server-side compliance (per-creative) call the **same** `containsBannedWord` symbol from `lib/banned-words.ts` against the same union list — see [flow-diagrams.md "Single-source rule"](flow-diagrams.md#compliance--banned-words).
+- Pre-flight banned-words check — always active. The selected brand's union list (`lib/cast/banned-words.ts` defaults + `inputs/brands/[brand]/banned-words.json` if present) is fetched via `GET /api/brands/[slug]`; if any locale's `message` contains a banned word, the Generate button is disabled with an inline warning naming the term and locale. The defaults floor (violence, hate, NSFW, weapons, drugs, self-harm) applies to every brand — a brand without `banned-words.json` still gets the floor; the indicator does not have a "checks skipped" state. Pre-flight (S1) and server-side compliance (per-creative) call the **same** `containsBannedWord` symbol from `lib/cast/banned-words.ts` against the same union list — see [flow-diagrams.md "Single-source rule"](flow-diagrams.md#compliance--banned-words).
 - Generate button (enabled when brief is valid + no banned-word violations)
 - Validation badge on brief (valid / invalid)
 
@@ -137,11 +137,11 @@ Using the Inform → Engage → Invite framework.
 **Inform — what the user sees:**
 
 - Live pipeline log — NDJSON events rendered as they stream:
-  - `step` → grey log line: "Parsing brief..."
-  - `asset_resolved` → green/amber line: "brisa-citrus — using local asset" / "brisa-berry — generating via GenAI"
-  - `creative_ready` → cyan line: "brisa-citrus 1:1 → composed"
-  - `compliance_result` → badge line: "brisa-citrus 1:1 — OK"
-  - `error` → red line: error message
+  - `step` → grey log line showing the pipeline `stage` and `slot` (product × market × ratio), e.g. "resolve · brisa-citrus · us-en · 1x1"
+  - `asset_resolved` → green/amber line: "brisa-citrus — using local asset (inputs/assets/brisa-citrus.png)" / "brisa-berry — generating via GenAI"
+  - `creative_ready` → cyan line: "brisa-citrus · us-en · 1x1 → composed (local)"
+  - `compliance_result` → badge line: "brisa-citrus · us-en · 1x1 — OK"
+  - `error` → red line: error message with stage and optional slot
 - Progress indicator — products × markets × ratios (e.g. "4 of 12 creatives done")
 - Brief is locked — editor not visible, shows campaign name only
 - No Generate button (pipeline running)
@@ -254,12 +254,12 @@ Dual-mode modal: **compliance violation** (badge ∈ WARN / FAIL, path is a real
 
 **What it does:**
 
-- Server action `revealOutputFolder(absPath)` reveals the generated output folder via the OS:
+- Server action `revealOutputFolder({ campaign })` reveals the generated output folder via the OS:
   - macOS: `open`
   - Windows: `explorer.exe`
   - Linux: `xdg-open`
-- **Path validation:** `absPath` must be normalized (`path.resolve`) and verified to remain within the outputs root (`ROOTS.outputs`) before invocation. Reject and 400 otherwise.
-- **Process model:** use `execFile`-style API with explicit argv (`execFile(bin, [absPath])`). Do **not** build the command via shell string interpolation (`exec`, `spawn` with `shell: true`, or template literals).
+- **Path derivation:** The campaign slug is validated against `SLUG_RE` and the absolute path is derived internally via `safeJoin("outputs", campaign)`. The caller never passes an arbitrary path.
+- **Process model:** use `execFile`-style API with explicit argv (`execFile(bin, [resolvedPath])`). Do **not** build the command via shell string interpolation (`exec`, `spawn` with `shell: true`, or template literals).
 - Fallback: absolute path is already visible as a copyable code block in S3.
 
 **Inform:** The copyable path on S3 is the primary affordance — always visible, always works.
