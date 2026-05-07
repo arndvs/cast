@@ -2,7 +2,7 @@
 
 **Why this doc exists.** The HTML brand guidelines under [docs/design/](design/) are the canonical source for each shipped brand profile. The runtime accepts a much thinner contract — `brandProfileSchema` in [flow-diagrams.md §4.3](flow-diagrams.md#brand-profile-schema-d11--contract). This doc names the reduction: which HTML sections land in which JSON path, what is intentionally dropped, and how a new client onboards their own brand.
 
-The reduction is hand-curated and peer-reviewed via PR. There is no scripted parser — `n = 2` brands ship with the POC, HTML structure varies brand-to-brand, ROI is poor. Treat this doc as the recipe; the actual JSON values are populated alongside the implementation PR. ([D28](flow-diagrams.md#appendix-a--design-decision-register))
+The reduction is hand-curated and peer-reviewed via PR. There is no scripted parser — `n = 2` brands ship with the POC, HTML structure varies brand-to-brand, ROI is poor. Treat this doc as the recipe; the actual JSON values are populated alongside the implementation PR. (See [Brand extraction methodology](flow-diagrams.md#appendix-a--design-decision-register).)
 
 > **v2 supersession.** A front-end **Brand onboarding UI** is listed in [flow-diagrams.md §8](flow-diagrams.md#8-future-scope-v2--explicitly-out-of-poc) — a form-driven flow (logo uploads, banned-words textarea, color pickers, voice fields) that writes the same directory atomically via `POST /api/brands`. Until that ships, this hand-curated recipe is the onboarding path.
 
@@ -29,8 +29,8 @@ Brisa and Volt are the only two brands that need extraction. Onboarding a real c
 
 | HTML source | JSON path | Type | Notes |
 | --- | --- | --- | --- |
-| Brand name (header / title block)            | `displayName`        | string | Human label. Surfaces in S1 brand selector and in the GenAI prompt as `${brandVoice.displayName}`. |
-| Primary brand color (hex)                    | `colors.primary`     | hex `#RRGGBB` | Used by the compositor for text overlay accents and by the compliance checker's palette sampler ([D21](flow-diagrams.md#appendix-a--design-decision-register)). |
+| Brand name (header / title block)            | `displayName`        | string | Human label. Surfaces in the brand selector and in the GenAI prompt as `${brandVoice.displayName}`. |
+| Primary brand color (hex)                    | `colors.primary`     | hex `#RRGGBB` | Used by the compositor for text overlay accents and by the compliance checker's palette sampler ([compliance + banned-words](flow-diagrams.md#appendix-a--design-decision-register)). |
 | Secondary / accent color (hex)               | `colors.accent`      | hex `#RRGGBB` | Same. |
 | Light/background color (hex, if specified)   | `colors.background?` | hex `#RRGGBB` | Optional. Used for compositor surface choice in mono modes. |
 | Body text color (hex, if specified)          | `colors.text?`       | hex `#RRGGBB` | Optional. Used for compositor text fill when contrast against the hero requires it. |
@@ -40,7 +40,7 @@ Brisa and Volt are the only two brands that need extraction. Onboarding a real c
 
 | HTML source | JSON path | Type | Notes |
 | --- | --- | --- | --- |
-| Voice / tone summary section                  | `tone`              | string (one paragraph) | Concise. Read into the GenAI prompt by `buildPrompt` ([D18](flow-diagrams.md#appendix-a--design-decision-register)). |
+| Voice / tone summary section                  | `tone`              | string (one paragraph) | Concise. Read into the GenAI prompt by `buildPrompt` ([prompt construction](flow-diagrams.md#appendix-a--design-decision-register)). |
 | Voice "Do" list                               | `do[]`              | string array | Each entry is one rule, imperative voice. Joined into the prompt as positive guidance. |
 | Voice "Don't" list                            | `dont[]`            | string array | Each entry is one rule. **Distinct from `banned-words.json`:** `dont[]` is high-level voice direction ("avoid macho swagger"); `banned-words.json` is literal substring matching. |
 | Imagery / mood / visual language sections     | `promptFragments[]` | string array | Synthesized from the brand's visual guidelines — concrete phrases the prompt builder concatenates onto the OpenAI image prompt. Examples: `"soft natural lighting"`, `"citrus tones"`, `"condensation on glass"`. Each fragment must be defensible from a specific HTML section; no free invention. Lift manually per brand. |
@@ -59,7 +59,7 @@ A flat array of lowercase terms. Per-brand HTML organizes these into categories 
 
 ### `logos/` + `logos.json`
 
-POC logos are **screenshots from the brand HTML guidelines**, not extracted SVGs. Per [D27](flow-diagrams.md#appendix-a--design-decision-register), each brand ships exactly four variants:
+POC logos are **screenshots from the brand HTML guidelines**, not extracted SVGs. Per the [logo variants convention](flow-diagrams.md#appendix-a--design-decision-register), each brand ships exactly four variants:
 
 | Variant id          | When the compositor uses it                                | Source                                 |
 | ------------------- | ---------------------------------------------------------- | -------------------------------------- |
@@ -86,7 +86,7 @@ PNG with alpha. Sizing is at the screenshotter's discretion — the compositor r
 
 ### `font.ttf` or `font.otf`
 
-Per-brand display font ([D10](flow-diagrams.md#appendix-a--design-decision-register)). OFL-licensed; the brand HTML names the typeface. Source the OFL file from Google Fonts or the typeface vendor and drop it in as either `font.ttf` or `font.otf` — the loader accepts whichever exists. Not extracted from the HTML.
+Per-brand display font ([per-brand display font convention](flow-diagrams.md#appendix-a--design-decision-register)). OFL-licensed; the brand HTML names the typeface. Source the OFL file from Google Fonts or the typeface vendor and drop it in as either `font.ttf` or `font.otf` — the loader accepts whichever exists. Not extracted from the HTML.
 
 ---
 
@@ -98,7 +98,7 @@ The HTML guidelines describe a complete design system. Cast's runtime composites
 - **Type scale, line-height ramps, weight pairings.** The display font is rendered at compositor-determined sizes per ratio; the brand's published scale is informational.
 - **Spacing / grid tokens.** Cast does not lay out compositions — the GenAI hero image owns the composition.
 - **Illustration style, iconography rules, photography art-direction.** Out of scope for the GenAI prompt's control surface; `promptFragments[]` is the deliberate narrow channel.
-- **Motion / animation specs.** Output creatives are static PNG only ([D26](flow-diagrams.md#appendix-a--design-decision-register)).
+- **Motion / animation specs.** Output creatives are static PNG only ([static raster output](flow-diagrams.md#appendix-a--design-decision-register)).
 - **Print specs, packaging die-lines, point-of-sale collateral.** Cast generates digital ad creatives.
 - **Banned-words category labels.** Flattened on lift (see above).
 
@@ -114,9 +114,9 @@ The README's "Onboard a new brand" section promises a directory drop with no cod
 2. Pull `displayName`, `colors.primary`, `colors.accent` (and optional `colors.background`, `colors.text`) into `brand.json`.
 3. Pull tone, do, don't, and synthesized visual `promptFragments[]` into `voice.json`.
 4. Flatten the brand's banned-words / no-fly list into `banned-words.json` (lowercase, deduped). Skip if the brand has no specific terms — defaults still apply.
-5. Capture or export the four logo variants per [D27](flow-diagrams.md#appendix-a--design-decision-register) into `logos/`. Write `logos.json`.
+5. Capture or export the four logo variants per the [logo variants convention](flow-diagrams.md#appendix-a--design-decision-register) into `logos/`. Write `logos.json`.
 6. Drop the OFL display font as `font.ttf` or `font.otf`.
-7. Restart `next dev` (the brand-profile cache TTL is 90 s; restart is faster than waiting). Brand appears in the S1 selector on next page load.
+7. Restart `next dev` (the brand-profile cache TTL is 90 s; restart is faster than waiting). Brand appears in the brand selector on next page load.
 
 No rebuild, no migration, no code change. The schema is the API.
 
@@ -124,12 +124,12 @@ No rebuild, no migration, no code change. The schema is the API.
 
 ## Linked decisions
 
-- [D10](flow-diagrams.md#appendix-a--design-decision-register) — Display font: per-brand `font.ttf` or `font.otf`.
-- [D11](flow-diagrams.md#appendix-a--design-decision-register) — Per-brand profile directory contract.
-- [D18](flow-diagrams.md#appendix-a--design-decision-register) — Prompt construction (consumes `voice.json`).
-- [D21](flow-diagrams.md#appendix-a--design-decision-register) — Compliance + banned-words (consumes the union list).
-- [D27](flow-diagrams.md#appendix-a--design-decision-register) — Logo variants (consumes `logos/` + `logos.json`).
-- [D28](flow-diagrams.md#appendix-a--design-decision-register) — This doc: extraction methodology.
+- [Display font](flow-diagrams.md#appendix-a--design-decision-register) — per-brand `font.ttf` or `font.otf`.
+- [Brand profile directory](flow-diagrams.md#appendix-a--design-decision-register) — per-brand profile directory contract.
+- [Prompt construction](flow-diagrams.md#appendix-a--design-decision-register) — consumes `voice.json`.
+- [Compliance + banned-words](flow-diagrams.md#appendix-a--design-decision-register) — consumes the union list.
+- [Logo variants](flow-diagrams.md#appendix-a--design-decision-register) — consumes `logos/` + `logos.json`.
+- [Brand extraction](flow-diagrams.md#appendix-a--design-decision-register) — this doc: extraction methodology.
 
 ---
 
