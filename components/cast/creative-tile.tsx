@@ -15,7 +15,7 @@ interface CreativeTileProps {
 }
 
 /**
- * A single creative cell in the S3 output grid.
+ * A single creative cell in the output grid.
  *
  * The tile is purely a view of `creative` — no fetching, no badge logic
  * beyond mapping the schema's `compliance.badge` to a colour. When

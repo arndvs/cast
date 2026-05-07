@@ -171,8 +171,8 @@ export function CastAppShell({
   // One toast per `run-error` transition. The reducer assigns a fresh
   // `runError` object each time, so identity-keyed effect deps fire exactly
   // once per failure. Surviving a screen switch is intentional — the toast
-  // is fired from the shell so it's visible from S2 and from any future S1
-  // edit-after-fail flow.
+  // is fired from the shell so it's visible from the run view and from any
+  // future edit-after-fail flow.
   React.useEffect(() => {
     if (!state.runError) return
     toast.error(state.runError.message, { description: state.runError.stage })

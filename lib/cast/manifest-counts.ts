@@ -53,7 +53,7 @@ export function deriveCounts(manifest: Manifest): DerivedCounts {
       continue
     }
     // Succeeded creatives default to OK when compliance is omitted — mirrors
-    // the UI fallback in `CreativeTile` and the S3 status filter (`?? "OK"`)
+    // the UI fallback in `CreativeTile` and the status filter (`?? "OK"`)
     // so `ok + warn + fail` always equals `manifest.counts.requested`.
     const badge = c.compliance?.badge ?? "OK"
     if (badge === "FAIL") fail += 1

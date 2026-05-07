@@ -22,7 +22,7 @@ export const ratioSchema = z.enum(["1x1", "9x16", "16x9"])
 export type AspectRatio = z.infer<typeof ratioSchema>
 
 // ---------------------------------------------------------------------------
-// Brief (S1 input → /api/generate body)
+// Brief (editor input → /api/generate body)
 // ---------------------------------------------------------------------------
 
 /**

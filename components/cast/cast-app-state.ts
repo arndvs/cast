@@ -1,5 +1,5 @@
 /**
- * S1 brief-editor state machine and reducer.
+ * Brief-editor state machine and reducer.
  *
  * Ports `docs/prototype/cast-app.jsx` reducer to TypeScript and adapts it to
  * the locked `briefSchema` shape (the prototype's `messageByLocale` /
