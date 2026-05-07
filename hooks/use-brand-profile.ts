@@ -172,6 +172,10 @@ export function useBrandProfile({
       cancelled = true
       controller.abort()
     }
+    // loadedSlug is intentionally excluded: it is written inside this effect
+    // (setLoadedSlug) so including it would re-run after every response and
+    // create an infinite loop. The guard reads the render-time capture only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brandSlug])
 
   const brandLoadable =
