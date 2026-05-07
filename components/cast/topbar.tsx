@@ -21,25 +21,23 @@ export function Topbar({ crumb, className, ...props }: TopbarProps) {
     <header
       className={cn(
         "flex items-center justify-between gap-6 border-b border-border bg-background px-8 py-4",
-        className,
+        className
       )}
       {...props}
     >
-      <div className="flex items-center gap-6 min-w-0">
+      <div className="flex min-w-0 items-center gap-6">
         <Wordmark />
+
+        <span className="truncate font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
+          Creative Automation Studio Toolchain
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
         {crumb ? (
-          <span className="font-mono text-xs uppercase tracking-[0.12em] text-muted-foreground truncate">
+          <span className="truncate font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
             {crumb}
           </span>
         ) : null}
-      </div>
-      <div className="flex items-center gap-3">
-        <Badge
-          variant="outline"
-          className="font-mono text-[0.6875rem] uppercase tracking-[0.12em]"
-        >
-          mode · {mode}
-        </Badge>
       </div>
     </header>
   )
