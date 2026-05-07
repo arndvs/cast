@@ -8,8 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
+import { PipelineLogLine } from "@/components/cast/pipeline-log-line"
+import { PipelineRunStatusBadge } from "@/components/cast/pipeline-run-status-badge"
 import { Wordmark } from "@/components/cast/wordmark"
 import type { PipelineEvent } from "@/lib/cast/events"
+import { formatRunTime } from "@/lib/cast/format-run-time"
 import { cn } from "@/lib/utils"
 
 interface PipelineRunViewProps {
@@ -68,10 +71,10 @@ export function PipelineRunView({ state, dispatch, cancelRef }: PipelineRunViewP
           <span className="text-sm text-fg-2">{brandSlug}</span>
           <span className="text-fg-3">/</span>
           <span className="font-mono text-sm text-fg-1">{brief.campaign}</span>
-          <RunStateBadge runState={runState} />
+          <PipelineRunStatusBadge runState={runState} />
           <div className="grow" />
           <span className="font-mono text-xs text-fg-3">
-            started {formatTime(runStartedAt)}
+            started {formatRunTime(runStartedAt)}
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -130,7 +133,7 @@ export function PipelineRunView({ state, dispatch, cancelRef }: PipelineRunViewP
           {events.length === 0 ? (
             <div className="px-4 py-6 text-fg-3">waiting for first event…</div>
           ) : (
-            events.map((ev, i) => <LogLine key={i} event={ev} />)
+            events.map((ev, i) => <PipelineLogLine key={i} event={ev} />)
           )}
           {runState === "running" && (
             <div className="px-4 py-1 text-fg-3">
@@ -178,98 +181,4 @@ export function PipelineRunView({ state, dispatch, cancelRef }: PipelineRunViewP
       </div>
     </div>
   )
-}
-
-function RunStateBadge({ runState }: { runState: CastAppState["runState"] }) {
-  if (runState === "running") {
-    return (
-      <Badge variant="secondary" className="bg-brand-cyan/15 text-fg-1">
-        <span className="mr-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-brand-cyan" />
-        running
-      </Badge>
-    )
-  }
-  if (runState === "complete") {
-    return (
-      <Badge variant="secondary" className="bg-ok/15 text-ok">
-        ✓ completed
-      </Badge>
-    )
-  }
-  if (runState === "failed") {
-    return (
-      <Badge variant="destructive">✕ failed</Badge>
-    )
-  }
-  return <Badge variant="outline">editing</Badge>
-}
-
-function LogLine({ event }: { event: PipelineEvent }) {
-  const tint =
-    event.type === "step"
-      ? "text-fg-2"
-      : event.type === "creative_ready"
-        ? "text-ok"
-        : event.type === "compliance_result"
-          ? "text-fg-2"
-          : event.type === "asset_resolved"
-            ? "text-fg-3"
-            : event.type === "error"
-              ? "text-bad"
-              : event.type === "complete"
-                ? "text-ok font-semibold"
-                : "text-fg-2"
-
-  return (
-    <div className={cn("flex gap-3 border-b border-border/40 px-4 py-1", tint)}>
-      <span className="w-20 shrink-0 text-fg-3">{eventLabel(event)}</span>
-      <span className="flex-1 truncate">{eventDetail(event)}</span>
-    </div>
-  )
-}
-
-function eventLabel(event: PipelineEvent): string {
-  switch (event.type) {
-    case "step":
-      return event.stage
-    case "asset_resolved":
-      return "asset"
-    case "creative_ready":
-      return "ready"
-    case "compliance_result":
-      return event.badge
-    case "error":
-      return `err:${event.stage}`
-    case "complete":
-      return "complete"
-  }
-}
-
-function eventDetail(event: PipelineEvent): string {
-  switch (event.type) {
-    case "step":
-      return `${slotLabel(event.slot)}${event.message ? " — " + event.message : ""}`
-    case "asset_resolved":
-      return `${event.product} · ${event.source}${event.file ? " · " + event.file : ""}`
-    case "creative_ready":
-      return `${slotLabel(event.slot)} · ${event.path}`
-    case "compliance_result": {
-      const banned = event.bannedWords.length
-        ? ` · banned=[${event.bannedWords.join(",")}]`
-        : ""
-      return `${slotLabel(event.slot)}${banned}`
-    }
-    case "error":
-      return `${event.slot ? slotLabel(event.slot) + " · " : ""}${event.message}`
-    case "complete":
-      return `${event.manifest.counts.succeeded}/${event.manifest.counts.requested} succeeded · ${event.manifest.counts.failed} failed · ${event.manifest.counts.flagged} flagged`
-  }
-}
-
-function slotLabel(slot: { product: string; market: string; ratio: string }): string {
-  return `${slot.product}/${slot.market}/${slot.ratio}`
-}
-
-function formatTime(d: Date): string {
-  return d.toLocaleTimeString(undefined, { hour12: false })
 }
