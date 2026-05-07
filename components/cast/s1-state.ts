@@ -16,12 +16,7 @@
 
 import { ALL_RATIOS, type AspectRatio } from "@/lib/cast/ratios"
 import { getMarket } from "@/lib/cast/markets"
-import {
-  type Brief,
-  type Creative,
-  type ErrorStage,
-  type Manifest,
-} from "@/lib/cast/schemas"
+import { type Brief, type ErrorStage, type Manifest } from "@/lib/cast/schemas"
 import type { PipelineEvent } from "@/lib/cast/events"
 
 /**
@@ -100,11 +95,6 @@ export interface S1State {
   runError: { stage: RunErrorStage; message: string } | null
   /** Which screen is mounted. Default `"S1"`. */
   screen: Screen
-  /**
-   * S3 detail dialog target. `null` when closed. The reducer owns the
-   * open/close transitions; the dialog itself lands in V5e.
-   */
-  detailOpen: Creative | null
 }
 
 // ---------------------------------------------------------------------------
@@ -130,8 +120,6 @@ export type S1Action =
   | { type: "goto-run" }
   | { type: "goto-grid" }
   | { type: "goto-edit" }
-  | { type: "open-detail"; creative: Creative }
-  | { type: "close-detail" }
 
 // ---------------------------------------------------------------------------
 // Reducer
@@ -265,7 +253,6 @@ export function s1Reducer(state: S1State, action: S1Action): S1State {
     case "goto-edit":
       // Discard the prior run's artifacts and return the editor to the
       // initial `editing` state. Brief, brand, uploads stay intact.
-      // Also close any open detail dialog so it doesn't reappear on re-run.
       return {
         ...state,
         screen: "S1",
@@ -273,12 +260,7 @@ export function s1Reducer(state: S1State, action: S1Action): S1State {
         events: [],
         manifest: null,
         runError: null,
-        detailOpen: null,
       }
-    case "open-detail":
-      return { ...state, detailOpen: action.creative }
-    case "close-detail":
-      return { ...state, detailOpen: null }
     case "pipeline-event": {
       const events = [...state.events, action.event]
       if (action.event.type === "complete") {
