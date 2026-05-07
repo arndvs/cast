@@ -16,7 +16,7 @@ Open any file directly in a browser; no build step.
 
 The pipeline does **not** load these HTML files at runtime. They're the rich, human-readable spec from which a much thinner JSON contract — `brandProfileSchema` — is distilled per brand.
 
-The reduction (which sections land in which JSON path, what is intentionally dropped, how to onboard a new brand) is documented in [../brand-extraction.md](../brand-extraction.md). The resulting runtime contract is defined in [../flow-diagrams.md §4.3](../flow-diagrams.md#brand-profile-schema-d11--contract).
+The reduction (which sections land in which JSON path, what is intentionally dropped, how to onboard a new brand) is documented in [../brand-extraction.md](../brand-extraction.md). The resulting runtime contract is defined in [../flow-diagrams.md §4.3](../flow-diagrams.md#brand-profile-schema-contract).
 
 ## When to update
 

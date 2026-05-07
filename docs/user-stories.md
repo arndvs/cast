@@ -1,7 +1,5 @@
 # User Stories — Cast: Creative Automation Studio Toolchain
 
-### Local Next.js App · POC · v5
-
 ---
 
 ## Goals served
@@ -78,6 +76,4 @@ Success looks like: Aaron **opens** `localhost:3000`, **clicks Generate** with t
 - **write** `report.json` — `counts` (requested / succeeded / failed / generated / reused / flagged), per-creative `compliance`, and an `errors[]` array
 - **document** in README — how to run, example input + output, key design decisions, assumptions and limitations
 
----
 
-_Cast · User Stories v5 · Adobe FDE Take-Home · Aaron Davis · 2026_
