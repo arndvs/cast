@@ -3,7 +3,7 @@
 import fs from "node:fs/promises"
 import { execFile } from "node:child_process"
 import { safeJoin, PathTraversalError } from "@/lib/cast/server/safe-join"
-import { SLUG_RE } from "@/lib/cast/schemas"
+import { MARKET_RE, ratioSchema, SLUG_RE, type AspectRatio } from "@/lib/cast/schemas"
 
 /**
  * revealOutputFolder — open the per-campaign outputs folder in the OS file
@@ -88,4 +88,61 @@ function isENOENT(err: unknown): boolean {
 function errMessage(err: unknown): string {
   if (err instanceof Error) return err.message
   return String(err)
+}
+
+/**
+ * resolveCreativeAbsolutePath — server-only helper for S4's "Copy path"
+ * button (V5e). The manifest stores creative paths repo-relative
+ * (POSIX), but operators want the OS-absolute path on the clipboard so
+ * pasting it into a terminal or file dialog Just Works.
+ *
+ * Mirrors `revealOutputFolder`'s validation discipline:
+ *   1. campaign / market / product slugs match SLUG_RE / MARKET_RE.
+ *   2. ratio matches `ratioSchema`.
+ *   3. safeJoin('outputs', …) — rejects traversal & absolute segments.
+ *
+ * Returns a result discriminator instead of throwing so the client can
+ * surface a toast either way.
+ */
+export async function resolveCreativeAbsolutePath({
+  campaign,
+  market,
+  product,
+  ratio,
+}: {
+  campaign: string
+  market: string
+  product: string
+  ratio: AspectRatio
+}): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+  if (typeof campaign !== "string" || !SLUG_RE.test(campaign)) {
+    return { ok: false, error: "invalid campaign slug" }
+  }
+  if (typeof market !== "string" || !MARKET_RE.test(market)) {
+    return { ok: false, error: "invalid market code" }
+  }
+  if (typeof product !== "string" || !SLUG_RE.test(product)) {
+    return { ok: false, error: "invalid product slug" }
+  }
+  const ratioParsed = ratioSchema.safeParse(ratio)
+  if (!ratioParsed.success) {
+    return { ok: false, error: "invalid ratio" }
+  }
+
+  try {
+    // TODO(symlink-hardening): re-validate with realpath before returning.
+    const abs = safeJoin(
+      "outputs",
+      campaign,
+      market,
+      product,
+      `${ratioParsed.data}.png`,
+    )
+    return { ok: true, path: abs }
+  } catch (err) {
+    if (err instanceof PathTraversalError) {
+      return { ok: false, error: "invalid creative path" }
+    }
+    return { ok: false, error: errMessage(err) }
+  }
 }
