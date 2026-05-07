@@ -20,7 +20,6 @@
  *   6. Write `report.json`. Emit terminal `complete` event with the manifest.
  */
 
-import { NextResponse } from "next/server"
 import {
   BrandIncompleteError,
   BrandInvalidError,

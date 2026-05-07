@@ -49,6 +49,6 @@ describe("activeLanguages", () => {
 
 describe("ALL_MARKETS", () => {
   it("is frozen", () => {
-    expect(() => (ALL_MARKETS as any).push({ code: "x", name: "x", language: "x" })).toThrow()
+    expect(() => (ALL_MARKETS as unknown as { push: (v: unknown) => void }).push({ code: "x", name: "x", language: "x" })).toThrow()
   })
 })

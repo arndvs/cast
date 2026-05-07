@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest"
-import {
-  creativeMatchesFilters,
-  type StatusFilter,
-  type RatioFilter,
-  type MarketCodeFilter,
-} from "@/lib/cast/filter-creatives"
+import { creativeMatchesFilters } from "@/lib/cast/filter-creatives"
 import type { Creative } from "@/lib/cast/schemas"
 
 function makeCreative(overrides: Partial<Creative> = {}): Creative {
