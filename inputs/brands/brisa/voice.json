@@ -21,5 +21,35 @@
     "citrus peel, blood orange zest, yuzu",
     "calm, airy negative space, generous white room",
     "still life, single can, no clutter"
-  ]
+  ],
+  "negativePromptFragments": [
+    "no candy-pastel backgrounds",
+    "no dessert or smoothie-bowl composition",
+    "no warm pink-and-cream aesthetic",
+    "no sugar or sweetness metaphors"
+  ],
+  "moodKeywords": ["mineral", "morning", "airy", "editorial"],
+  "skuFragments": {
+    "BRS-CIT-12": {
+      "promptFragments": [
+        "sharp citrus zest",
+        "lemon peel foreground detail",
+        "morning light",
+        "yellow-green citrus accent on can"
+      ],
+      "accentHex": "#C5D965",
+      "sceneMood": "morning · meal · move"
+    },
+    "BRS-BRY-12": {
+      "promptFragments": [
+        "soft floral tones",
+        "hibiscus-pink highlights on can",
+        "afternoon warmth",
+        "gentle diffuse light"
+      ],
+      "accentHex": "#C77B9F",
+      "sceneMood": "afternoon · host · slow"
+    }
+  }
 }
+
