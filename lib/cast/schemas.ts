@@ -22,7 +22,7 @@ export const ratioSchema = z.enum(["1x1", "9x16", "16x9"])
 export type AspectRatio = z.infer<typeof ratioSchema>
 
 // ---------------------------------------------------------------------------
-// Brief (S1 input → /api/generate body)
+// Brief (editor input → /api/generate body)
 // ---------------------------------------------------------------------------
 
 /**
@@ -61,7 +61,7 @@ export const briefSchema = z
     ratios: z.array(ratioSchema).min(1),
     // Optional logo variant id; cross-validated against the loaded brand
     // at /api/generate entry (briefSchema alone has no brand state). When
-    // omitted, the orchestrator falls back to `brandProfile.defaultLogoId` (D27).
+    // omitted, the orchestrator falls back to `brandProfile.defaultLogoId`.
     logoVariant: z.string().regex(SLUG_RE).optional(),
   })
   .superRefine((brief, ctx) => {
@@ -104,7 +104,7 @@ export const briefSchema = z
 export type Brief = z.infer<typeof briefSchema>
 
 // ---------------------------------------------------------------------------
-// Brand profile (D11)
+// Brand profile
 // ---------------------------------------------------------------------------
 
 export const brandColorsSchema = z.object({
@@ -133,6 +133,8 @@ export const logoVariantSchema = z.object({
   id: z.string().regex(SLUG_RE),
   displayName: z.string().min(1),
   file: z.string().regex(/^[a-z0-9-]+\.png$/),
+  /** Optional swatch hint for the editor preview. Defaults to "light". */
+  theme: z.enum(["light", "dark"]).optional(),
 })
 
 export const logosManifestSchema = z
@@ -174,8 +176,14 @@ export type BrandProfile = {
   brand: z.infer<typeof brandJsonSchema>
   voice: z.infer<typeof voiceJsonSchema>
   bannedWords: string[]
-  logoVariants: { id: string; displayName: string; path: string }[]
+  logoVariants: {
+    id: string
+    displayName: string
+    path: string
+    theme?: "light" | "dark"
+  }[]
   defaultLogoId: string
+  /** Absolute path to the brand's display font. `font.ttf` or `font.otf`. */
   fontPath: string
 }
 
@@ -192,6 +200,19 @@ export const errorStageSchema = z.enum([
   "write",
 ])
 export type ErrorStage = z.infer<typeof errorStageSchema>
+
+/**
+ * Ordered pipeline stages — used in the creative detail dialog breadcrumb
+ * and for error attribution in the manifest.
+ */
+export const PIPELINE_STAGES = [
+  "resolve",
+  "genai",
+  "resize",
+  "compose",
+  "compliance",
+  "write",
+] as const satisfies readonly ErrorStage[]
 
 export const complianceBadgeSchema = z.enum(["OK", "WARN", "FAIL"])
 export type ComplianceBadge = z.infer<typeof complianceBadgeSchema>
@@ -210,7 +231,7 @@ export const creativeSchema = z.object({
   market: z.string().regex(MARKET_RE),
   ratio: ratioSchema,
   source: z.enum(["local", "genai"]),
-  path: z.string().nullable(), // null on failure (D19)
+  path: z.string().nullable(), // null on failure (write stage skips compliance)
   compliance: complianceSchema.optional(),
 })
 
@@ -241,3 +262,6 @@ export const manifestSchema = z.object({
 })
 
 export type Manifest = z.infer<typeof manifestSchema>
+export type Creative = z.infer<typeof creativeSchema>
+export type ManifestError = z.infer<typeof manifestErrorSchema>
+export type Counts = z.infer<typeof countsSchema>

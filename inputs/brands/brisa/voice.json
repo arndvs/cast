@@ -1,0 +1,25 @@
+{
+  "tone": "Bright, mineral, declarative. The breeze in a can — short, warm, sensory. A short sentence with a long after-taste. Brisa never sounds like Volt; we are not loud, slangy, ironic, or aspirational about hustle.",
+  "do": [
+    "Lead with sensory verbs and nouns — peel, stone, morning, lift, crack, open.",
+    "Make one claim per surface; leave room for the consumer to bring their own.",
+    "Keep sentences short and declarative.",
+    "Use minerality, not sweetness — stone, citrus peel, morning air over candy or dessert metaphors.",
+    "Default to less. If a thing can come out, it comes out."
+  ],
+  "dont": [
+    "Don't use wellness jargon or function claims (detox, immune-boosting, fat-burning).",
+    "Don't lean on sugar, dessert, or candy-shop language.",
+    "Don't borrow Volt's punchy energy-drink tone or hustle posture.",
+    "Don't stack adjectives or use category clichés (refreshingly refreshing, burst of flavor).",
+    "Don't co-lockup with the Onda parent on consumer surfaces."
+  ],
+  "promptFragments": [
+    "soft natural daylight, morning window light",
+    "mineral palette — foam, paper, aqua, mineral teal",
+    "condensation on aluminum, beaded droplets",
+    "citrus peel, blood orange zest, yuzu",
+    "calm, airy negative space, generous white room",
+    "still life, single can, no clutter"
+  ]
+}

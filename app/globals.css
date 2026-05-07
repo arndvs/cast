@@ -2,12 +2,14 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Dark mode disabled — bind the `dark:` variant to a class that is never
+   applied so OS-level prefers-color-scheme can't trigger dark utilities. */
 @custom-variant dark (&:is(.dark *));
 
 /* =========================================================
    Cast design tokens — ported from
    docs/design/cast-brand-guidelines.html (single source of truth).
-   Default theme is LIGHT. Add `.dark` to <html> to flip.
+   Light theme only.
    ========================================================= */
 
 @theme inline {
@@ -119,9 +121,10 @@
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-.dark {
-  /* Reserved — dark theme tokens will land with the theme switcher. */
+html.dark {
+  /* Dark mode disabled — tokens unchanged. */
 }
+
 
 @layer base {
   *,
