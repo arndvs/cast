@@ -87,26 +87,35 @@ export function S1Shell({
   const [activeBrand, setActiveBrand] = React.useState(brand)
   const [activeBrandLoadError, setActiveBrandLoadError] =
     React.useState<BrandLoadErrorInfo | null>(brandLoadError ?? null)
+  // Tracks which slug the current activeBrand/activeBrandLoadError was
+  // fetched for. While a slug change is in-flight, loadedSlug differs from
+  // state.brandSlug — derived values treat the brand as unavailable without
+  // needing a synchronous setState in the effect body.
+  const [loadedSlug, setLoadedSlug] = React.useState(initialBrief.brand)
 
   React.useEffect(() => {
     // Fetch on every brandSlug change (including mount). The brand loader has
-    // a 90 s in-memory cache, so the initial mount fetch is cheap. Async
-    // callbacks avoid the react-hooks/set-state-in-effect lint rule.
-    // AbortController terminates the in-flight request on rapid slug changes so
-    // stale responses never overwrite a newer slug's result.
+    // a 90 s in-memory cache, so the initial mount fetch is cheap.
+    // Staleness: AbortController cancels the in-flight request on rapid slug
+    // changes; the cancelled boolean guards .then() for the window between
+    // fetch-resolved and abort (abort() does not cancel an already-resolved promise).
+    // Immediate-clear window: while loadedSlug !== state.brandSlug the derived
+    // brandLoadable/bannedList treat the brand as unavailable — no synchronous
+    // setState needed (which would violate react-hooks/set-state-in-effect).
     const controller = new AbortController()
+    let cancelled = false
     const slug = state.brandSlug
     fetch(`/api/brands/${encodeURIComponent(slug)}`, { signal: controller.signal })
       .then(async (res) => {
+        if (cancelled) return
         if (!res.ok) {
-          // All non-2xx responses render the brand as unavailable on the
-          // client. We don't distinguish incomplete/invalid here because the
-          // API error body doesn't carry the extra fields those kinds require;
-          // the banner's "notFound" copy is accurate enough for the operator.
           const body = await res.json().catch(() => ({})) as { errors?: { message: string }[] }
-          const message = body.errors?.[0]?.message ?? `Failed to load brand "${slug}" (HTTP ${res.status})`
+          if (cancelled) return
+          const message = body.errors?.[0]?.message ??
+            `Failed to load brand "${slug}" (HTTP ${res.status})`
           setActiveBrand(null)
           setActiveBrandLoadError({ kind: "notFound", slug, message })
+          setLoadedSlug(slug)
           return
         }
         const data = await res.json() as {
@@ -116,6 +125,7 @@ export function S1Shell({
             variants: Array<{ id: string; displayName: string; theme?: "light" | "dark" }>
           }
         }
+        if (cancelled) return
         setActiveBrand({
           defaultLogoId: data.logos.default,
           logoVariants: data.logos.variants.map(({ id, displayName, theme }) => ({
@@ -126,22 +136,24 @@ export function S1Shell({
           bannedWords: data.bannedWords,
         })
         setActiveBrandLoadError(null)
+        setLoadedSlug(slug)
       })
       .catch((err: unknown) => {
-        // Ignore aborts (superseded by a newer slug change).
-        if (err instanceof DOMException && err.name === "AbortError") return
+        if ((err as { name?: string })?.name === "AbortError") return
+        if (cancelled) return
         setActiveBrand(null)
         setActiveBrandLoadError({
           kind: "notFound",
           slug,
           message: err instanceof Error ? err.message : `Network error loading brand "${slug}"`,
         })
+        setLoadedSlug(slug)
       })
     return () => {
+      cancelled = true
       controller.abort()
     }
   }, [state.brandSlug])
-
   // One toast per `run-error` transition. The reducer assigns a fresh
   // `runError` object each time, so identity-keyed effect deps fire exactly
   // once per failure. Surviving a screen switch is intentional — the toast
@@ -152,7 +164,9 @@ export function S1Shell({
     toast.error(state.runError.message, { description: state.runError.stage })
   }, [state.runError])
 
-  const brandLoadable = activeBrandLoadError == null
+  // Gated on loadedSlug match so the in-flight window after a brand switch
+  // is treated as unavailable (Generate stays blocked until fetch settles).
+  const brandLoadable = loadedSlug === state.brandSlug && activeBrandLoadError == null
 
   // D29 — single source of truth for the banned-word list. The server
   // already merges `getDefaultBannedWords()` with the brand fixture at
@@ -163,8 +177,11 @@ export function S1Shell({
   // `brandLoadable`. `activeBrand` is kept in sync with `state.brandSlug`
   // via the useEffect above, so brand switches update both lists together.
   const bannedList = React.useMemo<readonly string[]>(
-    () => activeBrand?.bannedWords ?? getDefaultBannedWords(),
-    [activeBrand?.bannedWords]
+    () =>
+      loadedSlug === state.brandSlug
+        ? (activeBrand?.bannedWords ?? getDefaultBannedWords())
+        : getDefaultBannedWords(),
+    [activeBrand?.bannedWords, loadedSlug, state.brandSlug]
   )
   // The editor and the summary strip both read from the same list above:
   // the strip via `bannedHits`, the editor via the `bannedList` prop. This
