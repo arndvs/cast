@@ -21,7 +21,7 @@ Brisa and Volt are the only two brands that need extraction. Onboarding a real c
 
 ## Schema reduction
 
-`loadBrandProfile` validates each per-brand file against the matching sub-schema of `brandProfileSchema` — `brand.json` → `brandJsonSchema`, `voice.json` → `voiceJsonSchema`, `banned-words.json` (when present) → `bannedWordsSchema`, `logos/logos.json` → `logosManifestSchema`. `font.ttf` (or `font.otf`) is existence-checked only (no parse). The HTML carries far more than the schema accepts; the table below names exactly what the runtime reads.
+`loadBrandProfile` validates each per-brand file with its corresponding schema. The core runtime profile contract is `brandProfileSchema`, whose inputs are `brand.json` → `brandJsonSchema`, `voice.json` → `voiceJsonSchema`, `banned-words.json` (when present) → `bannedWordsSchema`, and `logos/logos.json` → `logosManifestSchema`. The optional manifests are loaded and validated separately during `loadBrandProfile` — `products.json` (when present) → `productsManifestSchema`, `backgrounds.json` (when present) → `backgroundsManifestSchema`. `font.ttf` (or `font.otf`) is existence-checked only (no parse). The HTML carries far more than the schema accepts; the table below names exactly what the runtime reads.
 
 ### `brand.json`
 
@@ -42,6 +42,9 @@ Brisa and Volt are the only two brands that need extraction. Onboarding a real c
 | Voice "Do" list                               | `do[]`              | string array | Each entry is one rule, imperative voice. Joined into the prompt as positive guidance. |
 | Voice "Don't" list                            | `dont[]`            | string array | Each entry is one rule. **Distinct from `banned-words.json`:** `dont[]` is high-level voice direction ("avoid macho swagger"); `banned-words.json` is literal substring matching. |
 | Imagery / mood / visual language sections     | `promptFragments[]` | string array | Synthesized from the brand's visual guidelines — concrete phrases the prompt builder concatenates onto the OpenAI image prompt. Examples: `"soft natural lighting"`, `"citrus tones"`, `"condensation on glass"`. Each fragment must be defensible from a specific HTML section; no free invention. Lift manually per brand. |
+| Negative imagery instructions                 | `negativePromptFragments[]` | string array | Phrases the prompt builder inserts as negative guidance — what to avoid in generated images. Examples: `"no harsh studio lighting"`, `"avoid cluttered backgrounds"`. |
+| Mood / atmosphere keywords                    | `moodKeywords[]`    | string array | Short scene-setting adjectives used by the prompt builder. Examples: `"refreshing"`, `"crisp"`, `"vibrant"`. |
+| Per-SKU visual differentiation                | `skuFragments?`     | `Record<sku, { promptFragments, accentHex?, sceneMood? }>` | Optional per-product overrides. Keyed by SKU (e.g. `"BRS-CIT-12"`). Each entry can supply product-specific prompt fragments, an accent hex, and a scene mood keyword. |
 
 ### `banned-words.json`
 
@@ -57,30 +60,54 @@ A flat array of lowercase terms. Per-brand HTML organizes these into categories 
 
 ### `logos/` (variants + `logos.json`)
 
-POC logos are **screenshots from the brand HTML guidelines**, not extracted SVGs. Per the [logo variants convention](flow-diagrams.md#per-brand-profile), each brand ships exactly four variants:
+POC logos are **screenshots from the brand HTML guidelines**, not extracted SVGs. The number and naming of variants is **brand-specific** — each brand ships as many variants as its guidelines require, with descriptive IDs derived from the logo treatment and surface:
 
-| Variant id          | When the compositor uses it                                | Source                                 |
-| ------------------- | ---------------------------------------------------------- | -------------------------------------- |
-| `primary-on-light`  | Default. Light hero backgrounds, hero ≥ 0.6 luminance.     | Screenshot of full-color logo on light surface |
-| `primary-on-dark`   | Dark hero backgrounds, hero ≤ 0.4 luminance.               | Screenshot of full-color logo on dark surface  |
-| `mono-white`        | Photographic / busy hero backgrounds, dark dominant.       | Screenshot of white-only logo treatment        |
-| `mono-black`        | Photographic / busy hero backgrounds, light dominant.      | Screenshot of black-only logo treatment        |
+**Brisa** (7 variants): `lockup-on-light`, `lockup-on-dark`, `wordmark-on-light`, `wordmark-on-dark`, `wordmark-aqua-on-dark`, `droplet-on-light`, `droplet-on-dark`
 
-Files land in `inputs/brands/[brand]/logos/[variant-id].png`. `logos/logos.json` declares the default variant and the manifest:
+**Volt** (5 variants): `wordmark-on-light`, `wordmark-on-volt`, `wordmark-on-dark`, `wordmark-on-slate`, `bolt-on-dark`
+
+Files land in `inputs/brands/[brand]/logos/[variant-id].png`. `logos/logos.json` declares the default variant, the manifest, and an optional `theme` hint per variant:
 
 ```json
 {
-  "default": "primary-on-light",
+  "default": "lockup-on-light",
   "variants": [
-    { "id": "primary-on-light", "displayName": "Primary · on light", "file": "primary-on-light.png" },
-    { "id": "primary-on-dark",  "displayName": "Primary · on dark",  "file": "primary-on-dark.png"  },
-    { "id": "mono-white",       "displayName": "Mono · white",       "file": "mono-white.png"       },
-    { "id": "mono-black",       "displayName": "Mono · black",       "file": "mono-black.png"       }
+    { "id": "lockup-on-light",       "displayName": "Lockup · on light",        "file": "lockup-on-light.png",       "theme": "light" },
+    { "id": "lockup-on-dark",        "displayName": "Lockup · on dark",         "file": "lockup-on-dark.png",        "theme": "dark"  },
+    { "id": "wordmark-on-light",     "displayName": "Wordmark · on light",      "file": "wordmark-on-light.png",     "theme": "light" },
+    { "id": "wordmark-on-dark",      "displayName": "Wordmark · on dark",       "file": "wordmark-on-dark.png",      "theme": "dark"  },
+    { "id": "wordmark-aqua-on-dark", "displayName": "Wordmark · aqua on dark",  "file": "wordmark-aqua-on-dark.png", "theme": "dark"  },
+    { "id": "droplet-on-light",      "displayName": "Droplet glyph · on light", "file": "droplet-on-light.png",      "theme": "light" },
+    { "id": "droplet-on-dark",       "displayName": "Droplet glyph · on dark",  "file": "droplet-on-dark.png",       "theme": "dark"  }
   ]
 }
 ```
 
 PNG with alpha. Sizing is at the screenshotter's discretion — the compositor resizes per ratio at composite time. Manual variant selection only for the POC; automatic per-creative selection by hero luminance is v2 ([§8](flow-diagrams.md#8-future-scope-v2--explicitly-out-of-poc)).
+
+### `products.json` (optional)
+
+Product-can cutout manifest. When present, `loadBrandProfile` validates against `productsManifestSchema`. Each item references a cutout PNG under `products/`.
+
+| JSON path | Type | Notes |
+| --- | --- | --- |
+| `items[].id`     | slug   | Unique identifier for the product can variant |
+| `items[].sku`    | string | SKU matching `brief.products[].sku` |
+| `items[].file`   | string | Path like `products/<file>.png` (relative to brand dir) |
+| `items[].pose`   | enum   | `"upright-center"` \| `"tilt-left"` \| `"tilt-right"` |
+| `items[].detail` | enum   | `"clean"` (default) \| `"condensation"` |
+
+### `backgrounds.json` (optional)
+
+Background-plate manifest. When present, `loadBrandProfile` validates against `backgroundsManifestSchema`. Each item references a background PNG under `backgrounds/`.
+
+| JSON path | Type | Notes |
+| --- | --- | --- |
+| `items[].id`        | slug   | Unique identifier for the background plate |
+| `items[].file`      | string | Path like `backgrounds/<file>.png` (relative to brand dir) |
+| `items[].ratio`     | enum   | `"1x1"` \| `"9x16"` \| `"16x9"` |
+| `items[].sku`       | string | SKU this background is designed for |
+| `items[].luminance` | enum   | `"light"` \| `"dark"` — used for logo variant auto-selection (v2) |
 
 ### `font.ttf` or `font.otf`
 
@@ -110,10 +137,12 @@ The README's "Onboard a new brand" section promises a directory drop with no cod
 
 1. Source the brand's brand book or guidelines (HTML, PDF, Figma — any canonical reference).
 2. Pull `displayName`, `colors.primary`, `colors.accent` (and optional `colors.background`, `colors.text`) into `brand.json`.
-3. Pull tone, do, don't, and synthesized visual `promptFragments[]` into `voice.json`.
+3. Pull tone, do, don't, `promptFragments`, `negativePromptFragments`, `moodKeywords` (and optional per-SKU `skuFragments`) into `voice.json`.
 4. Flatten the brand's banned-words / no-fly list into `banned-words.json` (lowercase, deduped). Skip if the brand has no specific terms — defaults still apply.
-5. Capture or export the four logo variants per the [logo variants convention](flow-diagrams.md#per-brand-profile) into `logos/`. Write `logos/logos.json`.
-6. Drop the OFL display font as `font.ttf` or `font.otf`.
-7. Restart `next dev` (the brand-profile cache TTL is 90 s; restart is faster than waiting). Brand appears in the brand selector on next page load.
+5. Capture or export logo variants with descriptive IDs matching the brand's treatments (e.g. `lockup-on-light`, `wordmark-on-dark`, `bolt-on-dark`) into `logos/`. Write `logos/logos.json` with a `theme` hint per variant.
+6. (Optional) If the brand has product-can cutouts, create `products.json` + `products/` directory.
+7. (Optional) If the brand has background plates, create `backgrounds.json` + `backgrounds/` directory.
+8. Drop the OFL display font as `font.ttf` or `font.otf`.
+9. Restart `next dev` (the brand-profile cache TTL is 90 s; restart is faster than waiting). Brand appears in the brand selector on next page load.
 
 No rebuild, no migration, no code change. The schema is the API.
