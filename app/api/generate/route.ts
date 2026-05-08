@@ -60,6 +60,7 @@ import {
   writeBriefSnapshot,
   writeReport,
 } from "@/lib/cast/server/storage"
+import fs from "node:fs/promises"
 import {
   emitAssetResolved,
   emitComplete,
@@ -232,7 +233,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
       const productSlug = slugify(product.name)
       let resolved: Awaited<ReturnType<typeof resolveAsset>>
       try {
-        resolved = await resolveAsset(productSlug)
+        resolved = await resolveAsset(productSlug, product.sku, brand)
       } catch (err) {
         // Non-ENOENT fs errors (EACCES, EPERM, EIO, …) bubble up from
         // findLocalAsset. Attribute them to the resolve stage per slot so
@@ -256,21 +257,31 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
       emit(
         emitAssetResolved(
           productSlug,
-          resolved.source,
+          // Map "products" to "local" for the event (both are local disk reads;
+          // the distinction is internal to the resolver). Only include `file`
+          // for true local assets — "products" uses an absolute filesystem path
+          // that must not be exposed to clients via NDJSON.
+          resolved.source === "genai" ? "genai" : "local",
           resolved.source === "local" ? resolved.file : undefined,
         ),
       )
 
       // Materialize the master once per product (per market). For local
-      // assets, one disk read. For cheap-mode genai, one 1024² generation
-      // here — done OUTSIDE the per-ratio Promise.all so the prompt is
-      // deterministic (ratio "1x1" stands in for the canonical square master).
-      // Default-mode genai is per-ratio and stays inside the ratio loop.
+      // assets and brand-can variants, one disk read. For cheap-mode genai,
+      // one 1024² generation here — done OUTSIDE the per-ratio Promise.all
+      // so the prompt is deterministic (ratio "1x1" stands in for the
+      // canonical square master). Default-mode genai stays inside the ratio
+      // loop.
       let localBaseImage: Buffer | undefined
       let baseImageGenerationError: { stage: ErrorStage; message: string } | undefined
-      if (resolved.source === "local") {
+      if (resolved.source === "local" || resolved.source === "products") {
         try {
-          localBaseImage = await readAsset(resolved.file)
+          // "local" → repo-relative path via readAsset; "products" → absolute
+          // path resolved by brand-loader, read directly via fs.
+          localBaseImage =
+            resolved.source === "local"
+              ? await readAsset(resolved.file)
+              : await readFile(resolved.file)
         } catch (err) {
           const message = errMessage(err)
           for (const ratio of brief.ratios) {
@@ -333,7 +344,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
 
             // ---- genai (only if missing) ----
             let master: Buffer
-            if (resolved.source === "local") {
+            if (resolved.source === "local" || resolved.source === "products") {
               master = localBaseImage!
             } else if (mode === "cheap") {
               // Already in cache (generated outside the ratio loop above).
@@ -400,7 +411,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
                 png: composed,
               }),
             )
-            emit(emitCreativeReady(slot, outputPath, resolved.source))
+            emit(emitCreativeReady(slot, outputPath, resolved.source === "products" ? "local" : resolved.source))
           } catch (err) {
             failedAt =
               err instanceof StageError
@@ -413,11 +424,15 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
             errors.push({ ...slot, stage: failedAt.stage, message: failedAt.message })
             // Omit `compliance` from the creative entry unless the
             // failure was at the `write` stage (compliance had already run).
+            // Map internal 'products' source to 'local' for the manifest
+            // schema (both represent a local disk read; the distinction is
+            // internal to the resolver stage).
+            const manifestSource = resolved.source === "products" ? "local" : resolved.source
             const entry: Creative = {
               product: productSlug,
               market,
               ratio,
-              source: resolved.source,
+              source: manifestSource,
               path: null,
               duration: (Date.now() - slotStart) / 1000,
               ...(failedAt.stage === "write" && compliance
@@ -426,11 +441,12 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
             }
             creatives.push(entry)
           } else {
+            const manifestSource = resolved.source === "products" ? "local" : resolved.source
             creatives.push({
               product: productSlug,
               market,
               ratio,
-              source: resolved.source,
+              source: manifestSource,
               path: outputPath,
               duration: (Date.now() - slotStart) / 1000,
               ...(compliance ? { compliance: toComplianceField(compliance) } : {}),
@@ -459,6 +475,7 @@ function buildPrompt(
   market: string,
   ratio: AspectRatio,
 ): string {
+  const skuEntry = brand.voice.skuFragments?.[product.sku]
   return buildPromptPreview({
     brand: {
       displayName: brand.brand.displayName,
@@ -469,8 +486,19 @@ function buildPrompt(
         brand.brand.colors.background ?? "",
       ].filter(Boolean),
       bannedWords: brand.bannedWords,
+      negativePromptFragments: brand.voice.negativePromptFragments,
+      moodKeywords: brand.voice.moodKeywords,
     },
-    product,
+    product: {
+      ...product,
+      skuFragments: skuEntry
+        ? {
+            promptFragments: skuEntry.promptFragments,
+            accentHex: skuEntry.accentHex,
+            sceneMood: skuEntry.sceneMood,
+          }
+        : undefined,
+    },
     market,
     ratio,
   })
@@ -493,5 +521,14 @@ async function runStage<T>(stage: ErrorStage, fn: () => Promise<T>): Promise<T> 
 
 function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
+}
+
+/**
+ * Read a file from an absolute path (used for brand-can variants whose paths
+ * are already absolute, resolved by brand-loader). Kept separate from
+ * `readAsset` which takes repo-relative inputs/-rooted paths.
+ */
+async function readFile(absPath: string): Promise<Buffer> {
+  return fs.readFile(absPath)
 }
 

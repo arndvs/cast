@@ -20,6 +20,8 @@ import {
   voiceJsonSchema,
   bannedWordsSchema,
   logosManifestSchema,
+  productsManifestSchema,
+  backgroundsManifestSchema,
   SLUG_RE,
   type BrandProfile,
 } from "@/lib/cast/schemas"
@@ -114,6 +116,22 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
     if (!(err instanceof BrandIncompleteError)) throw err
   }
 
+  // products.json is optional — present for Brisa, absent for Volt
+  let productsRaw: unknown = null
+  try {
+    productsRaw = await readJson(slug, "products.json")
+  } catch (err) {
+    if (!(err instanceof BrandIncompleteError)) throw err
+  }
+
+  // backgrounds.json is optional — present for Brisa, absent for Volt
+  let backgroundsRaw: unknown = null
+  try {
+    backgroundsRaw = await readJson(slug, "backgrounds.json")
+  } catch (err) {
+    if (!(err instanceof BrandIncompleteError)) throw err
+  }
+
   // font.ttf / font.otf is existence-checked only — either filename is accepted.
   // TODO(symlink-hardening): re-validate fontPath with realpath
   const fontPath = await resolveFontPath(slug)
@@ -144,6 +162,54 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
 
   const bannedWords = unionLowercase(getDefaultBannedWords(), bannedFromFile)
 
+  // Resolve can variant absolute paths
+  const canVariants: BrandProfile["canVariants"] = []
+  if (productsRaw !== null) {
+    const productsManifest = parse(
+      slug,
+      "products.json",
+      productsManifestSchema,
+      productsRaw,
+    )
+    for (const item of productsManifest.items) {
+      const segments = item.file.split("/").filter(Boolean)
+      // TODO(symlink-hardening): re-validate with realpath
+      const absPath = safeJoin("inputs", "brands", slug, ...segments)
+      await assertExists(absPath, slug, item.file)
+      canVariants.push({
+        id: item.id,
+        sku: item.sku,
+        file: absPath,
+        pose: item.pose,
+        detail: item.detail,
+      })
+    }
+  }
+
+  // Resolve background variant absolute paths
+  const backgroundVariants: BrandProfile["backgroundVariants"] = []
+  if (backgroundsRaw !== null) {
+    const backgroundsManifest = parse(
+      slug,
+      "backgrounds.json",
+      backgroundsManifestSchema,
+      backgroundsRaw,
+    )
+    for (const item of backgroundsManifest.items) {
+      const segments = item.file.split("/").filter(Boolean)
+      // TODO(symlink-hardening): re-validate with realpath
+      const absPath = safeJoin("inputs", "brands", slug, ...segments)
+      await assertExists(absPath, slug, item.file)
+      backgroundVariants.push({
+        id: item.id,
+        file: absPath,
+        ratio: item.ratio,
+        sku: item.sku,
+        luminance: item.luminance,
+      })
+    }
+  }
+
   const profile: BrandProfile = {
     slug,
     brand,
@@ -152,6 +218,8 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
     logoVariants,
     defaultLogoId: logos.default,
     fontPath,
+    canVariants,
+    backgroundVariants,
   }
 
   cache.set(slug, { profile, expiresAt: Date.now() + CACHE_TTL_MS })

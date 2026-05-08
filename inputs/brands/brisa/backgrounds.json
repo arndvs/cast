@@ -1,0 +1,12 @@
+{
+  "items": [
+    { "id": "studio-citrus-1x1",    "file": "backgrounds/bg-A-studio-citrus-1x1.png",    "ratio": "1x1",  "sku": "BRS-CIT-12", "luminance": "light" },
+    { "id": "studio-berry-1x1",     "file": "backgrounds/bg-A-studio-berry-1x1.png",     "ratio": "1x1",  "sku": "BRS-BRY-12", "luminance": "light" },
+    { "id": "story-citrus-9x16",    "file": "backgrounds/bg-B-story-citrus-9x16.png",    "ratio": "9x16", "sku": "BRS-CIT-12", "luminance": "light" },
+    { "id": "story-berry-9x16",     "file": "backgrounds/bg-B-story-berry-9x16.png",     "ratio": "9x16", "sku": "BRS-BRY-12", "luminance": "light" },
+    { "id": "dusk-citrus-1x1",      "file": "backgrounds/bg-D-dusk-citrus-1x1.png",      "ratio": "1x1",  "sku": "BRS-CIT-12", "luminance": "dark"  },
+    { "id": "dusk-berry-1x1",       "file": "backgrounds/bg-D-dusk-berry-1x1.png",       "ratio": "1x1",  "sku": "BRS-BRY-12", "luminance": "dark"  },
+    { "id": "hero-top-citrus-9x16", "file": "backgrounds/bg-E-hero-top-citrus-9x16.png", "ratio": "9x16", "sku": "BRS-CIT-12", "luminance": "light" },
+    { "id": "hero-top-berry-9x16",  "file": "backgrounds/bg-E-hero-top-berry-9x16.png",  "ratio": "9x16", "sku": "BRS-BRY-12", "luminance": "light" }
+  ]
+}
