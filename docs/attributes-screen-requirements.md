@@ -206,14 +206,14 @@ Using the Inform → Engage → Invite framework.
 **Engage — what the user can do:**
 
 - Click "Edit brief" — go back to S1 to fix the brief and re-generate
+- Click "Retry" — rerun the same brief immediately (`generate` from failed state)
 
-**Note:** There is no direct "Retry" from the failed state. Recovery always routes through S1 (Editing) — the user clicks "Edit brief" (`goto-edit`), then clicks "Generate" (`generate`) from S1. This two-step path ensures the user can review and adjust the brief before spending another GenAI call.
-
-**Run idempotency:** Both **Generate** (from S1) and re-runs after failure clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products of the run, not preserved artifacts — the recursive clear ensures a failed run never leaves a stale `report.json` on disk claiming success. End state of any successful run is invariant under retry; on mid-run failure the partial creatives plus the new `brief.json` describe the current attempt and the prior `report.json` is gone. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call, and the campaign slug is regex-validated (`SLUG_RE`) before it enters `safeJoin`.
+**Run idempotency:** Both **Generate** (from S1) and **Retry** (from S2′) clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products of the run, not preserved artifacts — the recursive clear ensures a failed run never leaves a stale `report.json` on disk claiming success. End state of any successful run is invariant under retry; on mid-run failure the partial creatives plus the new `brief.json` describe the current attempt and the prior `report.json` is gone. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call, and the campaign slug is regex-validated (`SLUG_RE`) before it enters `safeJoin`.
 
 **Invite — how they move to the next screen:**
 
 - Edit brief → Editing (S1)
+- Retry → Running (S2)
 
 ---
 
