@@ -258,9 +258,11 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
         emitAssetResolved(
           productSlug,
           // Map "products" to "local" for the event (both are local disk reads;
-          // the distinction is internal to the resolver).
+          // the distinction is internal to the resolver). Only include `file`
+          // for true local assets — "products" uses an absolute filesystem path
+          // that must not be exposed to clients via NDJSON.
           resolved.source === "genai" ? "genai" : "local",
-          resolved.source !== "genai" ? resolved.file : undefined,
+          resolved.source === "local" ? resolved.file : undefined,
         ),
       )
 
@@ -342,7 +344,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
 
             // ---- genai (only if missing) ----
             let master: Buffer
-            if (resolved.source === "local") {
+            if (resolved.source === "local" || resolved.source === "products") {
               master = localBaseImage!
             } else if (mode === "cheap") {
               // Already in cache (generated outside the ratio loop above).
