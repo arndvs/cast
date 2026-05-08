@@ -64,11 +64,13 @@ Loaded by `loadBrandProfile(brand)` at `/api/generate` entry; validated against 
 
 - slug (matches `brief.brand`)
 - brand (`brand.json` — `displayName`, `colors`, optional `tokens`)
-- voice (`voice.json` — `tone`, `do`, `dont`, `promptFragments`)
+- voice (`voice.json` — `tone`, `do`, `dont`, `promptFragments`, `negativePromptFragments`, `moodKeywords`, optional `skuFragments`)
 - bannedWords — **union** of `lib/cast/banned-words.ts` defaults (`getDefaultBannedWords()`) and `inputs/brands/[brand]/banned-words.json` (when present); deduped, lowercased. Defaults always apply. Missing brand file is silently skipped — the floor remains in force.
 - logoVariants[] (`logos/logos.json` — each `{ id, displayName, path, theme? }`; `path` resolved via `safeJoin` against `inputs/brands/[brand]/logos/`; `theme` is `"light" | "dark"` when present)
 - defaultLogoId (`logos.json` `default` — used when `brief.logoVariant` is absent)
 - fontPath (absolute, `safeJoin`-validated)
+- canVariants[] (optional — `products.json`; each `{ id, sku, file, pose, detail }`)
+- backgroundVariants[] (optional — `backgrounds.json`; each `{ id, file, ratio, sku, luminance }`)
 
 Cached in-process for 90 s. Missing directory → `BrandNotFoundError` → `404`. Missing required file → `BrandIncompleteError` → `400`. Schema violation → `BrandInvalidError` → `400`.
 
@@ -203,15 +205,15 @@ Using the Inform → Engage → Invite framework.
 
 **Engage — what the user can do:**
 
-- Click "Edit brief" — go back to S1 to fix the brief
-- Click "Retry" — rerun the same brief
+- Click "Edit brief" — go back to S1 to fix the brief and re-generate
 
-**Run idempotency:** Both **Generate** (from S1) and **Retry** (from S2′) clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products of the run, not preserved artifacts — the recursive clear ensures a failed run never leaves a stale `report.json` on disk claiming success. End state of any successful run is invariant under retry; on mid-run failure the partial creatives plus the new `brief.json` describe the current attempt and the prior `report.json` is gone. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call, and the campaign slug is regex-validated (`SLUG_RE`) before it enters `safeJoin`.
+**Note:** There is no direct "Retry" from the failed state. Recovery always routes through S1 (Editing) — the user clicks "Edit brief" (`goto-edit`), then clicks "Generate" (`generate`) from S1. This two-step path ensures the user can review and adjust the brief before spending another GenAI call.
+
+**Run idempotency:** Both **Generate** (from S1) and re-runs after failure clear `outputs/[campaign]/` recursively at run start, then immediately rewrite `brief.json` (before the per-product loop) and `report.json` (after the loop). `brief.json` and `report.json` are run-scoped products of the run, not preserved artifacts — the recursive clear ensures a failed run never leaves a stale `report.json` on disk claiming success. End state of any successful run is invariant under retry; on mid-run failure the partial creatives plus the new `brief.json` describe the current attempt and the prior `report.json` is gone. Cleared paths are validated through `safeJoin` against the `outputs` ROOT before any unlink call, and the campaign slug is regex-validated (`SLUG_RE`) before it enters `safeJoin`.
 
 **Invite — how they move to the next screen:**
 
 - Edit brief → Editing (S1)
-- Retry → Running (S2)
 
 ---
 
@@ -333,7 +335,7 @@ Dual-mode modal: **compliance violation** (badge ∈ WARN / FAIL, path is a real
 | preview prompt          | S1      | Expandable per-product prompt preview|
 | watch pipeline log      | S2      | Structured run view + collapsible raw log |
 | cancel run              | S2      | Cancel button → goto-edit            |
-| recover from failure    | S2′     | Error message + Edit / Retry buttons |
+| recover from failure    | S2′     | Error message + Edit Brief button    |
 | review output grid      | S3      | Market-grouped creative grid         |
 | filter creatives        | S3      | ResultsToolbar (status/ratio/market/search) |
 | toggle grid/list view   | S3      | View mode toggle                     |

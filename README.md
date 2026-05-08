@@ -222,15 +222,16 @@ Drop a directory under `inputs/brands/`:
 ```
 inputs/brands/[brand-slug]/
 ├── brand.json          # primary/accent colors (hex), tokens
-├── voice.json          # tone, do/don't lists, prompt fragments
-├── logos/              # corner-composited logo variants (four per brand: primary-on-light/dark, mono-white/black)
-│   ├── logos.json      # { default: variantId, variants: [{ id, displayName, file }] }
-│   ├── primary-on-light.png
-│   ├── primary-on-dark.png
-│   ├── mono-white.png
-│   └── mono-black.png
-├── font.ttf            # OFL display font
-└── banned-words.json?  # optional brand-specific terms (added on top of lib defaults — union, never replacement)
+├── voice.json          # tone, do/don't lists, prompt fragments, negative fragments, mood keywords, per-SKU overrides
+├── logos/              # corner-composited logo variants (PNG with alpha) — N per brand, descriptive naming
+│   ├── logos.json      # { default: variantId, variants: [{ id, displayName, file, theme? }] }
+│   └── *.png           # one file per variant declared in logos.json
+├── font.ttf | font.otf # OFL display font (loader accepts either)
+├── banned-words.json?  # optional brand-specific terms (added on top of lib defaults — union, never replacement)
+├── products.json?      # optional product-can manifest: [{ id, sku, file, pose, detail }]
+├── products/           # product-can cutout PNGs referenced by products.json
+├── backgrounds.json?   # optional background-plate manifest: [{ id, file, ratio, sku, luminance }]
+└── backgrounds/        # background-plate PNGs referenced by backgrounds.json
 ```
 
 Reference it from a brief: `"brand": "[brand-slug]"`. No code change. The repo ships two seed profiles — `inputs/brands/brisa/` (sparkling water) and `inputs/brands/volt/` (energy) — representing two sub-brands of the fictional Onda Beverages portfolio. Use them as templates. The recipe for reducing a brand book (HTML, PDF, Figma) into the JSON files above is in [docs/brand-extraction.md](docs/brand-extraction.md).
