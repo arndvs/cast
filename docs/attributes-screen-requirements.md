@@ -118,7 +118,6 @@ Using the Inform → Engage → Invite framework.
 - Form view: campaign name, brand, audience, message fields surfaced as readable form
 - JSON view: raw brief JSON with syntax highlighting, Zod `briefSchema` validation, parse error display, Apply/Reset buttons. `replaceBrief` action swaps the entire brief from parsed JSON.
 - GenAI mode badge — reads `NEXT_PUBLIC_CAST_GENAI_MODE` (default | cheap) at build time. Read-only; surfaces which model the run will hit before Generate fires. No runtime endpoint — the env is inlined at build, so the badge renders without a network round-trip.
-- Campaign name, brand, audience, message fields surfaced as readable form
 - Brand selector — dropdown listing every directory under `inputs/brands/` (slug + display name from `GET /api/brands`). Required; one brand per brief. Demo ships two profiles (`brisa`, `volt`) modeling sub-brands of the fictional Onda Beverages portfolio. On selection, S1 fetches `GET /api/brands/[slug]` to populate palette swatches, voice preview, the **union banned-words list** (lib defaults + brand file), the logo picker, and the prompt preview shown elsewhere on the screen.
 - Markets field — typeahead input accepting any conforming `<region>-<lang>` value; suggestion list seeds common values (`us-en`, `mx-es`, `de-de`, `jp-ja`)
 - Ratios picker — three pill toggles (`1:1`, `9:16`, `16:9`); default all checked; at least one must remain selected

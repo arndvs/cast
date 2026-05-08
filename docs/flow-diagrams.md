@@ -370,7 +370,7 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
 {
   "campaign": "summer-refresh-2026",
   "brand": "brisa",
-  "outputDir": "/abs/path/to/cast/outputs/summer-refresh-2026",
+  "outputDir": "outputs/summer-refresh-2026",
   "startedAt": "2026-05-07T10:00:00.000Z",
   "completedAt": "2026-05-07T10:02:34.000Z",
   "counts": {
@@ -416,7 +416,7 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
 
 - `creatives[].duration` is an optional non-negative number: elapsed seconds for that creative's pipeline pass (resolve → write). Omitted when the creative fails before timing is recorded.
 - `manifest.startedAt` / `manifest.completedAt` are optional ISO-8601 timestamps for the overall run. Both are omitted on legacy manifests.
-- `creatives[].path` is repo-relative `string` on success, `null` on failure. The grid renders a red placeholder tile for `null` paths. Join with `manifest.outputDir` (absolute) for filesystem operations; render `path` directly for repo-relative links.
+- `creatives[].path` is repo-relative `string` on success, `null` on failure. The grid renders a red placeholder tile for `null` paths. `manifest.outputDir` is also repo-relative (`outputs/<campaign>`); absolute filesystem paths are derived server-side via `safeJoin`.
 - `errors[]` is the dedicated failure log: every `null`-path creative has a corresponding entry. Top-level `counts.failed === errors.length`.
 - **Counts invariant:** `counts.generated + counts.reused === counts.succeeded`. Failed creatives do **not** increment `generated` / `reused` — those buckets are success-only. `flagged` and `failed` are independent axes: `flagged` counts successful creatives whose compliance badge is `WARN` or `FAIL`. A failed creative does not increment `flagged` even when a `write`-stage failure preserves a compliance object — `flagged` is gated on success, not on compliance presence.
 - `source` ∈ `'local' | 'genai'` reflects the **path attempted**, not the path that produced bytes: a `resolve`-stage failure (pre-placed file unreadable) carries `source: 'local'`; a `genai`-stage failure (OpenAI error or cap exhaustion) carries `source: 'genai'`. This keeps the failed-tile error mode in S4 informative about which input pathway broke.
@@ -439,7 +439,7 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
 - **S2** consumes the generate stream and renders log lines as they arrive.
 - **S3** hydrates from the **`complete` event's `manifest`** — no second `GET` to the filesystem, no race with disk writes.
 - **S2′ (Failed)** is triggered by an `{ "type": "error", "message": "..." }` event or a stream-level failure.
-- **S5 (Reveal)** uses `manifest.outputDir` for the server-action shell-out and as the copyable absolute path.
+- **S5 (Reveal)** resolves `manifest.outputDir` (repo-relative) to an absolute path server-side via `safeJoin` for the shell-out and copyable path.
 
 ---
 
