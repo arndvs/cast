@@ -8,12 +8,12 @@
 
 Six months ago, opening a SaaS dashboard was the only way to run a campaign. Today, an agent can call an API, get structured results back, and route them to the next system — with a human reviewing only the exceptions.
 
-Cast is designed for exactly this transition. The pipeline lives in `lib/cast/server/`. The UI is one caller. The Fastify API is another. The MCP transport is a third. All three callers hit the same code.
+Cast is designed for exactly this transition. Today the pipeline lives in `lib/cast/` and is called by Next.js route handlers (`app/api/*`). The target architecture extracts these into `lib/cast/server/` — a pure-logic layer that can be called by any transport. The UI is one caller. A future Fastify API is another. The MCP transport is a third. All three callers hit the same code.
 
 ```
-Human via UI        →  Next.js  →  lib/cast/server/
-Scheduler (cron)    →  Fastify  →  lib/cast/server/
-Agent via MCP       →  stdio / HTTP MCP  →  lib/cast/server/
+Human via UI        →  Next.js (today)  →  lib/cast/server/
+Scheduler (cron)    →  Fastify (planned) →  lib/cast/server/
+Agent via MCP       →  stdio / HTTP MCP (planned) →  lib/cast/server/
 ```
 
 The UI doesn't disappear — it becomes the human-review layer. The agent does the work; the human validates the output, approves what's ready, and flags what needs attention.
@@ -22,11 +22,11 @@ The UI doesn't disappear — it becomes the human-review layer. The agent does t
 
 ## MCP transport — stdio first, HTTP later
 
-### Phase 1: stdio (works today, zero infrastructure)
+### Phase 1: stdio (zero infrastructure)
 
-The stdio transport runs as a subprocess. Claude Desktop, Claude Code, VS Code MCP extension, and most LLM agent frameworks support it out of the box.
+The stdio transport runs as a subprocess. Claude Desktop, Claude Code, VS Code MCP extension, and most LLM agent frameworks support it out of the box. Implementation is tracked in [backend-evolution-plan.md](backend-evolution-plan.md) Slice 14b.
 
-**Connect Cast to your agent in 60 seconds:**
+**Connect Cast to your agent (once `lib/cast/server/mcp.ts` is implemented):**
 
 ```bash
 # Run the MCP server
@@ -52,7 +52,7 @@ npx tsx lib/cast/server/mcp.ts
 }
 ```
 
-No server to deploy. No auth to configure. The agent starts the process and communicates over stdio. This is the implementation path for the POC and interview demo.
+No server to deploy. No auth to configure. The agent starts the process and communicates over stdio. This is the planned implementation path for the POC and interview demo. Today, Cast's API surface is the Next.js route handlers under `app/api/*`.
 
 The `McpServer` constructor includes an `instructions` string — a short description of what Cast does and how to start. This appears in Claude Desktop's MCP panel and is used by agent frameworks for context. Example: *"Cast generates localized social ad creatives from brand profiles. Start with list_brands or the cast://brands resource, load a brand profile, then generate_campaign."*
 
@@ -114,7 +114,7 @@ The `PipelineEvent` types (`step`, `asset_resolved`, `creative_ready`, `complian
 
 ## The 9 core MCP tools
 
-Defined in `lib/cast/server/mcp.ts`. All 9 wrap existing `lib/cast/server/` functions. The first 9 map to code that already exists or is being built in Slices 1–8. Tools 10–13 are added when Qdrant is in place (Slices 11–13).
+This section describes the **proposed MCP tool surface** — the target interface for `lib/cast/server/mcp.ts` once implemented (see [backend-evolution-plan.md](backend-evolution-plan.md) Slice 14). The first 9 tools map to pipeline logic that already exists or is being built in Slices 1–8. Tools 10–13 are added when Qdrant is in place (Slices 11–13).
 
 Tool annotations control how agents use each tool:
 - `readOnlyHint: true` — safe to call speculatively, no state changes
@@ -603,7 +603,7 @@ new ResourceTemplate("cast://brands/{slug}", {
 })
 ```
 
-**On tool inputSchemas:** The `brand` and `campaign` fields on tools like `get_brand_profile`, `generate_campaign`, and `get_manifest` use `completable()` to provide autocomplete:
+**On tool inputSchemas (planned):** When the MCP server is implemented, the `brand` and `campaign` fields on tools like `get_brand_profile`, `generate_campaign`, and `get_manifest` will use `completable()` to provide autocomplete. Illustrative example using `@modelcontextprotocol/sdk`:
 
 ```typescript
 import { completable } from "@modelcontextprotocol/sdk/server/completable.js"
@@ -682,7 +682,7 @@ The S3 approval queue is the interface between agent actions and human review. A
 
 ## Ad platform provider interface
 
-Defined in `lib/cast/server/integrations/ads-performance.ts`. Any ad platform is plugged in by implementing this interface.
+Target location: `lib/cast/server/integrations/ads-performance.ts` (not yet implemented — see [backend-evolution-plan.md](backend-evolution-plan.md) Slice 13). Any ad platform will be plugged in by implementing this interface.
 
 ```typescript
 export interface AdsPerformanceProvider {
@@ -690,8 +690,8 @@ export interface AdsPerformanceProvider {
   fetchFatigueSignals(brand: string, market: string): Promise<FatigueSignal[]>
 }
 
-// ManualImportProvider — works today
-// Reads from POST /api/performance payloads; no external API required
+// ManualImportProvider — planned first implementation
+// Will read from POST /api/performance payloads; no external API required
 export class ManualImportProvider implements AdsPerformanceProvider { ... }
 
 // MetaAdsProvider — interface stubbed, implementation TODO
@@ -728,7 +728,7 @@ When the monorepo needs to become two services, the split is mechanical:
 | MCP stdio transport | Stays in same Fastify repo | `npx tsx lib/cast/server/mcp.ts` unchanged |
 | MCP HTTP transport | Added to Fastify repo | `/mcp` endpoint + `StreamableHTTPServerTransport` |
 
-`lib/cast/server/index.ts` barrel export is already the future Fastify service contract. The split is not an architectural decision — the architecture was proven in the monorepo first.
+The existing `lib/cast/` modules are the foundation for the future Fastify service contract. Once extracted to `lib/cast/server/`, the split is mechanical — not an architectural decision. The architecture is proven in the monorepo first.
 
 ---
 
@@ -751,28 +751,36 @@ A $250K/year Salesforce contract doesn't get replaced — Cast plugs into it as 
 
 ## Environment variables
 
+### Implemented today
+
 ```bash
-# Storage
+# GenAI
+OPENAI_API_KEY=
+```
+
+### Planned (added as features are built)
+
+```bash
+# Storage (Slice 9)
 CAST_STORAGE=local                        # or "azure"
 AZURE_STORAGE_CONNECTION_STRING=
 
-# Vector DB (optional — degrades gracefully)
+# Vector DB — Slices 11-12 (degrades gracefully when absent)
 QDRANT_URL=
 QDRANT_API_KEY=
 
-# Ads provider
+# Ads provider (Slice 13)
 CAST_ADS_PROVIDER=manual                  # or "meta" when MetaAdsProvider is wired
 META_APP_ID=
 META_APP_SECRET=
 META_ACCESS_TOKEN=
 META_AD_ACCOUNT_ID=
 
-# Fatigue
+# Fatigue (Slice 12)
 CAST_FATIGUE_THRESHOLD=45
 
-# GenAI
+# GenAI mode (Slice 6)
 CAST_GENAI_MODE=default                   # or "cheap"
-OPENAI_API_KEY=
 
 # API split (when Fastify repo exists)
 NEXT_PUBLIC_API_URL=http://localhost:4000
