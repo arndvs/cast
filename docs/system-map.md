@@ -21,14 +21,20 @@ graph LR
     Report["Report<br/>report.json<br/>startedAt · completedAt"]
     Upload["Upload Preview<br/>per-product · client-side"]
     LogoVariant["Logo Variant<br/>id · displayName · path · theme?"]
+    CanVariant["Can Variant<br/>id · sku · file · pose · detail"]
+    BackgroundVariant["Background Variant<br/>id · file · ratio · sku · luminance"]
 
     Brief -->|lists| Product
     Brief -->|carries| Message
     Brief -->|selects| LogoVariant
     Product -->|resolves to| InputAsset
     Product -.->|falls back to| HeroImage
+    Product -->|matches| CanVariant
+    Product -->|matches| BackgroundVariant
     InputAsset -->|source for| Creative
     HeroImage -->|source for| Creative
+    CanVariant -->|composited onto| Creative
+    BackgroundVariant -->|composited onto| Creative
     Message -->|composited onto| Creative
     Creative -->|evaluated by| Compliance
     Creative -->|listed in| Report
@@ -87,7 +93,7 @@ The verbs from the stories cluster into seven subsystems. Anything inside the da
 graph TB
     subgraph External["External / filesystem"]
         Inputs[("inputs/assets/<br/>product photos")]
-        BrandProfile[("inputs/brands/[brand]/<br/>brand.json · voice.json · logos/ + logos.json · font · banned-words.json?<br/>loaded via loadBrandProfile · Zod-validated · 90s in-process cache<br/>bannedWords = lib defaults ∪ brand file")]
+        BrandProfile[("inputs/brands/[brand]/<br/>brand.json · voice.json · logos/ + logos.json · font · banned-words.json?<br/>products.json? · products/ · backgrounds.json? · backgrounds/<br/>loaded via loadBrandProfile · Zod-validated · 90s in-process cache<br/>bannedWords = lib defaults ∪ brand file")]
         subgraph CampaignOut["outputs/[campaign]/"]
             Outputs[("[market]/[product]/[ratio].png")]
             BriefFile[("brief.json")]
@@ -312,5 +318,4 @@ A sanity check that every user-story verb has a home in the system map. **Source
 | write `report.json` (counts, creatives[], errors[])                | Reporter                                                               | Story 1 + Story 2                            |
 | aggregate step failures into `errors[]` (run never aborts)         | Run Orchestrator → Reporter                                            | Story 1 ("not blocked") + README             |
 | run idempotency: clear `outputs/[campaign]/` at run start           | Run Orchestrator (Generate + Retry)                                    | Design addition              |
-
 

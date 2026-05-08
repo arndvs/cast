@@ -49,8 +49,8 @@ flowchart TB
 
     S2 -->|event: complete<br/>(carries manifest)| S3
     S2 -->|event: error| S2Err["S2′ · Failed state<br/>error message + retry · edit brief"]
-    S2Err -->|edit| S1
     S2Err -->|retry| S2
+    S2Err -->|edit| S1
 
     subgraph S3["S3 · Output Grid"]
         Grid["Row per product<br/>cols: 1:1 · 9:16 · 16:9<br/>(rendered from manifest)"]
@@ -150,7 +150,7 @@ flowchart TB
 
     S1["S1 · Brief Editor<br/>+ Drop zones + Detected Assets"]:::mvp
     S2["S2 · Run View<br/>(live pipeline log)"]:::mvp
-    S2Err["S2′ · Failed state<br/>error message + retry/edit"]:::mvp
+    S2Err["S2′ · Failed state<br/>error message + edit brief"]:::mvp
     S3["S3 · Output Grid<br/>(creatives + badges + path)"]:::mvp
     S4["S4 · Creative Detail<br/>(drill-in on flagged or failed tile)"]:::mvp
     S5["S5 · Reveal in file explorer<br/>(server action + copyable path)"]:::mvp
@@ -454,15 +454,18 @@ Cast serves arbitrary clients; brand identity is a per-campaign input, not a con
 ```
 inputs/brands/[brand-slug]/
 ├── brand.json          # primary/accent colors (hex), tokens
-├── voice.json          # tone, do/don't lists, prompt fragments
-├── logos/              # corner-composited logo variants (PNG with alpha)
-│   ├── logos.json      # { default: variantId, variants: [{ id, displayName, file }] }
-│   ├── primary-on-light.png
-│   ├── primary-on-dark.png
-│   ├── mono-white.png
-│   └── mono-black.png
-├── font.ttf            # OFL-licensed display font for text overlay (or font.otf — loader accepts either)
-└── banned-words.json?  # additive layer — merged with library defaults at load time
+├── voice.json          # tone, do/don't lists, prompt fragments, negative fragments, mood keywords, per-SKU overrides
+├── logos/              # corner-composited logo variants (PNG with alpha) — N per brand, descriptive naming
+│   ├── logos.json      # { default: variantId, variants: [{ id, displayName, file, theme? }] }
+│   └── *.png           # one file per variant declared in logos.json (e.g. lockup-on-light.png, wordmark-on-dark.png)
+├── font.ttf | font.otf # OFL-licensed display font for text overlay (loader accepts either)
+├── banned-words.json?  # additive layer — merged with library defaults at load time
+├── products.json?      # optional product-can manifest: { items: [{ id, sku, file: "products/<name>.png", pose, detail }] }
+├── products/           # product-can cutout PNGs referenced by products.json via `items[].file` paths
+├── backgrounds.json?   # optional background-plate manifest: { items: [{ id, file: "backgrounds/<name>.png", ratio, sku, luminance }] }
+├── backgrounds/        # background-plate PNGs referenced by backgrounds.json via `items[].file` paths
+├── refs/               # reference/inspiration compositions (not loaded at runtime)
+└── README.md           # per-brand documentation (not loaded at runtime)
 ```
 
 The repo ships two demo profiles (`inputs/brands/brisa/` and `inputs/brands/volt/`), modeling the sub-brands of a fictional Onda Beverages portfolio. Onboarding a new brand is a directory drop — no code change. The Asset Resolver, prompt builder, and compliance checker all read from this directory based on `brief.brand`. The reduction from each brand's HTML guidelines under [docs/design/](design/) into the JSON files above is documented in [brand-extraction.md](brand-extraction.md).
@@ -484,19 +487,22 @@ Response: {
   "displayName": "Brisa",
   "colors": { "primary": "#...", "accent": "#...", "background?": "#...", "text?": "#..." },
   "tokens": { /* optional brand-specific design tokens */ },
-  "voice": { "tone": "...", "do": [...], "dont": [...], "promptFragments": [...] },
+  "voice": { "tone": "...", "do": [...], "dont": [...], "promptFragments": [...], "negativePromptFragments": [...], "moodKeywords": [...], "skuFragments": { ... } },
   "bannedWords": [
     /* union: lib defaults from `lib/cast/banned-words.ts` (`getDefaultBannedWords()`)
        + brand-specific terms from `inputs/brands/[brand]/banned-words.json`,
        deduped, lowercased. Defaults always apply — even when the brand file is absent. */
   ],
   "logos": {
-    "default": "primary-on-light",
+    "default": "lockup-on-light",
     "variants": [
-      { "id": "primary-on-light", "displayName": "Primary · on light", "theme": "light", "url": "/api/brands/brisa/logos/primary-on-light" },
-      { "id": "primary-on-dark",  "displayName": "Primary · on dark",  "theme": "dark",  "url": "/api/brands/brisa/logos/primary-on-dark"  },
-      { "id": "mono-white",       "displayName": "Mono · white",       "url": "/api/brands/brisa/logos/mono-white"       },
-      { "id": "mono-black",       "displayName": "Mono · black",       "url": "/api/brands/brisa/logos/mono-black"       }
+      { "id": "lockup-on-light",      "displayName": "Lockup · on light",      "theme": "light", "url": "/api/brands/brisa/logos/lockup-on-light" },
+      { "id": "lockup-on-dark",       "displayName": "Lockup · on dark",       "theme": "dark",  "url": "/api/brands/brisa/logos/lockup-on-dark" },
+      { "id": "wordmark-on-light",    "displayName": "Wordmark · on light",    "theme": "light", "url": "/api/brands/brisa/logos/wordmark-on-light" },
+      { "id": "wordmark-on-dark",     "displayName": "Wordmark · on dark",     "theme": "dark",  "url": "/api/brands/brisa/logos/wordmark-on-dark" },
+      { "id": "wordmark-aqua-on-dark","displayName": "Wordmark aqua · on dark","theme": "dark",  "url": "/api/brands/brisa/logos/wordmark-aqua-on-dark" },
+      { "id": "droplet-on-light",     "displayName": "Droplet · on light",     "theme": "light", "url": "/api/brands/brisa/logos/droplet-on-light" },
+      { "id": "droplet-on-dark",      "displayName": "Droplet · on dark",      "theme": "dark",  "url": "/api/brands/brisa/logos/droplet-on-dark" }
     ]
   }
 }
@@ -520,7 +526,7 @@ The **list** handler enumerates `inputs/brands/*/`, validates each subdirectory'
 
 - Verifies `inputs/brands/[brand]/` exists → else throws `BrandNotFoundError` → mapped to `404 { errors: [{ path: ['brand'], message: 'unknown brand: ...' }] }`.
 - Verifies required files exist (`brand.json`, `voice.json`, `logos/logos.json`, at least one PNG referenced by `logos.json` `variants[].file` under `logos/`, `font.ttf` or `font.otf`) → else throws `BrandIncompleteError` → mapped to `400 { errors: [{ path: ['brand', '<missing-file>'], message: '...' }] }`.
-- Validates each file against the matching sub-schema of `brandProfileSchema` (see [Brand profile schema](#brand-profile-schema-contract)) — `brand.json` against `brandJsonSchema`, `voice.json` against `voiceJsonSchema`, `banned-words.json` (when present) against `bannedWordsSchema`, `logos.json` against `logosManifestSchema`. `font.ttf` is existence-checked only (no parse). Any failure throws `BrandInvalidError` → mapped to `400` with the Zod issue path.
+- Validates each file with its corresponding schema (see [Brand profile schema](#brand-profile-schema-contract)) — `brand.json` against `brandJsonSchema`, `voice.json` against `voiceJsonSchema`, `banned-words.json` (when present) against `bannedWordsSchema`, and `logos.json` against `logosManifestSchema`. Separately, `loadBrandProfile` also validates `products.json` (when present) against `productsManifestSchema` and `backgrounds.json` (when present) against `backgroundsManifestSchema`. `font.ttf`/`font.otf` is existence-checked only (no parse). Any failure throws `BrandInvalidError` → mapped to `400` with the Zod issue path.
 - On success, returns the parsed `BrandProfile` and caches it in-process for 90 s (cheap reads on repeat runs in the same `next dev` session). **The cache is keyed on slug with a fixed 90 s TTL; there is no mtime invalidation.** Edits to `inputs/brands/[brand]/*` mid-session may not take effect until the cache expires — accepted POC behavior, documented in the README assumptions. Restart `next dev` to force-refresh.
 
 This is the security boundary for the brand axis: every field that becomes a path segment is regex-validated by the schema **and** existence-validated by the loader before anything touches the filesystem.
@@ -547,11 +553,20 @@ export const brandJsonSchema = z.object({
   tokens: z.record(z.string(), z.string()).optional(),
 });
 
+export const skuFragmentSchema = z.object({
+  promptFragments: z.array(z.string()).default([]),
+  accentHex: z.string().regex(HEX).optional(),
+  sceneMood: z.string().optional(),
+});
+
 export const voiceJsonSchema = z.object({
   tone: z.string().min(1),
   do: z.array(z.string()).default([]),
   dont: z.array(z.string()).default([]),
   promptFragments: z.array(z.string()).default([]),
+  negativePromptFragments: z.array(z.string()).default([]),
+  moodKeywords: z.array(z.string()).default([]),
+  skuFragments: z.record(z.string(), skuFragmentSchema).optional(),
 });
 
 export const bannedWordsSchema = z.array(z.string().min(1));
@@ -590,6 +605,33 @@ export const logosManifestSchema = z
     });
   });
 
+// Product-can variant schemas (optional products.json)
+export const canPoseSchema = z.enum(["upright-center", "tilt-left", "tilt-right"]);
+export const canDetailSchema = z.enum(["clean", "condensation"]);
+export const canItemSchema = z.object({
+  id: z.string().regex(SLUG_RE),
+  sku: z.string().min(1),
+  file: z.string().min(1),
+  pose: canPoseSchema,
+  detail: canDetailSchema.default("clean"),
+});
+export const productsManifestSchema = z.object({
+  items: z.array(canItemSchema).min(1),
+});
+
+// Background-plate schemas (optional backgrounds.json)
+export const backgroundLuminanceSchema = z.enum(["light", "dark"]);
+export const backgroundItemSchema = z.object({
+  id: z.string().regex(SLUG_RE),
+  file: z.string().min(1),
+  ratio: RATIO,
+  sku: z.string().min(1),
+  luminance: backgroundLuminanceSchema,
+});
+export const backgroundsManifestSchema = z.object({
+  items: z.array(backgroundItemSchema).min(1),
+});
+
 // Aggregator — the external contract `loadBrandProfile` validates against.
 // system-map §3 references this symbol by name; the per-file schemas
 // above are its building blocks.
@@ -608,6 +650,20 @@ export type BrandProfile = {
   logoVariants: { id: string; displayName: string; path: string; theme?: "light" | "dark" }[]; // each path safeJoin-validated
   defaultLogoId: string;
   fontPath: string; // absolute, safeJoin-validated
+  canVariants: Array<{
+    id: string;
+    sku: string;
+    file: string;
+    pose: z.infer<typeof canPoseSchema>;
+    detail: z.infer<typeof canDetailSchema>;
+  }>;
+  backgroundVariants: Array<{
+    id: string;
+    file: string;
+    ratio: z.infer<typeof RATIO>;
+    sku: string;
+    luminance: z.infer<typeof backgroundLuminanceSchema>;
+  }>;
 };
 ```
 
@@ -864,5 +920,4 @@ Captured here so the POC's omissions are deliberate, not accidental:
 - **Parent brand inheritance (Onda → Brisa, Volt)** — explicitly out of POC. The Onda Beverages framing is narrative-only: it gives Brisa and Volt a believable shared universe (one corporate parent, two sub-brands with contrasting voices) so the demo's multi-brand story is concrete instead of abstract. The HTML brand guidelines under [docs/design/](design/) reference Onda for that context — they are designer-facing artifacts, not a runtime contract. Cast does NOT model parent-brand inheritance at runtime: there is no `inputs/brands/onda/` profile loaded by `loadBrandProfile`, no token cascade from parent → child, no shared banned-words/voice resolution chain. Each sub-brand's `inputs/brands/[brand]/` directory is fully self-contained. Modeling true inheritance (parent profile + child overrides with merge precedence rules) composes with **Multi-brand campaign briefs** above and **Per-market brand variations** below; all three are v2.
 - **Motion creatives** — animated outputs (5-second loops, `.gif` and `.mp4` parallel to `.png` per ratio). Pipeline fan-out becomes `(product × market × ratio × format)`. Resolver, compositor, and storage each gain a format axis. Compliance gains motion-specific checks (frame-1 logo presence, looping integrity).
 - **Color compliance validation** — pixel-sample the headline bar region of the final composite and compare its average color to the brand primary via Euclidean RGB distance. Deferred because the 78% opacity overlay over AI-generated backgrounds produces sampled colors that vary wildly by scene (e.g. Volt `#E8FF1A` over dark energy-drink imagery drops to `{93, 88, 50}`, distance ≈ 219). A reliable gate requires either (a) a perceptually-uniform color space (CIELAB ΔE), (b) alpha-aware sampling that accounts for the composited background, or (c) a WARN-only mode that surfaces distance without failing. Until then, the compliance stage checks logo presence and banned words only.
-
 
