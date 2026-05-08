@@ -2,16 +2,16 @@
 
 > **Status:** Plan only — no code changes.
 > **Date:** 2026-05-07
-> **Branch:** `dev`
-> **Goal:** Evolve the Cast POC from local-filesystem storage to an agent-ready creative infrastructure layer with Azure Blob Storage, image metadata pipeline, Qdrant vector database, and MCP server — all within the monorepo before splitting.
+> **Branch:** `v2-backend-evolution`
+> **Goal:** Evolve the Cast POC from local-filesystem storage to an agent-ready creative infrastructure layer with Azure Blob Storage, image metadata pipeline, Qdrant vector database, and MCP server — all within the monorepo before splitting to a separate service.
 
 ---
 
 ## 1. Context
 
-Cast is a POC for Adobe FDE that generates localized social ad creatives from a campaign brief. The current architecture is a Next.js 16 monorepo where **all state is filesystem-based** — brand configs read from `inputs/brands/`, product photos from `inputs/assets/`, and generated outputs written to `outputs/[campaign]/`. There is no database, no cloud storage, and no vector search.
+Cast is a social ad creatives from a campaign brief. The current architecture is a Next.js 16 monorepo where **all state is filesystem-based** — brand configs read from `inputs/brands/`, product photos from `inputs/assets/`, and generated outputs written to `outputs/[campaign]/`. There is no database, no cloud storage, and no vector search.
 
-The transcript conversation identified five backend capabilities needed to move from POC to production-worthy:
+Cast has nine backend capabilities needed to move from v1 to v2 to be production-worthy:
 
 1. **Azure Blob Storage** — replace all local file I/O
 2. **Image Metadata Pipeline** — auto-analyze generated images and persist structured metadata
