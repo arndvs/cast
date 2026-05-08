@@ -48,7 +48,8 @@ flowchart TB
     end
 
     S2 -->|event: complete<br/>(carries manifest)| S3
-    S2 -->|event: error| S2Err["S2′ · Failed state<br/>error message + edit brief"]
+    S2 -->|event: error| S2Err["S2′ · Failed state<br/>error message + retry · edit brief"]
+    S2Err -->|retry| S2
     S2Err -->|edit| S1
 
     subgraph S3["S3 · Output Grid"]
@@ -459,10 +460,10 @@ inputs/brands/[brand-slug]/
 │   └── *.png           # one file per variant declared in logos.json (e.g. lockup-on-light.png, wordmark-on-dark.png)
 ├── font.ttf | font.otf # OFL-licensed display font for text overlay (loader accepts either)
 ├── banned-words.json?  # additive layer — merged with library defaults at load time
-├── products.json?      # optional product-can manifest: [{ id, sku, file, pose, detail }]
-├── products/           # product-can cutout PNGs referenced by products.json
-├── backgrounds.json?   # optional background-plate manifest: [{ id, file, ratio, sku, luminance }]
-├── backgrounds/        # background-plate PNGs referenced by backgrounds.json
+├── products.json?      # optional product-can manifest: { items: [{ id, sku, file: "products/<name>.png", pose, detail }] }
+├── products/           # product-can cutout PNGs referenced by products.json via `items[].file` paths
+├── backgrounds.json?   # optional background-plate manifest: { items: [{ id, file: "backgrounds/<name>.png", ratio, sku, luminance }] }
+├── backgrounds/        # background-plate PNGs referenced by backgrounds.json via `items[].file` paths
 ├── refs/               # reference/inspiration compositions (not loaded at runtime)
 └── README.md           # per-brand documentation (not loaded at runtime)
 ```
@@ -525,7 +526,7 @@ The **list** handler enumerates `inputs/brands/*/`, validates each subdirectory'
 
 - Verifies `inputs/brands/[brand]/` exists → else throws `BrandNotFoundError` → mapped to `404 { errors: [{ path: ['brand'], message: 'unknown brand: ...' }] }`.
 - Verifies required files exist (`brand.json`, `voice.json`, `logos/logos.json`, at least one PNG referenced by `logos.json` `variants[].file` under `logos/`, `font.ttf` or `font.otf`) → else throws `BrandIncompleteError` → mapped to `400 { errors: [{ path: ['brand', '<missing-file>'], message: '...' }] }`.
-- Validates each file against the matching sub-schema of `brandProfileSchema` (see [Brand profile schema](#brand-profile-schema-contract)) — `brand.json` against `brandJsonSchema`, `voice.json` against `voiceJsonSchema`, `banned-words.json` (when present) against `bannedWordsSchema`, `logos.json` against `logosManifestSchema`, `products.json` (when present) against `productsManifestSchema`, `backgrounds.json` (when present) against `backgroundsManifestSchema`. `font.ttf`/`font.otf` is existence-checked only (no parse). Any failure throws `BrandInvalidError` → mapped to `400` with the Zod issue path.
+- Validates each file with its corresponding schema (see [Brand profile schema](#brand-profile-schema-contract)) — `brand.json` against `brandJsonSchema`, `voice.json` against `voiceJsonSchema`, `banned-words.json` (when present) against `bannedWordsSchema`, and `logos.json` against `logosManifestSchema`. Separately, `loadBrandProfile` also validates `products.json` (when present) against `productsManifestSchema` and `backgrounds.json` (when present) against `backgroundsManifestSchema`. `font.ttf`/`font.otf` is existence-checked only (no parse). Any failure throws `BrandInvalidError` → mapped to `400` with the Zod issue path.
 - On success, returns the parsed `BrandProfile` and caches it in-process for 90 s (cheap reads on repeat runs in the same `next dev` session). **The cache is keyed on slug with a fixed 90 s TTL; there is no mtime invalidation.** Edits to `inputs/brands/[brand]/*` mid-session may not take effect until the cache expires — accepted POC behavior, documented in the README assumptions. Restart `next dev` to force-refresh.
 
 This is the security boundary for the brand axis: every field that becomes a path segment is regex-validated by the schema **and** existence-validated by the loader before anything touches the filesystem.
@@ -743,6 +744,7 @@ stateDiagram-v2
     Running --> Failed: run-error
     Running --> Editing: goto-edit (cancel)
     Failed --> Editing: goto-edit
+    Failed --> Running: generate (retry)
     Complete: S3 — Grid visible<br/>badges rendered<br/>tiles clickable
     Complete --> DetailOpen: open-detail
     DetailOpen: S4 — Creative Detail dialog over grid

@@ -228,9 +228,9 @@ inputs/brands/[brand-slug]/
 │   └── *.png           # one file per variant declared in logos.json
 ├── font.ttf | font.otf # OFL display font (loader accepts either)
 ├── banned-words.json?  # optional brand-specific terms (added on top of lib defaults — union, never replacement)
-├── products.json?      # optional product-can manifest: [{ id, sku, file, pose, detail }]
+├── products.json?      # optional product-can manifest: { items: [{ id, sku, file: "products/<name>.png", pose, detail }] }
 ├── products/           # product-can cutout PNGs referenced by products.json
-├── backgrounds.json?   # optional background-plate manifest: [{ id, file, ratio, sku, luminance }]
+├── backgrounds.json?   # optional background-plate manifest: { items: [{ id, file: "backgrounds/<name>.png", ratio, sku, luminance }] }
 └── backgrounds/        # background-plate PNGs referenced by backgrounds.json
 ```
 

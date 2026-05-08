@@ -21,7 +21,7 @@ Brisa and Volt are the only two brands that need extraction. Onboarding a real c
 
 ## Schema reduction
 
-`loadBrandProfile` validates each per-brand file against the matching sub-schema of `brandProfileSchema` — `brand.json` → `brandJsonSchema`, `voice.json` → `voiceJsonSchema`, `banned-words.json` (when present) → `bannedWordsSchema`, `logos/logos.json` → `logosManifestSchema`, `products.json` (when present) → `productsManifestSchema`, `backgrounds.json` (when present) → `backgroundsManifestSchema`. `font.ttf` (or `font.otf`) is existence-checked only (no parse). The HTML carries far more than the schema accepts; the table below names exactly what the runtime reads.
+`loadBrandProfile` validates each per-brand file with its corresponding schema. The core runtime profile contract is `brandProfileSchema`, whose inputs are `brand.json` → `brandJsonSchema`, `voice.json` → `voiceJsonSchema`, `banned-words.json` (when present) → `bannedWordsSchema`, and `logos/logos.json` → `logosManifestSchema`. The optional manifests are loaded and validated separately during `loadBrandProfile` — `products.json` (when present) → `productsManifestSchema`, `backgrounds.json` (when present) → `backgroundsManifestSchema`. `font.ttf` (or `font.otf`) is existence-checked only (no parse). The HTML carries far more than the schema accepts; the table below names exactly what the runtime reads.
 
 ### `brand.json`
 
@@ -93,7 +93,7 @@ Product-can cutout manifest. When present, `loadBrandProfile` validates against 
 | --- | --- | --- |
 | `items[].id`     | slug   | Unique identifier for the product can variant |
 | `items[].sku`    | string | SKU matching `brief.products[].sku` |
-| `items[].file`   | string | Filename in `products/` directory |
+| `items[].file`   | string | Path like `products/<file>.png` (relative to brand dir) |
 | `items[].pose`   | enum   | `"upright-center"` \| `"tilt-left"` \| `"tilt-right"` |
 | `items[].detail` | enum   | `"clean"` (default) \| `"condensation"` |
 
@@ -104,7 +104,7 @@ Background-plate manifest. When present, `loadBrandProfile` validates against `b
 | JSON path | Type | Notes |
 | --- | --- | --- |
 | `items[].id`        | slug   | Unique identifier for the background plate |
-| `items[].file`      | string | Filename in `backgrounds/` directory |
+| `items[].file`      | string | Path like `backgrounds/<file>.png` (relative to brand dir) |
 | `items[].ratio`     | enum   | `"1x1"` \| `"9x16"` \| `"16x9"` |
 | `items[].sku`       | string | SKU this background is designed for |
 | `items[].luminance` | enum   | `"light"` \| `"dark"` — used for logo variant auto-selection (v2) |
