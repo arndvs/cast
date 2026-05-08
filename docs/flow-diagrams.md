@@ -371,6 +371,8 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
   "campaign": "summer-refresh-2026",
   "brand": "brisa",
   "outputDir": "/abs/path/to/cast/outputs/summer-refresh-2026",
+  "startedAt": "2026-05-07T10:00:00.000Z",
+  "completedAt": "2026-05-07T10:02:34.000Z",
   "counts": {
     "requested": 12,
     "succeeded": 11,
@@ -389,7 +391,8 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
       "compliance": {
         "badge": "OK",
         "checks": { "logoPresent": true, "bannedWords": [] }
-      }
+      },
+      "duration": 4.2
     },
     {
       "product": "brisa-berry",
@@ -411,6 +414,8 @@ Both files are `safeJoin(outputDir, name)` writes; `outputDir` is itself derived
 }
 ```
 
+- `creatives[].duration` is an optional non-negative number: elapsed seconds for that creative's pipeline pass (resolve → write). Omitted when the creative fails before timing is recorded.
+- `manifest.startedAt` / `manifest.completedAt` are optional ISO-8601 timestamps for the overall run. Both are omitted on legacy manifests.
 - `creatives[].path` is repo-relative `string` on success, `null` on failure. The grid renders a red placeholder tile for `null` paths. Join with `manifest.outputDir` (absolute) for filesystem operations; render `path` directly for repo-relative links.
 - `errors[]` is the dedicated failure log: every `null`-path creative has a corresponding entry. Top-level `counts.failed === errors.length`.
 - **Counts invariant:** `counts.generated + counts.reused === counts.succeeded`. Failed creatives do **not** increment `generated` / `reused` — those buckets are success-only. `flagged` and `failed` are independent axes: `flagged` counts successful creatives whose compliance badge is `WARN` or `FAIL`. A failed creative does not increment `flagged` even when a `write`-stage failure preserves a compliance object — `flagged` is gated on success, not on compliance presence.
@@ -499,6 +504,14 @@ Response: {
 GET /api/brands/[slug]/logos/[id]
 Response: image/png  (the variant file, served through safeJoin against ROOTS.inputs;
                      `inputs/` is NOT exposed as a static tree — every byte ships through this proxy)
+
+GET /api/outputs/[...path]
+Response: image/png  (read-only proxy for generated creatives in `outputs/`;
+                     only `.png` extension whitelisted; path validated via safeJoin
+                     against ROOTS.outputs; Cache-Control: no-store)
+  — used by the output grid to render creative thumbnails without exposing
+    the filesystem tree directly. Path traversal beyond the outputs root
+    is rejected by safeJoin before any read.
 ```
 
 The **list** handler enumerates `inputs/brands/*/`, validates each subdirectory's slug against `SLUG_RE`, and reads `displayName` from `brand.json`. The **detail** handler additionally returns the union banned-words list (lib defaults + brand file) and the parsed `logos.json` with proxied variant URLs. Adding a profile makes it available in the UI on next page load — no rebuild.
@@ -663,22 +676,50 @@ This is a string check, not OCR — the server composited the text itself, so OC
 
 Because S1/S2/S3 are states of one page, here is the state machine for the main route `/`. Useful for the next step (wireframes) so we know what each state needs to render.
 
+**Implementation note:** S1–S3 are the three tab-based screens (`brief-editor`, `pipeline-run`, `output-grid`), navigated via `ScreenTabs`. S4 is a Radix Dialog overlay on S3. S5 is a server action (not a screen). The `AppScreen` type is `"brief-editor" | "pipeline-run" | "output-grid"`. The `RunState` type is `"editing" | "running" | "complete" | "failed"`.
+
 ```mermaid
 stateDiagram-v2
     [*] --> Editing
     Editing: S1 — Brief Editor visible<br/>Generate button enabled
-    Editing --> Running: click Generate
+    Editing --> Running: generate
     Running: S2 — Log streaming<br/>brief locked, no Generate
-    Running --> Complete: run finishes
-    Running --> Failed: run errors
-    Failed --> Editing: click "edit brief"
-    Failed --> Running: click "retry"
+    Running --> Complete: pipeline-event (complete)
+    Running --> Failed: run-error
+    Running --> Editing: goto-edit (cancel)
+    Failed --> Editing: goto-edit
+    Failed --> Running: generate (retry)
     Complete: S3 — Grid visible<br/>badges rendered<br/>tiles clickable
-    Complete --> DetailOpen: click flagged or failed tile
-    DetailOpen: S4 — Creative Detail modal over grid
-    DetailOpen --> Complete: close modal
-    Complete --> Editing: click "edit brief & re-run"
+    Complete --> DetailOpen: open-detail
+    DetailOpen: S4 — Creative Detail dialog over grid
+    DetailOpen --> Complete: close-detail
+    Complete --> Editing: goto-edit
 ```
+
+**Reducer action types (20):** The `castAppReducer` in `components/cast/cast-app-state.ts` handles all state transitions via a discriminated union of actions:
+
+| Action | Payload | Effect |
+|--------|---------|--------|
+| `setBrand` | `slug: string` | Switch brand, reset brief brand field |
+| `setField` | `field: "campaign" \| "audience"; value: string` | Update brief text field |
+| `setLocaleMessage` | `lang: string; value: string` | Update per-locale headline |
+| `toggleMarket` | `code: string` | Add/remove market from brief |
+| `toggleRatio` | `value: AspectRatio` | Add/remove ratio from brief |
+| `addProduct` | `product: { name, sku }` | Append product to brief |
+| `removeProduct` | `sku: string` | Remove product by SKU |
+| `setLogoVariant` | `id: string` | Select logo variant for run |
+| `upload` | `productSlug, preview` | Store upload preview |
+| `removeUpload` | `productSlug: string` | Clear upload preview |
+| `generate` | — | Transition to `running` state |
+| `pipeline-event` | `event: PipelineEvent` | Append event; derive manifest on `complete` |
+| `run-error` | `stage, message` | Transition to `failed` state |
+| `goto-run` | — | Navigate to pipeline-run screen |
+| `goto-grid` | — | Navigate to output-grid screen |
+| `goto-edit` | — | Navigate to brief-editor screen |
+| `set-screen` | `screen: AppScreen` | Direct screen navigation |
+| `replaceBrief` | `brief: Brief` | Replace entire brief (JSON mode apply) |
+| `open-detail` | `creative: Creative` | Open creative detail dialog |
+| `close-detail` | — | Close creative detail dialog |
 
 ---
 
@@ -691,20 +732,32 @@ Final sanity pass. If any verb lacks a screen, the flow diagram is broken.
 | open app                            | S1                                              | Editing                             |
 | edit brief                          | S1                                              | Editing                             |
 | selects brand                       | S1 (Brand selector → `/api/brands`)             | Editing                             |
+| switch brand                        | S1 (Brand picker sidebar, color swatches)       | Editing                             |
+| toggle form / JSON mode             | S1 (form ↔ JSON toggle, Zod validation)         | Editing                             |
+| add product from catalog            | S1 (catalog-add dropdown)                       | Editing                             |
 | **drop product photos onto rows**   | S1 (drop zone → `/api/upload`)                  | Editing                             |
 | pre-place files in `inputs/assets/` | (filesystem path — Aaron's demo)                | confirmed via Detected Assets panel |
 | confirm assets will be picked up    | S1 (Detected Assets panel)                      | Editing                             |
 | sees GenAI mode                     | S1 (mode badge ← `NEXT_PUBLIC_CAST_GENAI_MODE`) | Editing                             |
+| preview prompt                      | S1 (expandable per-product prompt preview)      | Editing                             |
+| search/add markets                  | S1 (cmdk typeahead, custom `MARKET_RE` input)   | Editing                             |
 | click Generate                      | S1                                              | Editing → Running                   |
 | watch pipeline log                  | S2                                              | Running                             |
+| cancel run                          | S2 (cancel button → `goto-edit`)                | Running → Editing                   |
 | recover from a run failure          | S2′                                             | Failed                              |
 | review output grid                  | S3                                              | Complete                            |
 | read compliance badge               | S3                                              | Complete                            |
+| filter creatives                    | S3 (status/ratio/market/search toolbar)         | Complete                            |
+| toggle grid / list view             | S3 (view mode toggle)                           | Complete                            |
+| select creatives                    | S3 (batch selection, select-all checkbox)        | Complete                            |
 | click flagged tile                  | S3 → S4                                         | Complete → DetailOpen               |
 | click failed tile (`path === null`) | S3 → S4                                         | Complete → DetailOpen (error mode)  |
 | read compliance detail              | S4                                              | DetailOpen                          |
+| copy creative path                  | S4 (Copy Path button → server action)           | DetailOpen                          |
 | reveal output folder                | S3 → S5                                         | Complete (server action)            |
 | copy absolute output path           | S3                                              | Complete                            |
+| download brief / report             | S3 (download buttons in results header)         | Complete                            |
+| export to Dropbox                   | S3 (Dropbox Saver SDK, campaign folder export)  | Complete                            |
 | download files                      | OS file explorer                                | (post-handoff)                      |
 | narrate demo                        | S2 + S3                                         | Running, Complete                   |
 
@@ -718,13 +771,75 @@ With screens + flow + states + API contract locked, the next step (wireframes) h
 
 - **One Next.js route** (`/`) handling four states: `Editing`, `Running`, `Complete`, `Failed`.
 - **One modal/drawer** for `DetailOpen` (S4).
-- **One server action** for S5 — `revealOutputFolder({ campaign })` reveals the generated output folder via the OS (`explorer.exe` on Windows / `open` on macOS / `xdg-open` on Linux). The campaign slug is validated against `SLUG_RE` and the absolute path is derived internally via `safeJoin("outputs", campaign)`, verified to remain within the outputs root before invocation. Do **not** build the command via string interpolation or shell concatenation of untrusted input; use a `spawn`/`execFile`-style API with explicit args. Fallback: copyable absolute path on screen.
+- **Two server actions** — `revealOutputFolder({ campaign })` and `resolveCreativeAbsolutePath({ campaign, market, product, ratio })`. The latter resolves a creative's repo-relative path to an OS-absolute path for clipboard copy (used by the Copy Path button in S4).
+- `revealOutputFolder({ campaign })` reveals the generated output folder via the OS (`explorer.exe` on Windows / `open` on macOS / `xdg-open` on Linux). The campaign slug is validated against `SLUG_RE` and the absolute path is derived internally via `safeJoin("outputs", campaign)`, verified to remain within the outputs root before invocation. Do **not** build the command via string interpolation or shell concatenation of untrusted input; use a `spawn`/`execFile`-style API with explicit args. Fallback: copyable absolute path on screen.
 - **Per-product drop zone** on S1 → `POST /api/upload` (multipart, `productSlug` + `file`) writes to `inputs/assets/[slug].ext`.
 - **Asset preview read** — `GET /api/detected-assets?slugs=...` on S1 mount (immediate), on brief change (300 ms debounced), and after each upload (immediate). Returns `[{ slug, foundFile | null }]` for the Detected Assets panel.
 - **Streaming generate** — `POST /api/generate` returns NDJSON; terminal `complete` event carries the full manifest. S2 reads the stream; S3 hydrates from the manifest. **No separate output-read endpoint.**
 - **One filename convention** — `[product-slug].{png,jpg,jpeg,webp}` — enforced server-side by `/api/upload` and matched by Resolver and Detected Assets panel. Maya never has to type a slug.
 
 Everything else is wireframe craft.
+
+---
+
+## 7.1 Implementation additions — features beyond the original spec
+
+The following features were added during implementation. They extend the spec above without contradicting it.
+
+### S1 — Brief Editor additions
+
+- **Form ↔ JSON mode toggle** — the brief editor supports two modes. Form mode provides structured field editing (campaign, headlines, markets, ratios, products). JSON mode exposes the raw brief JSON with syntax highlighting, Zod `briefSchema` validation, parse error display, and Apply/Reset buttons. The `replaceBrief` action swaps the entire brief from parsed JSON. Mode toggle does not lose unsaved edits — JSON text state is independent.
+- **Brand picker** — sidebar brand selector lists all available brands from `GET /api/brands`. Each entry shows the brand's color swatches (`primary`, `accent`). Selecting a brand dispatches `setBrand` and triggers a profile fetch.
+- **Missing brand banner** — when the brand profile fails to load (via `useBrandProfile` hook), a diagnostic banner shows the error kind (`notFound` / `incomplete` / `invalid`), available brand slugs, and actionable hints. Component: `MissingBrandBanner`.
+- **Markets typeahead** — `cmdk`-powered typeahead (`MarketsTypeahead` component) for adding markets. Filters by code, country name, and language. Supports custom market codes matching `MARKET_RE` for markets not in the preset list.
+- **Catalog add dropdown** — `CatalogAddDropdown` shows remaining brand catalog products not yet in the brief. One-click addition dispatches `addProduct`.
+- **Per-product prompt preview** — each product row in `BriefProductRow` includes an expandable prompt preview showing the exact string `buildPromptPreview` will produce for that product's first market/ratio. Warns if the product isn't in the brand catalog.
+
+### S2 — Run View additions
+
+- **Structured per-product run view** — `JobRunnerView` replaces the flat log view for production use. Shows per-product `JobVariantRow` components (collapsed: product name + compact market status indicators; expanded: market-grouped `JobCreativeBadge` badges). Creative-level progress bar replaces the raw event counter.
+- **Cancel run** — `cancelRef` (`AbortController`) passed to `useRunController` allows aborting mid-run. Triggers `goto-edit` to return to the brief editor.
+- **Live elapsed timer** — `JobRunnerView` displays a ticking elapsed time (1-second interval) from `state.runStartedAt` to `completedAt` or now. Useful for demo narration and performance awareness.
+- **Collapsible raw log** — raw NDJSON events are still viewable in a collapsible section below the structured view.
+
+### S3 — Output Grid additions
+
+- **Filter toolbar** — `ResultsToolbar` provides four filter dimensions: status (all/OK/WARN/FAIL/failed), ratio (all/1:1/9:16/16:9), market (dynamic from manifest), and free-text search. Filter state is local to the grid screen.
+- **Grid / list view toggle** — output creatives render in tile grid (default) or table list (`ResultsListView`). List view shows columns: checkbox, thumbnail, product, market (with country flag), ratio, source, logo, status, duration, detail button.
+- **Batch selection** — multi-select checkboxes on each creative tile/row with a select-all toggle. Selection state (`Set<string>`) enables future batch actions (download, retry-failed — currently disabled placeholders).
+- **Summary stat cards** — `CreativeCountsSummaryCard` renders Total, Complete, Failed, and Avg Time stat cards above the grid. Supports tone coloring (ok/warn/bad).
+- **Results header** — `ResultsHeader` shows brand/campaign breadcrumbs, run status badge, time range, and action buttons: Download brief.json, Download report.json, Reveal in folder, and Export to Dropbox.
+- **Dropbox export** — `ResultsHeader` lazily loads the Dropbox Saver SDK (via `NEXT_PUBLIC_DROPBOX_APP_KEY` env var). Exports the entire campaign output folder to the user's Dropbox. The SDK script is loaded in `app/layout.tsx` conditionally.
+- **Market grouping** — creatives are grouped by market in the grid via `groupCreativesByMarket`, with market headers showing the locale code and flag emoji.
+
+### S4 — Creative Detail additions
+
+- **Copy path to clipboard** — `CopyPathButton` calls `resolveCreativeAbsolutePath` server action, then copies the OS-absolute path to clipboard with toast feedback.
+
+### Hooks — client-side orchestration
+
+Two custom hooks manage the client lifecycle:
+
+- **`useBrandProfile(brandSlug)`** — on slug change, fetches `GET /api/brands/<slug>`, classifies errors (notFound / incomplete / invalid), derives the merged banned-word list (default floor ∪ brand fixture), and pre-flights brief text for banned-word hits. Returns `{ activeBrand, activeBrandLoadError, brandLoadable, bannedList, bannedHits }`.
+- **`useRunController(state, dispatch, cancelRef)`** — watches `state.runState`. On `"running"`, POSTs brief to `/api/generate`, decodes NDJSON response line-by-line, dispatches `pipeline-event` per parsed event. Handles: non-2xx → `"validation"` error, non-NDJSON content-type → `"stream"` error, 90s idle timeout → abort, parse failure, network error.
+
+### Component → screen mapping
+
+| Component file | Screen | Purpose |
+|---------------|--------|---------|
+| `cast-app-shell.tsx` | — | Client shell, mounts all screens + reducer |
+| `brief-editor.tsx` | S1 | Main brief editor container |
+| `brief-editor-sidebar.tsx` | S1 | Brand picker, logo grid, detected assets |
+| `brief-editor-form-view.tsx` | S1 | Structured form fields |
+| `job-runner-view.tsx` | S2 | Structured per-product run view |
+| `pipeline-run-view.tsx` | S2 | Legacy flat log view (still in codebase) |
+| `creative-output-grid.tsx` | S3 | Output grid with filters + grouping |
+| `results-header.tsx` | S3 | Header bar with actions |
+| `results-toolbar.tsx` | S3 | Filter toolbar |
+| `results-list-view.tsx` | S3 | Table view alternative |
+| `creative-detail-dialog.tsx` | S4 | Radix Dialog, dual-mode |
+| `topbar.tsx` | — | App chrome header |
+| `screen-tabs.tsx` | — | Tab navigation (Brief / Run / Outputs) |
 
 ---
 

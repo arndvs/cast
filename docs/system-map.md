@@ -11,17 +11,20 @@ The "things" the system stores, moves, and renders. Pulled from the user-story v
 ```mermaid
 graph LR
     Brief["Brief<br/>brand · products · markets<br/>audience · message · ratios"]
-    Product["Product<br/>name · sku"]
+    Product["Product<br/>name · sku · promptOverrides?"]
     InputAsset["Input Asset<br/>inputs/assets/[product-slug].{png,jpg,jpeg,webp}"]
     HeroImage["Hero Image<br/>GenAI fallback"]
-    Creative["Output Creative<br/>1:1 · 9:16 · 16:9"]
+    Creative["Output Creative<br/>1:1 · 9:16 · 16:9<br/>duration? · compliance?"]
     Message["Localized Message<br/>per locale"]
     Compliance["Compliance Result<br/>OK · WARN · FAIL"]
     RunLog["Run Log<br/>streamed steps"]
-    Report["Report<br/>report.json"]
+    Report["Report<br/>report.json<br/>startedAt · completedAt"]
+    Upload["Upload Preview<br/>per-product · client-side"]
+    LogoVariant["Logo Variant<br/>id · displayName · path · theme?"]
 
     Brief -->|lists| Product
     Brief -->|carries| Message
+    Brief -->|selects| LogoVariant
     Product -->|resolves to| InputAsset
     Product -.->|falls back to| HeroImage
     InputAsset -->|source for| Creative
@@ -31,6 +34,7 @@ graph LR
     Creative -->|listed in| Report
     Compliance -->|listed in| Report
     RunLog -->|summarized in| Report
+    Upload -->|preview of| InputAsset
 ```
 
 ---
@@ -112,10 +116,12 @@ graph TB
             GenerateAPI["POST /api/generate<br/>(NDJSON stream)"]
             BrandsAPI["GET /api/brands<br/>(brand selector list)"]
             BrandDetailAPI["GET /api/brands/[slug]<br/>(union banned-words + logo variants)<br/>+ GET /api/brands/[slug]/logos/[id]<br/>(safeJoin proxy — not a static tree)"]
+            OutputsAPI["GET /api/outputs/[...path]<br/>(PNG proxy · .png whitelist · no-store)"]
         end
 
         subgraph Actions["Server actions"]
             RevealAction["revealOutputFolder({ campaign })<br/>execFile · path derived via safeJoin"]
+            CopyPathAction["resolveCreativeAbsolutePath<br/>({ campaign, market, product, ratio })<br/>→ OS-absolute path for clipboard"]
         end
 
         subgraph Engine["Pipeline Engine"]
@@ -165,6 +171,10 @@ graph TB
     RevealBtn --> RevealAction
     RevealAction -.->|opens| OS
     OS -.->|browse| Outputs
+    Grid -->|thumbnail src| OutputsAPI
+    OutputsAPI -->|reads PNG| Outputs
+    BadgeUI -.->|copy path| CopyPathAction
+    CopyPathAction -->|resolves| Outputs
 ```
 
 ---
