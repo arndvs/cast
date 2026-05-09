@@ -339,6 +339,7 @@ export function registerCastTools(
         title: tool.title,
         description: tool.description,
         inputSchema: tool.inputSchema,
+        outputSchema: tool.outputSchema,
         annotations: tool.annotations,
       },
       async (input: unknown) => tool.handler(input as never),
