@@ -3,18 +3,18 @@
  *
  * Every read/write in the pipeline goes through this interface. Two adapters:
  *   - LocalFsAdapter (default) — maps containers to filesystem roots
- *   - AzureBlobAdapter (future, Slice 2) — maps containers to Azure Blob
+ *   - AzureBlobAdapter — maps containers to Azure Blob Storage containers
  *
  * Container names map to logical storage areas:
  *   - "inputs"  → product photos, uploaded assets
  *   - "outputs" → generated creatives, manifests, briefs
- *   - "brands"  → brand profiles, logos, fonts (future — currently under inputs/)
  */
 
 import fs from "node:fs/promises"
 import path from "node:path"
 import { safeJoin, type RootKey } from "@/lib/cast/server/safe-join"
 import { getStorageBackend, type StorageBackend } from "@/lib/cast/server/config"
+import { AzureBlobAdapter } from "@/lib/cast/server/azure-blob-adapter"
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -147,7 +147,8 @@ let cached: StorageAdapter | null = null
 
 /**
  * Returns the active StorageAdapter based on `CAST_STORAGE` env var.
- * Currently only `local` is implemented; `azure` will be added in Slice 2.
+ * - `local` (default): LocalFsAdapter (filesystem-backed)
+ * - `azure`: AzureBlobAdapter (Azure Blob Storage-backed)
  */
 export function getStorageAdapter(backend?: StorageBackend): StorageAdapter {
   if (cached) return cached
@@ -157,10 +158,8 @@ export function getStorageAdapter(backend?: StorageBackend): StorageAdapter {
       cached = new LocalFsAdapter()
       break
     case "azure":
-      throw new Error(
-        "AzureBlobAdapter is not yet implemented (planned in Slice 2). " +
-        "Set CAST_STORAGE=local or omit the variable.",
-      )
+      cached = new AzureBlobAdapter()
+      break
     default:
       throw new Error(`Unknown storage backend: ${resolved}`)
   }
