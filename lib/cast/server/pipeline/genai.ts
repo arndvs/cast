@@ -13,20 +13,21 @@ import OpenAI from "openai"
 import type { AspectRatio } from "@/lib/cast/schemas"
 import { RATIO_PIXELS } from "@/lib/cast/ratios"
 import { retry, type RetryableError } from "@/lib/cast/server/retry"
+import {
+  getGenAIMode as getConfigGenAIMode,
+  getOpenAIApiKey,
+} from "@/lib/cast/server/config"
 
 export type GenAIMode = "default" | "cheap"
 
 export function getGenAIMode(): GenAIMode {
-  return process.env.CAST_GENAI_MODE === "cheap" ? "cheap" : "default"
+  return getConfigGenAIMode()
 }
 
 let openaiClient: OpenAI | null = null
 function getClient(): OpenAI {
   if (openaiClient) return openaiClient
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not set")
-  }
-  openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  openaiClient = new OpenAI({ apiKey: getOpenAIApiKey() })
   return openaiClient
 }
 
