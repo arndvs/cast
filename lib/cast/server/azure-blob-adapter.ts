@@ -36,10 +36,12 @@ const AZURE_CONTAINER_MAP: Record<Container, string> = {
 export class AzureBlobAdapter implements StorageAdapter {
   private readonly serviceClient: BlobServiceClient
   private readonly containerClients = new Map<Container, ContainerClient>()
+  private readonly sharedKeyCredential: StorageSharedKeyCredential | null
 
   constructor(connectionString?: string) {
     const cs = connectionString ?? getAzureConnectionString()
     this.serviceClient = BlobServiceClient.fromConnectionString(cs)
+    this.sharedKeyCredential = parseSharedKeyCredential(cs)
   }
 
   private getContainerClient(container: Container): ContainerClient {
@@ -93,7 +95,12 @@ export class AzureBlobAdapter implements StorageAdapter {
   }
 
   async deletePrefix(container: Container, prefix: string): Promise<void> {
-    const normalizedPrefix = this.normalizeBlobName(prefix)
+    let normalizedPrefix = this.normalizeBlobName(prefix)
+    // Ensure trailing / for directory semantics — prevents "brisa" from
+    // matching "brisa-summer/" in Azure's string-prefix blob listing.
+    if (normalizedPrefix && !normalizedPrefix.endsWith("/")) {
+      normalizedPrefix += "/"
+    }
     const containerClient = this.getContainerClient(container)
     // List all blobs under the prefix and delete each.
     // Azure Blob does not have native "delete directory" — iterate blobs.
@@ -130,7 +137,7 @@ export class AzureBlobAdapter implements StorageAdapter {
         // If the service client was created from a connection string with
         // an account key, we can generate SAS tokens. Otherwise fall back
         // to the blob URL (works for public containers).
-        const credential = this.extractCredential()
+        const credential = this.sharedKeyCredential
         if (credential) {
           const expiresOn = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
           const sas = generateBlobSASQueryParameters(
@@ -160,23 +167,35 @@ export class AzureBlobAdapter implements StorageAdapter {
     }
   }
 
-  /**
-   * Attempt to extract the shared-key credential from the service client.
-   * Returns null if the client uses a different auth mechanism (e.g. managed identity).
-   */
-  private extractCredential(): StorageSharedKeyCredential | null {
-    // BlobServiceClient stores the credential on a private property.
-    // The SDK doesn't expose a public accessor, but the credential is
-    // available when constructed from a connection string with AccountKey.
-    const cred = (this.serviceClient as unknown as { credential?: unknown }).credential
-    if (cred instanceof StorageSharedKeyCredential) return cred
-    return null
-  }
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Parse a connection string for AccountName + AccountKey and return a
+ * StorageSharedKeyCredential. Returns null when the connection string
+ * uses a different auth mechanism (e.g. SAS token or managed identity).
+ *
+ * This avoids relying on the private `BlobServiceClient.credential`
+ * property which could change across SDK versions.
+ */
+function parseSharedKeyCredential(connectionString: string): StorageSharedKeyCredential | null {
+  const parts = new Map(
+    connectionString.split(";").map((segment) => {
+      const idx = segment.indexOf("=")
+      if (idx === -1) return [segment, ""]
+      return [segment.slice(0, idx), segment.slice(idx + 1)]
+    }),
+  )
+  const accountName = parts.get("AccountName")
+  const accountKey = parts.get("AccountKey")
+  if (accountName && accountKey) {
+    return new StorageSharedKeyCredential(accountName, accountKey)
+  }
+  return null
+}
 
 async function streamToBuffer(readable: NodeJS.ReadableStream): Promise<Buffer> {
   const chunks: Buffer[] = []

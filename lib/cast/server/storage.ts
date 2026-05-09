@@ -20,7 +20,7 @@ const ASSET_EXTS = ["png", "jpg", "jpeg", "webp"] as const
  * Returns the **repo-relative** path (`inputs/assets/foo.png`) or `null`.
  */
 export async function findLocalAsset(productSlug: string): Promise<string | null> {
-  const adapter = getStorageAdapter()
+  const adapter = await getStorageAdapter()
   for (const ext of ASSET_EXTS) {
     const key = `assets/${productSlug}.${ext}`
     if (await adapter.fileExists("inputs", key)) {
@@ -38,7 +38,7 @@ export async function readAsset(repoRelativePath: string): Promise<Buffer> {
     throw new Error(`expected inputs-rooted path, got "${repoRelativePath}"`)
   }
   const key = segments.join("/")
-  return getStorageAdapter().readFile("inputs", key)
+  return (await getStorageAdapter()).readFile("inputs", key)
 }
 
 /**
@@ -46,7 +46,7 @@ export async function readAsset(repoRelativePath: string): Promise<Buffer> {
  * Safe on first run (no-op if prefix doesn't exist).
  */
 export async function clearCampaignOutput(campaign: string): Promise<void> {
-  await getStorageAdapter().deletePrefix("outputs", campaign)
+  await (await getStorageAdapter()).deletePrefix("outputs", `${campaign}/`)
 }
 
 /**
@@ -61,7 +61,7 @@ export async function writeCreative(
   png: Buffer,
 ): Promise<string> {
   const key = `${campaign}/${market}/${productSlug}/${ratio}.png`
-  await getStorageAdapter().writeFile("outputs", key, png, "image/png")
+  await (await getStorageAdapter()).writeFile("outputs", key, png, "image/png")
   return path.posix.join("outputs", key)
 }
 
@@ -72,7 +72,7 @@ export async function writeBriefSnapshot(
 ): Promise<string> {
   const key = `${campaign}/brief.json`
   const data = JSON.stringify(brief, null, 2) + "\n"
-  await getStorageAdapter().writeFile("outputs", key, data, "application/json")
+  await (await getStorageAdapter()).writeFile("outputs", key, data, "application/json")
   return path.posix.join("outputs", key)
 }
 
@@ -83,6 +83,6 @@ export async function writeReport(
 ): Promise<string> {
   const key = `${campaign}/report.json`
   const data = JSON.stringify(manifest, null, 2) + "\n"
-  await getStorageAdapter().writeFile("outputs", key, data, "application/json")
+  await (await getStorageAdapter()).writeFile("outputs", key, data, "application/json")
   return path.posix.join("outputs", key)
 }
