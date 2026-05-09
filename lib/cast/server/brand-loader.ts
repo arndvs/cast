@@ -336,11 +336,17 @@ function parse<T>(
 
 /**
  * Reject item.file values containing backslashes, traversal segments (.., .),
- * or absolute paths. Surfaces violations as BrandInvalidError so callers get
- * a clear 400 instead of an unexpected PathTraversalError from the adapter.
+ * or absolute paths. Container keys use forward slashes only — any backslash
+ * is rejected outright. Surfaces violations as BrandInvalidError so callers
+ * get a clear 400 instead of an unexpected PathTraversalError from the adapter.
  */
 function validateItemFile(slug: string, manifestFile: string, raw: string): string[] {
-  const segments = raw.split(/[\\/]/).filter(Boolean)
+  if (raw.includes("\\")) {
+    throw new BrandInvalidError(slug, manifestFile, [
+      { path: ["file"], message: `backslashes not allowed in container key: "${raw}"` },
+    ])
+  }
+  const segments = raw.split("/").filter(Boolean)
   for (const seg of segments) {
     if (seg === "." || seg === "..") {
       throw new BrandInvalidError(slug, manifestFile, [
