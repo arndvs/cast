@@ -44,6 +44,7 @@ import {
   getGenAIMode,
   type GenAIMode,
 } from "@/lib/cast/server/pipeline/genai"
+import { analyzeImage, type ImageMetadata } from "@/lib/cast/server/metadata"
 import { resizeForRatio } from "@/lib/cast/server/pipeline/resize"
 import { composeCreative } from "@/lib/cast/server/pipeline/compose"
 import { runCompliance } from "@/lib/cast/server/pipeline/compliance"
@@ -228,6 +229,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
     // also keys by ratio because dall-e-3 native sizes differ per ratio.
     // Cheap mode keys by productSlug only (single 1024² master per product).
     const baseImageCache = new Map<string, Buffer>()
+    const genMetaCache = new Map<string, { model: string; revisedPrompt: string | null; promptUsed: string }>()
 
     for (const product of brief.products) {
       const productSlug = slugify(product.name)
@@ -300,11 +302,10 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
         }
       } else if (mode === "cheap") {
         try {
-          const master = await generateImage({
-            prompt: buildPrompt(brief, brand, product, market, "1x1"),
-            mode: "cheap",
-          })
-          baseImageCache.set(productSlug, master)
+          const cheapPrompt = buildPrompt(brief, brand, product, market, "1x1")
+          const cheapResult = await generateImage({ prompt: cheapPrompt, mode: "cheap" })
+          baseImageCache.set(productSlug, cheapResult.png)
+          genMetaCache.set(productSlug, { model: cheapResult.meta.model, revisedPrompt: cheapResult.meta.revisedPrompt, promptUsed: cheapPrompt })
         } catch (err) {
           // Defer attribution to the per-ratio loop so each (market × ratio)
           // gets its own error event + manifest entry.
@@ -357,14 +358,13 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
                 master = cached
               } else {
                 emit(emitStep("genai", slot, `generating ${ratio} native`))
-                master = await runStage("genai", () =>
-                  generateImage({
-                    prompt: buildPrompt(brief, brand, product, market, ratio),
-                    ratio,
-                    mode: "default",
-                  }),
+                const genPrompt = buildPrompt(brief, brand, product, market, ratio)
+                const genResult = await runStage("genai", () =>
+                  generateImage({ prompt: genPrompt, ratio, mode: "default" }),
                 )
-                baseImageCache.set(cacheKey, master)
+                master = genResult.png
+                baseImageCache.set(cacheKey, genResult.png)
+                genMetaCache.set(cacheKey, { model: genResult.meta.model, revisedPrompt: genResult.meta.revisedPrompt, promptUsed: genPrompt })
               }
             }
 
@@ -399,6 +399,30 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
               emitComplianceResult(slot, compliance.badge, compliance.checks.bannedWords),
             )
 
+            // ---- metadata (best-effort — failure must not block pipeline) ----
+            let metadata: ImageMetadata | undefined
+            const metaSource: "local" | "genai" = resolved.source === "genai" ? "genai" : "local"
+            const metaCacheKey = resolved.source === "genai"
+              ? (mode === "cheap" ? productSlug : `${productSlug}|${ratio}`)
+              : null
+            const cachedGenMeta = metaCacheKey ? genMetaCache.get(metaCacheKey) : null
+            try {
+              metadata = await analyzeImage(composed, {
+                campaign: brief.campaign,
+                brand: brief.brand,
+                product: productSlug,
+                market,
+                ratio,
+                source: metaSource,
+                promptUsed: cachedGenMeta?.promptUsed ?? null,
+                model: cachedGenMeta?.model ?? null,
+                revisedPrompt: cachedGenMeta?.revisedPrompt ?? null,
+              })
+            } catch {
+              // Swallowed — analyzeImage already handles internal failures
+              // via graceful degradation. This outer catch is belt-and-suspenders.
+            }
+
             // ---- write ----
             currentStage = "write"
             emit(emitStep("write", slot))
@@ -409,6 +433,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
                 productSlug,
                 ratio,
                 png: composed,
+                metadata,
               }),
             )
             emit(emitCreativeReady(slot, outputPath, resolved.source === "products" ? "local" : resolved.source))

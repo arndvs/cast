@@ -65,6 +65,20 @@ export async function writeCreative(
   return path.posix.join("outputs", key)
 }
 
+/** Write metadata sidecar at `outputs/[campaign]/[market]/[product]/[ratio].metadata.json`. */
+export async function writeMetadata(
+  campaign: string,
+  market: string,
+  productSlug: string,
+  ratio: AspectRatio,
+  metadata: unknown,
+): Promise<string> {
+  const key = `${campaign}/${market}/${productSlug}/${ratio}.metadata.json`
+  const data = JSON.stringify(metadata, null, 2) + "\n"
+  await (await getStorageAdapter()).writeFile("outputs", key, data, "application/json")
+  return path.posix.join("outputs", key)
+}
+
 /** Write the brief snapshot at `outputs/[campaign]/brief.json`. */
 export async function writeBriefSnapshot(
   campaign: string,
