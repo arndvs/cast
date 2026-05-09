@@ -15,6 +15,7 @@ import { PathTraversalError } from "@/lib/cast/server/safe-join"
 import type { AspectRatio } from "@/lib/cast/schemas"
 
 const ASSET_EXTS = ["png", "jpg", "jpeg", "webp"] as const
+type AssetExt = (typeof ASSET_EXTS)[number]
 
 /**
  * Scan `inputs/assets/` for a product photo named after `productSlug`.
@@ -125,9 +126,12 @@ export async function detectAssetFiles(
  */
 export async function saveAssetFile(
   productSlug: string,
-  ext: string,
+  ext: AssetExt,
   bytes: Uint8Array,
 ): Promise<string> {
+  if (!(ASSET_EXTS as readonly string[]).includes(ext)) {
+    throw new Error(`invalid asset extension "${ext}" — allowed: ${ASSET_EXTS.join(", ")}`)
+  }
   const adapter = await getStorageAdapter()
   for (const e of ASSET_EXTS) {
     await adapter.deleteFile("inputs", `assets/${productSlug}.${e}`)
@@ -144,11 +148,20 @@ export async function saveAssetFile(
  * Throws if the file does not exist (ENOENT) or the path is invalid.
  */
 export async function readOutputFile(...segments: string[]): Promise<Buffer> {
+  // Reject obviously invalid raw segments before normalization.
   for (const seg of segments) {
-    if (!seg || seg.includes("\0") || seg === ".." || path.isAbsolute(seg)) {
+    if (!seg || path.isAbsolute(seg)) {
       throw new PathTraversalError(`invalid output path segment: "${seg}"`)
     }
   }
-  const key = segments.join("/")
+  // Normalize: split on both / and \ so embedded separators can't smuggle
+  // traversal components past the per-segment check.
+  const parts = segments.flatMap((s) => s.split(/[/\\]/)).filter(Boolean)
+  for (const part of parts) {
+    if (part === "." || part === ".." || part.includes("\0")) {
+      throw new PathTraversalError(`invalid output path segment: "${part}"`)
+    }
+  }
+  const key = parts.join("/")
   return (await getStorageAdapter()).readFile("outputs", key)
 }
