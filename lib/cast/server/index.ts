@@ -43,8 +43,15 @@ export * from "./brief-loader"
 
 // -- Storage ----------------------------------------------------------------
 export * from "./storage"
-export * from "./storage-adapter"
-export * from "./azure-blob-adapter"
+export {
+  type Container,
+  type StorageAdapter,
+  getStorageAdapter,
+} from "./storage-adapter"
+// AzureBlobAdapter is NOT re-exported — it is lazy-loaded by
+// getStorageAdapter() via dynamic import(). Eagerly re-exporting it
+// would pull in @azure/storage-blob for every consumer of this barrel.
+export type { AzureBlobAdapter } from "./azure-blob-adapter"
 
 // -- Metadata ---------------------------------------------------------------
 export * from "./metadata"
