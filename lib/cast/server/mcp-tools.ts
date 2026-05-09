@@ -72,6 +72,7 @@ export interface McpToolDeps {
   }) => ComplianceResult
   getStorageAdapter: () => {
     readFile(container: "inputs" | "outputs", key: string): Promise<Buffer>
+    fileExists(container: "inputs" | "outputs", key: string): Promise<boolean>
   }
 }
 
@@ -261,27 +262,20 @@ export function buildToolRegistry(deps: McpToolDeps): CastMcpTool[] {
       }),
       annotations: { readOnlyHint: true },
       handler: async (input) => {
-        try {
-          const adapter = deps.getStorageAdapter()
-          const buf = await adapter.readFile(
-            "outputs",
-            `${input.campaign}/report.json`,
-          )
-          const manifest: unknown = JSON.parse(buf.toString("utf8"))
+        const adapter = deps.getStorageAdapter()
+        const key = `${input.campaign}/report.json`
+        const exists = await adapter.fileExists("outputs", key)
+        if (!exists) {
           return {
-            structuredContent: { found: true, manifest },
-            content: `Manifest found for campaign "${input.campaign}"`,
+            structuredContent: { found: false },
+            content: `No manifest found for campaign "${input.campaign}"`,
           }
-        } catch (err: unknown) {
-          // Only treat ENOENT (missing report.json) as "not found".
-          // Rethrow permission errors, JSON parse failures, and other I/O issues.
-          if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
-            return {
-              structuredContent: { found: false },
-              content: `No manifest found for campaign "${input.campaign}"`,
-            }
-          }
-          throw err
+        }
+        const buf = await adapter.readFile("outputs", key)
+        const manifest: unknown = JSON.parse(buf.toString("utf8"))
+        return {
+          structuredContent: { found: true, manifest },
+          content: `Manifest found for campaign "${input.campaign}"`,
         }
       },
     }),
