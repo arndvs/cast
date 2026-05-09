@@ -211,6 +211,16 @@ describe("listBrandSlugs", () => {
     expect(slugs).toEqual(["alpha", "zeta"])
   })
 
+  it("excludes slugs that have files but no brand.json", async () => {
+    mockAdapter.listFiles.mockResolvedValue([
+      "brands/alpha/brand.json",
+      "brands/partial/logos/logo.png", // no brand.json → excluded
+      "brands/partial/voice.json",     // still no brand.json
+    ])
+    const slugs = await listBrandSlugs()
+    expect(slugs).toEqual(["alpha"])
+  })
+
   it("returns [] when inputs/brands/ is missing (empty listFiles)", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
     mockAdapter.listFiles.mockResolvedValue([])
@@ -394,6 +404,23 @@ describe("canVariants — products.json", () => {
       if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
       if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
       if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(BACKSLASH_ONLY))
+      if (key === "brands/acme/banned-words.json") throw enoent()
+      if (key === "brands/acme/backgrounds.json") throw enoent()
+      throw enoent()
+    })
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
+  })
+
+  it("throws BrandInvalidError when item.file resolves to empty segments", async () => {
+    const EMPTY_KEY = {
+      items: [{ id: "empty", sku: "BAD-001", file: "///", pose: "upright-center", detail: "evil" }],
+    }
+    mockAdapter.fileExists.mockResolvedValue(true)
+    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
+      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(EMPTY_KEY))
       if (key === "brands/acme/banned-words.json") throw enoent()
       if (key === "brands/acme/backgrounds.json") throw enoent()
       throw enoent()

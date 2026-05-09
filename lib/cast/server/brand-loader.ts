@@ -235,12 +235,13 @@ export async function listBrandSlugs(): Promise<string[]> {
     maybeWarnNoBrands("missing")
     return []
   }
-  // Extract unique slugs from keys like "brands/brisa/brand.json".
+  // Extract unique slugs from keys that include brand.json — only list
+  // brands that loadBrandProfile() will be able to load.
   const slugSet = new Set<string>()
   for (const key of keys) {
     const parts = key.split("/")
-    // parts[0] === "brands", parts[1] === slug
-    if (parts.length >= 2 && SLUG_RE.test(parts[1])) {
+    // Match keys like "brands/<slug>/brand.json"
+    if (parts.length >= 3 && parts[2] === "brand.json" && SLUG_RE.test(parts[1])) {
       slugSet.add(parts[1])
     }
   }
@@ -357,6 +358,11 @@ function validateItemFile(slug: string, manifestFile: string, raw: string): stri
   if (/^[a-zA-Z]:/.test(raw) || raw.startsWith("/")) {
     throw new BrandInvalidError(slug, manifestFile, [
       { path: ["file"], message: `absolute path not allowed: "${raw}"` },
+    ])
+  }
+  if (segments.length === 0) {
+    throw new BrandInvalidError(slug, manifestFile, [
+      { path: ["file"], message: `empty container key: "${raw}"` },
     ])
   }
   return segments
