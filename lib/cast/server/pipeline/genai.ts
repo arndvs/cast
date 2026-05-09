@@ -42,11 +42,20 @@ export interface GenerateImageArgs {
   retryDeps?: { sleep?: (ms: number) => Promise<void>; random?: () => number }
 }
 
+export interface GenerationResult {
+  png: Buffer
+  meta: {
+    model: string
+    revisedPrompt: string | null
+    size: string
+  }
+}
+
 /**
- * Returns the raw PNG bytes for a single image generation. Throws after
- * exhausting retries.
+ * Returns the raw PNG bytes and generation metadata for a single image
+ * generation. Throws after exhausting retries.
  */
-export async function generateImage(args: GenerateImageArgs): Promise<Buffer> {
+export async function generateImage(args: GenerateImageArgs): Promise<GenerationResult> {
   const mode = args.mode ?? getGenAIMode()
   const client = args.client ?? getClient()
 
@@ -77,7 +86,14 @@ export async function generateImage(args: GenerateImageArgs): Promise<Buffer> {
         new Error(`OpenAI images response missing b64_json (model=${model})`),
       )
     }
-    return Buffer.from(base64Image, "base64")
+    return {
+      png: Buffer.from(base64Image, "base64"),
+      meta: {
+        model,
+        revisedPrompt: imageData.revised_prompt ?? null,
+        size,
+      },
+    }
   }, args.retryDeps)
 }
 
