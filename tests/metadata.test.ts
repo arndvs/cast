@@ -173,6 +173,26 @@ describe("analyzeImage", () => {
     expect(result.tags).toEqual(VISION_RESPONSE.tags)
   })
 
+  it("handles leading-newline fenced responses", async () => {
+    const fenced = "\n```json\n" + JSON.stringify(VISION_RESPONSE) + "\n```\n"
+    const client = makeMockClient({ content: fenced })
+
+    const result = await analyzeImage(fakeBuffer(), CONTEXT, { client })
+
+    expect(result.description).toBe(VISION_RESPONSE.description)
+    expect(result.tags).toEqual(VISION_RESPONSE.tags)
+  })
+
+  it("handles plain ``` fences without json tag", async () => {
+    const fenced = "```\n" + JSON.stringify(VISION_RESPONSE) + "\n```"
+    const client = makeMockClient({ content: fenced })
+
+    const result = await analyzeImage(fakeBuffer(), CONTEXT, { client })
+
+    expect(result.description).toBe(VISION_RESPONSE.description)
+    expect(result.tags).toEqual(VISION_RESPONSE.tags)
+  })
+
   it("passes the image as base64 to the vision model", async () => {
     const client = makeMockClient({ content: JSON.stringify(VISION_RESPONSE) })
     const buf = Buffer.from("test-png")

@@ -162,8 +162,9 @@ async function callVisionModel(imageBuffer: Buffer, client?: OpenAI): Promise<z.
     throw new Error("Empty response from vision model")
   }
 
-  // Strip markdown fences if present
-  const cleaned = text.replace(/^```json\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim()
+  // Strip markdown fences if present (trim first so leading whitespace
+  // doesn't prevent the opening-fence regex from matching).
+  const cleaned = text.trim().replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim()
   const parsed = JSON.parse(cleaned) as unknown
 
   return analysisResponseSchema.parse(parsed)
