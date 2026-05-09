@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
-import fs from "node:fs/promises"
-import nodePath from "node:path"
-import { safeJoin, PathTraversalError } from "@/lib/cast/server/safe-join"
+import { readOutputFile } from "@/lib/cast/server/storage"
+import { PathTraversalError } from "@/lib/cast/server/safe-join"
 import { isENOENT } from "@/lib/cast/server/api-helpers"
 
 export const runtime = "nodejs"
@@ -39,28 +38,11 @@ export async function GET(
     return new NextResponse(null, { status: 404 })
   }
 
-  let resolved: string
-  try {
-    // TODO(symlink-hardening): re-validate with realpath before readFile.
-    resolved = safeJoin("outputs", ...segments)
-  } catch (err) {
-    if (err instanceof PathTraversalError) {
-      return new NextResponse(null, { status: 404 })
-    }
-    throw err
-  }
-
-  // Defense in depth — safeJoin already rejected absolute/.. but extension
-  // check ran on the raw segment. Re-check on the resolved path too.
-  if (nodePath.extname(resolved).toLowerCase() !== ".png") {
-    return new NextResponse(null, { status: 404 })
-  }
-
   let bytes: Buffer
   try {
-    bytes = await fs.readFile(resolved)
+    bytes = await readOutputFile(...segments)
   } catch (err) {
-    if (isENOENT(err)) {
+    if (err instanceof PathTraversalError || isENOENT(err)) {
       return new NextResponse(null, { status: 404 })
     }
     return new NextResponse(null, { status: 500 })

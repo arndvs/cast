@@ -11,6 +11,7 @@
 
 import path from "node:path"
 import { getStorageAdapter } from "@/lib/cast/server/storage-adapter"
+import { PathTraversalError } from "@/lib/cast/server/safe-join"
 import type { AspectRatio } from "@/lib/cast/schemas"
 
 const ASSET_EXTS = ["png", "jpg", "jpeg", "webp"] as const
@@ -99,4 +100,55 @@ export async function writeReport(
   const data = JSON.stringify(manifest, null, 2) + "\n"
   await (await getStorageAdapter()).writeFile("outputs", key, data, "application/json")
   return path.posix.join("outputs", key)
+}
+
+/**
+ * Detect which asset files exist for the given product slugs.
+ * Returns `{ slug, foundFile }` pairs where `foundFile` is the filename
+ * (e.g. `"slug.png"`) or `null` if no asset was found.
+ */
+export async function detectAssetFiles(
+  slugs: string[],
+): Promise<{ slug: string; foundFile: string | null }[]> {
+  const results: { slug: string; foundFile: string | null }[] = []
+  for (const slug of slugs) {
+    const found = await findLocalAsset(slug)
+    results.push({ slug, foundFile: found ? path.posix.basename(found) : null })
+  }
+  return results
+}
+
+/**
+ * Save an uploaded asset file, replacing any existing variant for the slug.
+ * Deletes all existing extensions first, then writes the new file.
+ * Returns the repo-relative path (e.g. `"inputs/assets/slug.png"`).
+ */
+export async function saveAssetFile(
+  productSlug: string,
+  ext: string,
+  bytes: Uint8Array,
+): Promise<string> {
+  const adapter = await getStorageAdapter()
+  for (const e of ASSET_EXTS) {
+    await adapter.deleteFile("inputs", `assets/${productSlug}.${e}`)
+  }
+  const key = `assets/${productSlug}.${ext}`
+  await adapter.writeFile("inputs", key, Buffer.from(bytes))
+  return path.posix.join("inputs", key)
+}
+
+/**
+ * Read a file from the outputs container.
+ * Validates individual path segments before delegating to the adapter —
+ * rejects absolute paths, parent traversal, and null bytes.
+ * Throws if the file does not exist (ENOENT) or the path is invalid.
+ */
+export async function readOutputFile(...segments: string[]): Promise<Buffer> {
+  for (const seg of segments) {
+    if (!seg || seg.includes("\0") || seg === ".." || path.isAbsolute(seg)) {
+      throw new PathTraversalError(`invalid output path segment: "${seg}"`)
+    }
+  }
+  const key = segments.join("/")
+  return (await getStorageAdapter()).readFile("outputs", key)
 }
