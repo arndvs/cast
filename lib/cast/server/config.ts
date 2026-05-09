@@ -23,8 +23,17 @@ export function getOpenAIApiKey(): string {
 
 export type StorageBackend = "local" | "azure"
 
+const VALID_BACKENDS = new Set<string>(["local", "azure"])
+
 export function getStorageBackend(): StorageBackend {
-  return process.env.CAST_STORAGE === "azure" ? "azure" : "local"
+  const raw = process.env.CAST_STORAGE
+  if (!raw) return "local"
+  if (!VALID_BACKENDS.has(raw)) {
+    throw new Error(
+      `Invalid CAST_STORAGE="${raw}". Expected one of: ${[...VALID_BACKENDS].join(", ")}`,
+    )
+  }
+  return raw as StorageBackend
 }
 
 export function getAzureConnectionString(): string {
