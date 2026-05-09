@@ -91,8 +91,13 @@ export class LocalFsAdapter implements StorageAdapter {
     let entries: string[]
     try {
       entries = await fs.readdir(abs)
-    } catch {
-      return []
+    } catch (err: unknown) {
+      // Only treat ENOENT (missing directory) as "no files".
+      // Rethrow permission errors (EACCES/EPERM) and other I/O failures.
+      if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+        return []
+      }
+      throw err
     }
     return entries.map((e) => path.posix.join(prefix, e))
   }
@@ -143,30 +148,36 @@ export class LocalFsAdapter implements StorageAdapter {
 // Factory
 // ---------------------------------------------------------------------------
 
-let cached: StorageAdapter | null = null
+const adapterCache = new Map<StorageBackend, StorageAdapter>()
 
 /**
  * Returns the active StorageAdapter based on `CAST_STORAGE` env var.
  * - `local` (default): LocalFsAdapter (filesystem-backed)
  * - `azure`: AzureBlobAdapter (Azure Blob Storage-backed)
+ *
+ * Caches per backend key so an explicit override doesn't return a
+ * previously cached adapter for a different backend.
  */
 export function getStorageAdapter(backend?: StorageBackend): StorageAdapter {
-  if (cached) return cached
   const resolved = backend ?? getStorageBackend()
+  const existing = adapterCache.get(resolved)
+  if (existing) return existing
+  let adapter: StorageAdapter
   switch (resolved) {
     case "local":
-      cached = new LocalFsAdapter()
+      adapter = new LocalFsAdapter()
       break
     case "azure":
-      cached = new AzureBlobAdapter()
+      adapter = new AzureBlobAdapter()
       break
     default:
       throw new Error(`Unknown storage backend: ${resolved}`)
   }
-  return cached
+  adapterCache.set(resolved, adapter)
+  return adapter
 }
 
-/** Reset the cached adapter (test seam). */
+/** Reset the cached adapter(s) (test seam). */
 export function _resetStorageAdapter(): void {
-  cached = null
+  adapterCache.clear()
 }
