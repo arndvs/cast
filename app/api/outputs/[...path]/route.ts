@@ -12,7 +12,8 @@ export const runtime = "nodejs"
  * prior run; this route is the only way the browser can pull a generated PNG.
  *
  * Hardening:
- *   - safeJoin against ROOTS.outputs (rejects `..`, absolute, null bytes)
+ *   - readOutputFile validates segments (rejects `..`, absolute, null bytes,
+ *     backslash-smuggled components) before delegating to the StorageAdapter
  *   - .png whitelist — anything else 404s, never reveals MIME of other files
  *   - X-Content-Type-Options: nosniff so a malicious upstream can't trick
  *     the browser into rendering the bytes as HTML/JS
