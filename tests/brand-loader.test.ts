@@ -349,6 +349,40 @@ describe("canVariants — products.json", () => {
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
   })
+
+  it("throws BrandInvalidError when item.file contains traversal segment", async () => {
+    const TRAVERSAL_PRODUCTS = {
+      items: [{ id: "bad", sku: "BAD-001", file: "../../../etc/passwd", pose: "upright-center", detail: "evil" }],
+    }
+    mockAdapter.fileExists.mockResolvedValue(true)
+    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
+      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(TRAVERSAL_PRODUCTS))
+      if (key === "brands/acme/banned-words.json") throw enoent()
+      if (key === "brands/acme/backgrounds.json") throw enoent()
+      throw enoent()
+    })
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
+  })
+
+  it("throws BrandInvalidError when item.file contains backslashes", async () => {
+    const BACKSLASH_PRODUCTS = {
+      items: [{ id: "bad", sku: "BAD-001", file: "products\\..\\secrets.png", pose: "upright-center", detail: "evil" }],
+    }
+    mockAdapter.fileExists.mockResolvedValue(true)
+    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
+      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(BACKSLASH_PRODUCTS))
+      if (key === "brands/acme/banned-words.json") throw enoent()
+      if (key === "brands/acme/backgrounds.json") throw enoent()
+      throw enoent()
+    })
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
+  })
 })
 
 describe("backgroundVariants — backgrounds.json", () => {
@@ -381,5 +415,22 @@ describe("backgroundVariants — backgrounds.json", () => {
     mountValidBrandFixture()
     const profile = await loadBrandProfile("acme")
     expect(profile.backgroundVariants).toEqual([])
+  })
+
+  it("throws BrandInvalidError when item.file contains traversal segment", async () => {
+    const TRAVERSAL_BG = {
+      items: [{ id: "bad", file: "../../../etc/shadow", ratio: "1x1", sku: "BAD-001", luminance: "dark" }],
+    }
+    mockAdapter.fileExists.mockResolvedValue(true)
+    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
+      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/backgrounds.json") return Buffer.from(JSON.stringify(TRAVERSAL_BG))
+      if (key === "brands/acme/banned-words.json") throw enoent()
+      if (key === "brands/acme/products.json") throw enoent()
+      throw enoent()
+    })
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
   })
 })

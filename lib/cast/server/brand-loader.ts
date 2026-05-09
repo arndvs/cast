@@ -173,7 +173,7 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
       productsRaw,
     )
     for (const item of productsManifest.items) {
-      const segments = item.file.split("/").filter(Boolean)
+      const segments = validateItemFile(slug, "products.json", item.file)
       const itemKey = `brands/${slug}/${segments.join("/")}`
       await assertExists(storage, itemKey, slug, item.file)
       canVariants.push({
@@ -196,7 +196,7 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
       backgroundsRaw,
     )
     for (const item of backgroundsManifest.items) {
-      const segments = item.file.split("/").filter(Boolean)
+      const segments = validateItemFile(slug, "backgrounds.json", item.file)
       const itemKey = `brands/${slug}/${segments.join("/")}`
       await assertExists(storage, itemKey, slug, item.file)
       backgroundVariants.push({
@@ -332,6 +332,28 @@ function parse<T>(
     )
   }
   return result.data
+}
+
+/**
+ * Reject item.file values containing backslashes, traversal segments (.., .),
+ * or absolute paths. Surfaces violations as BrandInvalidError so callers get
+ * a clear 400 instead of an unexpected PathTraversalError from the adapter.
+ */
+function validateItemFile(slug: string, manifestFile: string, raw: string): string[] {
+  const segments = raw.split(/[\\/]/).filter(Boolean)
+  for (const seg of segments) {
+    if (seg === "." || seg === "..") {
+      throw new BrandInvalidError(slug, manifestFile, [
+        { path: ["file"], message: `path traversal segment "${seg}" in "${raw}"` },
+      ])
+    }
+  }
+  if (/^[a-zA-Z]:/.test(raw) || raw.startsWith("/")) {
+    throw new BrandInvalidError(slug, manifestFile, [
+      { path: ["file"], message: `absolute path not allowed: "${raw}"` },
+    ])
+  }
+  return segments
 }
 
 function unionLowercase(a: readonly string[], b: readonly string[]): string[] {
