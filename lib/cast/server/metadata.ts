@@ -2,14 +2,15 @@
  * Image metadata pipeline — analyzes generated creatives and writes
  * structured metadata as JSON sidecars.
  *
- * Called after `writeCreativeOutput` succeeds for each creative. Analysis
- * uses a cheap vision model (gpt-4o-mini) to extract description, tags,
- * colors, and mood from the image. Deterministic fields (campaign, brand,
- * market, etc.) are always populated; AI fields gracefully degrade to
- * empty arrays / null on analysis failure so the pipeline never breaks.
+ * Called during the pipeline loop for each creative, before the write
+ * stage. Uses a cheap vision model (gpt-4o-mini) to extract description,
+ * tags, colors, and mood from the composed image. Deterministic fields
+ * (campaign, brand, market, etc.) are always populated; AI fields
+ * gracefully degrade to empty arrays / null on analysis failure so the
+ * pipeline never breaks.
  *
- * Metadata is written to `outputs/[campaign]/[market]/[product]/[ratio].metadata.json`
- * via the StorageAdapter.
+ * The resulting metadata is passed to `writeCreativeOutput`, which writes
+ * the `.metadata.json` sidecar alongside the PNG via the StorageAdapter.
  */
 
 import OpenAI from "openai"
@@ -17,6 +18,17 @@ import { z } from "zod"
 import type { AspectRatio } from "@/lib/cast/schemas"
 import { ratioSchema } from "@/lib/cast/schemas"
 import { getOpenAIApiKey } from "@/lib/cast/server/config"
+
+// ---------------------------------------------------------------------------
+// Shared OpenAI client (lazy singleton — same pattern as pipeline/genai.ts)
+// ---------------------------------------------------------------------------
+
+let openaiClient: OpenAI | null = null
+function getClient(): OpenAI {
+  if (openaiClient) return openaiClient
+  openaiClient = new OpenAI({ apiKey: getOpenAIApiKey() })
+  return openaiClient
+}
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -127,7 +139,7 @@ const ANALYSIS_PROMPT = `Analyze this social media ad creative image. Return a J
 Return ONLY the JSON object, no other text.`
 
 async function callVisionModel(imageBuffer: Buffer, client?: OpenAI): Promise<z.infer<typeof analysisResponseSchema>> {
-  const openai = client ?? new OpenAI({ apiKey: getOpenAIApiKey() })
+  const openai = client ?? getClient()
 
   const base64 = imageBuffer.toString("base64")
   const response = await openai.chat.completions.create({
