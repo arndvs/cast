@@ -41,7 +41,7 @@ export const imageMetadataSchema = z.object({
   model: z.string().nullable(),
   revisedPrompt: z.string().nullable(),
 
-  generatedAt: z.string(),
+  generatedAt: z.string().datetime(),
 })
 
 export type ImageMetadata = z.infer<typeof imageMetadataSchema>

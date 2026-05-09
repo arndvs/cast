@@ -21,7 +21,12 @@ export async function writeCreativeOutput(args: {
   const outputPath = await writeToDisk(args.campaign, args.market, args.productSlug, args.ratio, args.png)
 
   if (args.metadata) {
-    await writeMetaToDisk(args.campaign, args.market, args.productSlug, args.ratio, args.metadata)
+    try {
+      await writeMetaToDisk(args.campaign, args.market, args.productSlug, args.ratio, args.metadata)
+    } catch {
+      // Best-effort — metadata sidecar failure must not block the pipeline.
+      // The PNG was already written successfully above.
+    }
   }
 
   return outputPath
