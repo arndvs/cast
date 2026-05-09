@@ -34,7 +34,7 @@ export interface StorageAdapter {
   /** Delete all files under a prefix (recursive). No-op if prefix does not exist. */
   deletePrefix(container: Container, prefix: string): Promise<void>
 
-  /** List file keys under a prefix. Returns keys relative to the container root. */
+  /** List all file keys under a prefix (recursive). Returns keys relative to the container root. */
   listFiles(container: Container, prefix: string): Promise<string[]>
 
   /** Check whether a file exists. */
@@ -60,7 +60,7 @@ export class LocalFsAdapter implements StorageAdapter {
     return fs.readFile(abs)
   }
 
-  async writeFile(container: Container, key: string, data: Buffer | string): Promise<void> {
+  async writeFile(container: Container, key: string, data: Buffer | string, _contentType?: string): Promise<void> {
     const segments = key.split(/[/\\]/).filter(Boolean)
     // TODO(symlink-hardening): safeJoin is lexical-only — harden with realpath check
     const abs = safeJoin(container as RootKey, ...segments)
@@ -87,9 +87,9 @@ export class LocalFsAdapter implements StorageAdapter {
     const segments = prefix.split(/[/\\]/).filter(Boolean)
     // TODO(symlink-hardening): safeJoin is lexical-only — harden with realpath check
     const abs = safeJoin(container as RootKey, ...segments)
-    let entries: string[]
+    let entries: import("node:fs").Dirent[]
     try {
-      entries = await fs.readdir(abs)
+      entries = await fs.readdir(abs, { withFileTypes: true })
     } catch (err: unknown) {
       // Only treat ENOENT (missing directory) as "no files".
       // Rethrow permission errors (EACCES/EPERM) and other I/O failures.
@@ -98,7 +98,17 @@ export class LocalFsAdapter implements StorageAdapter {
       }
       throw err
     }
-    return entries.map((e) => path.posix.join(prefix, e))
+    const results: string[] = []
+    for (const entry of entries) {
+      const entryPath = path.posix.join(prefix, entry.name)
+      if (entry.isFile()) {
+        results.push(entryPath)
+      } else if (entry.isDirectory()) {
+        const nested = await this.listFiles(container, entryPath)
+        results.push(...nested)
+      }
+    }
+    return results
   }
 
   async fileExists(container: Container, key: string): Promise<boolean> {

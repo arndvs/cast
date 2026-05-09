@@ -110,7 +110,12 @@ export class AzureBlobAdapter implements StorageAdapter {
   }
 
   async listFiles(container: Container, prefix: string): Promise<string[]> {
-    const normalizedPrefix = this.normalizeBlobName(prefix)
+    let normalizedPrefix = this.normalizeBlobName(prefix)
+    // Ensure trailing / for directory semantics — prevents "brisa" from
+    // matching "brisa-summer/" in Azure's string-prefix blob listing.
+    if (normalizedPrefix && !normalizedPrefix.endsWith("/")) {
+      normalizedPrefix += "/"
+    }
     const containerClient = this.getContainerClient(container)
     const keys: string[] = []
     for await (const blob of containerClient.listBlobsFlat({ prefix: normalizedPrefix })) {
