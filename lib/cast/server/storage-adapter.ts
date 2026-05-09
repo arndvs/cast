@@ -14,7 +14,6 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import { safeJoin, type RootKey } from "@/lib/cast/server/safe-join"
 import { getStorageBackend, type StorageBackend } from "@/lib/cast/server/config"
-import { AzureBlobAdapter } from "@/lib/cast/server/azure-blob-adapter"
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -153,12 +152,15 @@ const adapterCache = new Map<StorageBackend, StorageAdapter>()
 /**
  * Returns the active StorageAdapter based on `CAST_STORAGE` env var.
  * - `local` (default): LocalFsAdapter (filesystem-backed)
- * - `azure`: AzureBlobAdapter (Azure Blob Storage-backed)
+ * - `azure`: AzureBlobAdapter (Azure Blob Storage-backed, lazy-loaded)
  *
  * Caches per backend key so an explicit override doesn't return a
  * previously cached adapter for a different backend.
+ *
+ * Async because the Azure SDK is loaded dynamically to avoid pulling
+ * @azure/storage-blob at module init when CAST_STORAGE=local.
  */
-export function getStorageAdapter(backend?: StorageBackend): StorageAdapter {
+export async function getStorageAdapter(backend?: StorageBackend): Promise<StorageAdapter> {
   const resolved = backend ?? getStorageBackend()
   const existing = adapterCache.get(resolved)
   if (existing) return existing
@@ -167,9 +169,11 @@ export function getStorageAdapter(backend?: StorageBackend): StorageAdapter {
     case "local":
       adapter = new LocalFsAdapter()
       break
-    case "azure":
+    case "azure": {
+      const { AzureBlobAdapter } = await import("@/lib/cast/server/azure-blob-adapter")
       adapter = new AzureBlobAdapter()
       break
+    }
     default:
       throw new Error(`Unknown storage backend: ${resolved}`)
   }
