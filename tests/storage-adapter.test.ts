@@ -180,16 +180,16 @@ describe("LocalFsAdapter", () => {
       vi.mocked(fs.readdir).mockResolvedValue([
         { name: "a.png", isFile: () => true, isDirectory: () => false },
         { name: "subdir", isFile: () => false, isDirectory: () => true },
-      ] as unknown as import("node:fs").Dirent[])
+      ] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
 
       // When readdir is called for the subdir, return one file
       vi.mocked(fs.readdir).mockResolvedValueOnce([
         { name: "a.png", isFile: () => true, isDirectory: () => false },
         { name: "subdir", isFile: () => false, isDirectory: () => true },
-      ] as unknown as import("node:fs").Dirent[])
+      ] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
       vi.mocked(fs.readdir).mockResolvedValueOnce([
         { name: "b.png", isFile: () => true, isDirectory: () => false },
-      ] as unknown as import("node:fs").Dirent[])
+      ] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
 
       const result = await adapter.listFiles("outputs", "camp")
 
@@ -202,17 +202,17 @@ describe("LocalFsAdapter", () => {
       // Top-level: one directory
       vi.mocked(fs.readdir).mockResolvedValueOnce([
         { name: "market", isFile: () => false, isDirectory: () => true },
-      ] as unknown as import("node:fs").Dirent[])
+      ] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
       // market/: one file + one directory
       vi.mocked(fs.readdir).mockResolvedValueOnce([
         { name: "product", isFile: () => false, isDirectory: () => true },
         { name: "brief.json", isFile: () => true, isDirectory: () => false },
-      ] as unknown as import("node:fs").Dirent[])
+      ] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
       // market/product/: two files
       vi.mocked(fs.readdir).mockResolvedValueOnce([
         { name: "1x1.png", isFile: () => true, isDirectory: () => false },
         { name: "16x9.png", isFile: () => true, isDirectory: () => false },
-      ] as unknown as import("node:fs").Dirent[])
+      ] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
 
       const result = await adapter.listFiles("outputs", "camp")
 
