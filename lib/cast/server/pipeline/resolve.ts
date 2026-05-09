@@ -8,9 +8,9 @@
  *      matched by SKU (source: "products")
  *   3. No local asset found → GenAI fill (source: "genai")
  *
- * Repo-relative path is returned for "local"; absolute path for "products"
- * (brand-loader already resolved them). The orchestrator can call `readAsset`
- * for "local" or `fs.readFile` for "products" to materialize a Buffer.
+ * Repo-relative path is returned for "local"; container-relative key for
+ * "products" (brand-loader already resolved them). The orchestrator reads
+ * both types via StorageAdapter.
  */
 
 import type { BrandProfile } from "@/lib/cast/schemas"

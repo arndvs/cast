@@ -1,17 +1,29 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
+import type { StorageAdapter } from "@/lib/cast/server/storage-adapter"
 
-// Mock node:fs/promises before importing the loader.
-vi.mock("node:fs/promises", () => {
-  return {
-    default: {
-      readFile: vi.fn(),
-      access: vi.fn(),
-      readdir: vi.fn(),
-    },
-  }
-})
+// Mock getStorageAdapter to return a controllable adapter.
+const mockAdapter: {
+  readFile: ReturnType<typeof vi.fn>
+  fileExists: ReturnType<typeof vi.fn>
+  listFiles: ReturnType<typeof vi.fn>
+  writeFile: ReturnType<typeof vi.fn>
+  deleteFile: ReturnType<typeof vi.fn>
+  deletePrefix: ReturnType<typeof vi.fn>
+  getPublicUrl: ReturnType<typeof vi.fn>
+} = {
+  readFile: vi.fn(),
+  fileExists: vi.fn(),
+  listFiles: vi.fn(),
+  writeFile: vi.fn(),
+  deleteFile: vi.fn(),
+  deletePrefix: vi.fn(),
+  getPublicUrl: vi.fn(),
+}
 
-import fs from "node:fs/promises"
+vi.mock("@/lib/cast/server/storage-adapter", () => ({
+  getStorageAdapter: vi.fn(async () => mockAdapter as unknown as StorageAdapter),
+}))
+
 import {
   loadBrandProfile,
   listBrandSlugs,
@@ -24,12 +36,6 @@ import {
   BrandIncompleteError,
   BrandInvalidError,
 } from "@/lib/cast/errors"
-
-const mockedFs = fs as unknown as {
-  readFile: ReturnType<typeof vi.fn>
-  access: ReturnType<typeof vi.fn>
-  readdir: ReturnType<typeof vi.fn>
-}
 
 const VALID_BRAND = {
   displayName: "Acme",
@@ -56,13 +62,20 @@ function enoent(): NodeJS.ErrnoException {
 }
 
 function mountValidBrandFixture(slug = "acme"): void {
-  mockedFs.access.mockImplementation(async () => undefined)
-  mockedFs.readFile.mockImplementation(async (p: string) => {
-    const path = String(p).replace(/\\/g, "/")
-    if (path.endsWith(`brands/${slug}/brand.json`)) return JSON.stringify(VALID_BRAND)
-    if (path.endsWith(`brands/${slug}/voice.json`)) return JSON.stringify(VALID_VOICE)
-    if (path.endsWith(`brands/${slug}/logos/logos.json`)) return JSON.stringify(VALID_LOGOS)
-    if (path.endsWith(`brands/${slug}/banned-words.json`)) throw enoent()
+  mockAdapter.fileExists.mockImplementation(async (_c: string, key: string) => {
+    // brand.json existence check (brand dir proxy) + font + logo variants
+    if (key === `brands/${slug}/brand.json`) return true
+    if (key === `brands/${slug}/font.ttf`) return true
+    if (key === `brands/${slug}/logos/primary.png`) return true
+    return false
+  })
+  mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
+    if (key === `brands/${slug}/brand.json`) return Buffer.from(JSON.stringify(VALID_BRAND))
+    if (key === `brands/${slug}/voice.json`) return Buffer.from(JSON.stringify(VALID_VOICE))
+    if (key === `brands/${slug}/logos/logos.json`) return Buffer.from(JSON.stringify(VALID_LOGOS))
+    if (key === `brands/${slug}/banned-words.json`) throw enoent()
+    if (key === `brands/${slug}/products.json`) throw enoent()
+    if (key === `brands/${slug}/backgrounds.json`) throw enoent()
     throw enoent()
   })
 }
@@ -70,9 +83,9 @@ function mountValidBrandFixture(slug = "acme"): void {
 beforeEach(() => {
   _clearBrandCache()
   _resetBrandWarnings()
-  mockedFs.readFile.mockReset()
-  mockedFs.access.mockReset()
-  mockedFs.readdir.mockReset()
+  mockAdapter.readFile.mockReset()
+  mockAdapter.fileExists.mockReset()
+  mockAdapter.listFiles.mockReset()
 })
 
 afterEach(() => {
@@ -87,17 +100,16 @@ describe("loadBrandProfile", () => {
   })
 
   it("throws BrandNotFoundError when brand dir is missing", async () => {
-    mockedFs.access.mockRejectedValue(enoent())
+    mockAdapter.fileExists.mockResolvedValue(false)
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandNotFoundError)
   })
 
   it("throws BrandIncompleteError when a required file is missing", async () => {
-    mockedFs.access.mockResolvedValue(undefined)
-    mockedFs.readFile.mockImplementation(async (p: string) => {
-      const path = String(p).replace(/\\/g, "/")
-      if (path.endsWith("voice.json")) throw enoent()
-      if (path.endsWith("brand.json")) return JSON.stringify(VALID_BRAND)
-      if (path.endsWith("logos/logos.json")) return JSON.stringify(VALID_LOGOS)
+    mockAdapter.fileExists.mockResolvedValue(true)
+    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
+      if (key === "brands/acme/voice.json") throw enoent()
+      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
       throw enoent()
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
@@ -106,8 +118,8 @@ describe("loadBrandProfile", () => {
   })
 
   it("throws BrandInvalidError on JSON parse failure", async () => {
-    mockedFs.access.mockResolvedValue(undefined)
-    mockedFs.readFile.mockImplementation(async () => "{ this is not json")
+    mockAdapter.fileExists.mockResolvedValue(true)
+    mockAdapter.readFile.mockResolvedValue(Buffer.from("{ this is not json"))
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
   })
 
@@ -124,61 +136,62 @@ describe("loadBrandProfile", () => {
   it("returns the cached profile on a second call within TTL", async () => {
     mountValidBrandFixture()
     const a = await loadBrandProfile("acme")
-    const readsAfterFirst = mockedFs.readFile.mock.calls.length
+    const readsAfterFirst = mockAdapter.readFile.mock.calls.length
     const b = await loadBrandProfile("acme")
     expect(b).toBe(a) // referentially identical → from cache
-    expect(mockedFs.readFile.mock.calls.length).toBe(readsAfterFirst)
+    expect(mockAdapter.readFile.mock.calls.length).toBe(readsAfterFirst)
   })
 
   it("re-reads after TTL expiry (90 s)", async () => {
     vi.useFakeTimers()
     mountValidBrandFixture()
     await loadBrandProfile("acme")
-    const readsAfterFirst = mockedFs.readFile.mock.calls.length
+    const readsAfterFirst = mockAdapter.readFile.mock.calls.length
     vi.advanceTimersByTime(90_001)
     await loadBrandProfile("acme")
-    expect(mockedFs.readFile.mock.calls.length).toBeGreaterThan(readsAfterFirst)
+    expect(mockAdapter.readFile.mock.calls.length).toBeGreaterThan(readsAfterFirst)
   })
 
   it("re-reads after _clearBrandCache()", async () => {
     mountValidBrandFixture()
     await loadBrandProfile("acme")
-    const readsAfterFirst = mockedFs.readFile.mock.calls.length
+    const readsAfterFirst = mockAdapter.readFile.mock.calls.length
     _clearBrandCache()
     await loadBrandProfile("acme")
-    expect(mockedFs.readFile.mock.calls.length).toBeGreaterThan(readsAfterFirst)
+    expect(mockAdapter.readFile.mock.calls.length).toBeGreaterThan(readsAfterFirst)
   })
 
   it("accepts font.otf when font.ttf is absent", async () => {
-    mockedFs.access.mockImplementation(async (p: string) => {
-      const path = String(p).replace(/\\/g, "/")
-      if (path.endsWith("/font.ttf")) throw enoent()
-      return undefined
+    mockAdapter.fileExists.mockImplementation(async (_c: string, key: string) => {
+      if (key === "brands/acme/font.ttf") return false
+      return true
     })
-    mockedFs.readFile.mockImplementation(async (p: string) => {
-      const path = String(p).replace(/\\/g, "/")
-      if (path.endsWith("brands/acme/brand.json")) return JSON.stringify(VALID_BRAND)
-      if (path.endsWith("brands/acme/voice.json")) return JSON.stringify(VALID_VOICE)
-      if (path.endsWith("brands/acme/logos/logos.json")) return JSON.stringify(VALID_LOGOS)
-      if (path.endsWith("brands/acme/banned-words.json")) throw enoent()
+    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
+      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/banned-words.json") throw enoent()
+      if (key === "brands/acme/products.json") throw enoent()
+      if (key === "brands/acme/backgrounds.json") throw enoent()
       throw enoent()
     })
     const profile = await loadBrandProfile("acme")
-    expect(profile.fontPath.replace(/\\/g, "/")).toMatch(/\/font\.otf$/)
+    expect(profile.fontPath).toBe("brands/acme/font.otf")
   })
 
   it("throws BrandIncompleteError when neither font.ttf nor font.otf exists", async () => {
-    mockedFs.access.mockImplementation(async (p: string) => {
-      const path = String(p).replace(/\\/g, "/")
-      if (/\/font\.(ttf|otf)$/.test(path)) throw enoent()
-      return undefined
+    mockAdapter.fileExists.mockImplementation(async (_c: string, key: string) => {
+      if (key === "brands/acme/font.ttf") return false
+      if (key === "brands/acme/font.otf") return false
+      return true
     })
-    mockedFs.readFile.mockImplementation(async (p: string) => {
-      const path = String(p).replace(/\\/g, "/")
-      if (path.endsWith("brands/acme/brand.json")) return JSON.stringify(VALID_BRAND)
-      if (path.endsWith("brands/acme/voice.json")) return JSON.stringify(VALID_VOICE)
-      if (path.endsWith("brands/acme/logos/logos.json")) return JSON.stringify(VALID_LOGOS)
-      if (path.endsWith("brands/acme/banned-words.json")) throw enoent()
+    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
+      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/banned-words.json") throw enoent()
+      if (key === "brands/acme/products.json") throw enoent()
+      if (key === "brands/acme/backgrounds.json") throw enoent()
       throw enoent()
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
@@ -189,19 +202,18 @@ describe("loadBrandProfile", () => {
 
 describe("listBrandSlugs", () => {
   it("returns sorted slugs that match SLUG_RE", async () => {
-    mockedFs.readdir.mockResolvedValue([
-      { name: "zeta", isDirectory: () => true },
-      { name: "alpha", isDirectory: () => true },
-      { name: "INVALID", isDirectory: () => true }, // fails SLUG_RE
-      { name: "not-a-dir", isDirectory: () => false },
-    ] as unknown as never)
+    mockAdapter.listFiles.mockResolvedValue([
+      "brands/zeta/brand.json",
+      "brands/alpha/brand.json",
+      "brands/INVALID/brand.json", // fails SLUG_RE
+    ])
     const slugs = await listBrandSlugs()
     expect(slugs).toEqual(["alpha", "zeta"])
   })
 
-  it("returns [] when inputs/brands/ is missing (ENOENT)", async () => {
+  it("returns [] when inputs/brands/ is missing (empty listFiles)", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
-    mockedFs.readdir.mockRejectedValue(enoent())
+    mockAdapter.listFiles.mockResolvedValue([])
     expect(await listBrandSlugs()).toEqual([])
     warn.mockRestore()
   })
@@ -209,7 +221,7 @@ describe("listBrandSlugs", () => {
   it("re-throws non-ENOENT errors (e.g. EACCES)", async () => {
     const eacces = new Error("EACCES") as NodeJS.ErrnoException
     eacces.code = "EACCES"
-    mockedFs.readdir.mockRejectedValue(eacces)
+    mockAdapter.listFiles.mockRejectedValue(eacces)
     await expect(listBrandSlugs()).rejects.toThrow("EACCES")
   })
 })
@@ -217,7 +229,7 @@ describe("listBrandSlugs", () => {
 describe("listBrandSlugs warn-once", () => {
   it("warns exactly once when inputs/brands/ is missing", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
-    mockedFs.readdir.mockRejectedValue(enoent())
+    mockAdapter.listFiles.mockResolvedValue([])
     await listBrandSlugs()
     await listBrandSlugs()
     expect(warn).toHaveBeenCalledTimes(1)
@@ -227,9 +239,9 @@ describe("listBrandSlugs warn-once", () => {
 
   it("warns exactly once when no slugs match SLUG_RE", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
-    mockedFs.readdir.mockResolvedValue([
-      { name: "INVALID", isDirectory: () => true },
-    ] as unknown as never)
+    mockAdapter.listFiles.mockResolvedValue([
+      "brands/INVALID/brand.json",
+    ])
     await listBrandSlugs()
     await listBrandSlugs()
     expect(warn).toHaveBeenCalledTimes(1)
@@ -239,9 +251,9 @@ describe("listBrandSlugs warn-once", () => {
 
   it("does NOT warn when at least one valid slug is present", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
-    mockedFs.readdir.mockResolvedValue([
-      { name: "acme", isDirectory: () => true },
-    ] as unknown as never)
+    mockAdapter.listFiles.mockResolvedValue([
+      "brands/acme/brand.json",
+    ])
     await listBrandSlugs()
     expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
@@ -257,19 +269,18 @@ describe("tryLoadBrand", () => {
   })
 
   it("returns { ok: false, error: BrandNotFoundError } when brand dir is missing", async () => {
-    mockedFs.access.mockRejectedValue(enoent())
+    mockAdapter.fileExists.mockResolvedValue(false)
     const result = await tryLoadBrand("acme")
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error).toBeInstanceOf(BrandNotFoundError)
   })
 
   it("returns { ok: false, error: BrandIncompleteError } on missing required file", async () => {
-    mockedFs.access.mockResolvedValue(undefined)
-    mockedFs.readFile.mockImplementation(async (p: string) => {
-      const path = String(p).replace(/\\/g, "/")
-      if (path.endsWith("voice.json")) throw enoent()
-      if (path.endsWith("brand.json")) return JSON.stringify(VALID_BRAND)
-      if (path.endsWith("logos/logos.json")) return JSON.stringify(VALID_LOGOS)
+    mockAdapter.fileExists.mockResolvedValue(true)
+    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
+      if (key === "brands/acme/voice.json") throw enoent()
+      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
       throw enoent()
     })
     const result = await tryLoadBrand("acme")
@@ -278,8 +289,8 @@ describe("tryLoadBrand", () => {
   })
 
   it("returns { ok: false, error: BrandInvalidError } on parse failure", async () => {
-    mockedFs.access.mockResolvedValue(undefined)
-    mockedFs.readFile.mockImplementation(async () => "{ not json")
+    mockAdapter.fileExists.mockResolvedValue(true)
+    mockAdapter.readFile.mockResolvedValue(Buffer.from("{ not json"))
     const result = await tryLoadBrand("acme")
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error).toBeInstanceOf(BrandInvalidError)
@@ -288,7 +299,7 @@ describe("tryLoadBrand", () => {
   it("re-throws non-brand errors (e.g. EACCES)", async () => {
     const eacces = new Error("EACCES") as NodeJS.ErrnoException
     eacces.code = "EACCES"
-    mockedFs.access.mockRejectedValue(eacces)
+    mockAdapter.fileExists.mockRejectedValue(eacces)
     await expect(tryLoadBrand("acme")).rejects.toThrow("EACCES")
   })
 })
@@ -302,22 +313,21 @@ describe("canVariants — products.json", () => {
   }
 
   it("populates canVariants when products.json is present", async () => {
-    mockedFs.access.mockResolvedValue(undefined)
-    mockedFs.readFile.mockImplementation(async (p: string) => {
-      const path = String(p).replace(/\\/g, "/")
-      if (path.endsWith("brands/acme/brand.json")) return JSON.stringify(VALID_BRAND)
-      if (path.endsWith("brands/acme/voice.json")) return JSON.stringify(VALID_VOICE)
-      if (path.endsWith("brands/acme/logos/logos.json")) return JSON.stringify(VALID_LOGOS)
-      if (path.endsWith("brands/acme/products.json")) return JSON.stringify(VALID_PRODUCTS)
-      if (path.endsWith("brands/acme/banned-words.json")) throw enoent()
-      if (path.endsWith("brands/acme/backgrounds.json")) throw enoent()
+    mockAdapter.fileExists.mockResolvedValue(true)
+    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
+      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(VALID_PRODUCTS))
+      if (key === "brands/acme/banned-words.json") throw enoent()
+      if (key === "brands/acme/backgrounds.json") throw enoent()
       throw enoent()
     })
     const profile = await loadBrandProfile("acme")
     expect(profile.canVariants).toHaveLength(2)
     expect(profile.canVariants[0].sku).toBe("TST-CIT-12")
     expect(profile.canVariants[0].pose).toBe("upright-center")
-    expect(profile.canVariants[0].file.replace(/\\/g, "/")).toContain("can-citrus.png")
+    expect(profile.canVariants[0].file).toBe("brands/acme/products/can-citrus.png")
   })
 
   it("returns empty canVariants when products.json is absent", async () => {
@@ -327,15 +337,14 @@ describe("canVariants — products.json", () => {
   })
 
   it("throws BrandInvalidError when products.json has invalid schema", async () => {
-    mockedFs.access.mockResolvedValue(undefined)
-    mockedFs.readFile.mockImplementation(async (p: string) => {
-      const path = String(p).replace(/\\/g, "/")
-      if (path.endsWith("brands/acme/brand.json")) return JSON.stringify(VALID_BRAND)
-      if (path.endsWith("brands/acme/voice.json")) return JSON.stringify(VALID_VOICE)
-      if (path.endsWith("brands/acme/logos/logos.json")) return JSON.stringify(VALID_LOGOS)
-      if (path.endsWith("brands/acme/products.json")) return JSON.stringify({ items: [] }) // min(1) violation
-      if (path.endsWith("brands/acme/banned-words.json")) throw enoent()
-      if (path.endsWith("brands/acme/backgrounds.json")) throw enoent()
+    mockAdapter.fileExists.mockResolvedValue(true)
+    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
+      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify({ items: [] })) // min(1) violation
+      if (key === "brands/acme/banned-words.json") throw enoent()
+      if (key === "brands/acme/backgrounds.json") throw enoent()
       throw enoent()
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
@@ -351,15 +360,14 @@ describe("backgroundVariants — backgrounds.json", () => {
   }
 
   it("populates backgroundVariants when backgrounds.json is present", async () => {
-    mockedFs.access.mockResolvedValue(undefined)
-    mockedFs.readFile.mockImplementation(async (p: string) => {
-      const path = String(p).replace(/\\/g, "/")
-      if (path.endsWith("brands/acme/brand.json")) return JSON.stringify(VALID_BRAND)
-      if (path.endsWith("brands/acme/voice.json")) return JSON.stringify(VALID_VOICE)
-      if (path.endsWith("brands/acme/logos/logos.json")) return JSON.stringify(VALID_LOGOS)
-      if (path.endsWith("brands/acme/backgrounds.json")) return JSON.stringify(VALID_BACKGROUNDS)
-      if (path.endsWith("brands/acme/banned-words.json")) throw enoent()
-      if (path.endsWith("brands/acme/products.json")) throw enoent()
+    mockAdapter.fileExists.mockResolvedValue(true)
+    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
+      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/backgrounds.json") return Buffer.from(JSON.stringify(VALID_BACKGROUNDS))
+      if (key === "brands/acme/banned-words.json") throw enoent()
+      if (key === "brands/acme/products.json") throw enoent()
       throw enoent()
     })
     const profile = await loadBrandProfile("acme")

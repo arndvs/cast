@@ -60,7 +60,7 @@ import {
   writeBriefSnapshot,
   writeReport,
 } from "@/lib/cast/server/storage"
-import fs from "node:fs/promises"
+import { getStorageAdapter } from "@/lib/cast/server/storage-adapter"
 import {
   emitAssetResolved,
   emitComplete,
@@ -276,12 +276,12 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
       let baseImageGenerationError: { stage: ErrorStage; message: string } | undefined
       if (resolved.source === "local" || resolved.source === "products") {
         try {
-          // "local" → repo-relative path via readAsset; "products" → absolute
-          // path resolved by brand-loader, read directly via fs.
+          // "local" → repo-relative path via readAsset; "products" → container-relative
+          // key via readBrandAsset.
           localBaseImage =
             resolved.source === "local"
               ? await readAsset(resolved.file)
-              : await readFile(resolved.file)
+              : await readBrandAsset(resolved.file)
         } catch (err) {
           const message = errMessage(err)
           for (const ratio of brief.ratios) {
@@ -524,11 +524,10 @@ function errMessage(err: unknown): string {
 }
 
 /**
- * Read a file from an absolute path (used for brand-can variants whose paths
- * are already absolute, resolved by brand-loader). Kept separate from
- * `readAsset` which takes repo-relative inputs/-rooted paths.
+ * Read a brand asset file via StorageAdapter using a container-relative key
+ * (e.g. `brands/brisa/products/can-citrus.png`).
  */
-async function readFile(absPath: string): Promise<Buffer> {
-  return fs.readFile(absPath)
+async function readBrandAsset(key: string): Promise<Buffer> {
+  return (await getStorageAdapter()).readFile("inputs", key)
 }
 

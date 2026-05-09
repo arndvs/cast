@@ -239,11 +239,11 @@ export type BrandProfile = {
     theme?: "light" | "dark"
   }[]
   defaultLogoId: string
-  /** Absolute path to the brand's display font. `font.ttf` or `font.otf`. */
+  /** Container-relative key to the brand's display font, e.g. `brands/acme/font.otf`. */
   fontPath: string
   /**
    * Can/product PNG variants from products.json.
-   * `file` is an absolute path (resolved by brand-loader).
+   * `file` is a container-relative key (e.g. `brands/acme/products/can.png`).
    * Empty array when products.json is absent (e.g. Volt).
    */
   canVariants: Array<{
@@ -255,7 +255,7 @@ export type BrandProfile = {
   }>
   /**
    * Background image variants from backgrounds.json.
-   * `file` is an absolute path (resolved by brand-loader).
+   * `file` is a container-relative key (e.g. `brands/acme/backgrounds/bg.png`).
    * Empty array when backgrounds.json is absent (e.g. Volt).
    */
   backgroundVariants: Array<{
