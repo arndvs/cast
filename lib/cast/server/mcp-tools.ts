@@ -70,10 +70,10 @@ export interface McpToolDeps {
     headline: string
     bannedWords: readonly string[]
   }) => ComplianceResult
-  getStorageAdapter: () => {
+  getStorageAdapter: () => Promise<{
     readFile(container: "inputs" | "outputs", key: string): Promise<Buffer>
     fileExists(container: "inputs" | "outputs", key: string): Promise<boolean>
-  }
+  }>
 }
 
 // ---------------------------------------------------------------------------
@@ -262,7 +262,7 @@ export function buildToolRegistry(deps: McpToolDeps): CastMcpTool[] {
       }),
       annotations: { readOnlyHint: true },
       handler: async (input) => {
-        const adapter = deps.getStorageAdapter()
+        const adapter = await deps.getStorageAdapter()
         const key = `${input.campaign}/report.json`
         const exists = await adapter.fileExists("outputs", key)
         if (!exists) {
