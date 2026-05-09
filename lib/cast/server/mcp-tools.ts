@@ -272,11 +272,16 @@ export function buildToolRegistry(deps: McpToolDeps): CastMcpTool[] {
             structuredContent: { found: true, manifest },
             content: `Manifest found for campaign "${input.campaign}"`,
           }
-        } catch {
-          return {
-            structuredContent: { found: false },
-            content: `No manifest found for campaign "${input.campaign}"`,
+        } catch (err: unknown) {
+          // Only treat ENOENT (missing report.json) as "not found".
+          // Rethrow permission errors, JSON parse failures, and other I/O issues.
+          if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+            return {
+              structuredContent: { found: false },
+              content: `No manifest found for campaign "${input.campaign}"`,
+            }
           }
+          throw err
         }
       },
     }),

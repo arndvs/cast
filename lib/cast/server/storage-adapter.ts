@@ -56,12 +56,14 @@ export interface StorageAdapter {
 export class LocalFsAdapter implements StorageAdapter {
   async readFile(container: Container, key: string): Promise<Buffer> {
     const segments = key.split(/[/\\]/).filter(Boolean)
+    // TODO(symlink-hardening): safeJoin is lexical-only — harden with realpath check
     const abs = safeJoin(container as RootKey, ...segments)
     return fs.readFile(abs)
   }
 
   async writeFile(container: Container, key: string, data: Buffer | string): Promise<void> {
     const segments = key.split(/[/\\]/).filter(Boolean)
+    // TODO(symlink-hardening): safeJoin is lexical-only — harden with realpath check
     const abs = safeJoin(container as RootKey, ...segments)
     const dir = path.dirname(abs)
     await fs.mkdir(dir, { recursive: true })
@@ -70,18 +72,21 @@ export class LocalFsAdapter implements StorageAdapter {
 
   async deleteFile(container: Container, key: string): Promise<void> {
     const segments = key.split(/[/\\]/).filter(Boolean)
+    // TODO(symlink-hardening): safeJoin is lexical-only — harden with realpath check
     const abs = safeJoin(container as RootKey, ...segments)
     await fs.rm(abs, { force: true })
   }
 
   async deletePrefix(container: Container, prefix: string): Promise<void> {
     const segments = prefix.split(/[/\\]/).filter(Boolean)
+    // TODO(symlink-hardening): safeJoin is lexical-only — harden with realpath check
     const abs = safeJoin(container as RootKey, ...segments)
     await fs.rm(abs, { recursive: true, force: true })
   }
 
   async listFiles(container: Container, prefix: string): Promise<string[]> {
     const segments = prefix.split(/[/\\]/).filter(Boolean)
+    // TODO(symlink-hardening): safeJoin is lexical-only — harden with realpath check
     const abs = safeJoin(container as RootKey, ...segments)
     let entries: string[]
     try {
@@ -94,17 +99,43 @@ export class LocalFsAdapter implements StorageAdapter {
 
   async fileExists(container: Container, key: string): Promise<boolean> {
     const segments = key.split(/[/\\]/).filter(Boolean)
+    // TODO(symlink-hardening): safeJoin is lexical-only — harden with realpath check
     const abs = safeJoin(container as RootKey, ...segments)
     try {
       await fs.access(abs)
       return true
-    } catch {
-      return false
+    } catch (err: unknown) {
+      // Only treat ENOENT (missing file) as "not found".
+      // Rethrow permission errors (EACCES/EPERM) and other I/O failures.
+      if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+        return false
+      }
+      throw err
     }
   }
 
   getPublicUrl(container: Container, key: string): string {
-    return `/api/outputs/${key}`
+    // Percent-encode each path segment for safe URL construction.
+    const encoded = key
+      .split(/[/\\]/)
+      .filter(Boolean)
+      .map((seg) => encodeURIComponent(seg))
+      .join("/")
+
+    switch (container) {
+      case "outputs":
+        return `/api/outputs/${encoded}`
+      case "inputs":
+        // Inputs are not publicly served; throw to catch misuse early.
+        throw new Error(
+          `getPublicUrl() does not support the "inputs" container — ` +
+          `only "outputs" assets have public proxy URLs.`,
+        )
+      default: {
+        const _exhaustive: never = container
+        throw new Error(`Unknown container: ${_exhaustive}`)
+      }
+    }
   }
 }
 
