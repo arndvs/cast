@@ -1,7 +1,7 @@
 # Cast — Documentation (v2)
 
 > Specs, diagrams, and the lo-fi prototype for the **Cast Creative Automation Studio Toolchain**.
-> For runtime / Quick Start, see the [root README](../README.md).
+> For runtime / Quick Start, see the [root README](../../README.md).
 
 This folder is the design record for the POC and v2 evolution. Read top-to-bottom — each doc builds on the one above it.
 
@@ -9,20 +9,20 @@ This folder is the design record for the POC and v2 evolution. Read top-to-botto
 
 | # | Doc | What it answers |
 | --- | --- | --- |
-| 1 | [user-stories.md](user-stories.md) | **Who** uses Cast and **what jobs** they need done. Five personas: Maya (production), Priya (brand), Aaron (demo), Jordan (performance), Sam (ops/scheduling). Source of every requirement downstream. |
-| 2 | [system-map.md](system-map.md) | **What the system is**: entities, actors, subsystems, three-caller architecture (UI · Fastify · MCP), data flows. The canonical architecture reference. |
-| 3 | [flow-diagrams.md](flow-diagrams.md) | **How requests move through it** (v1): per-screen flows S1–S5, error paths, retry semantics, API contract, brief schema, brand profile schema, future scope §1–§8. |
+| 1 | [user-stories-v2.md](user-stories-v2.md) | **Who** uses Cast and **what jobs** they need done. Five personas: Maya (production), Priya (brand), Aaron (demo), Jordan (performance), Sam (ops/scheduling). Source of every requirement downstream. |
+| 2 | [system-map-v2.md](system-map-v2.md) | **What the system is**: entities, actors, subsystems, three-caller architecture (UI · Fastify · MCP), data flows. The canonical architecture reference. |
+| 3 | [flow-diagrams.md](../flow-diagrams.md) | **How requests move through it** (v1): per-screen flows S1–S5, error paths, retry semantics, API contract, brief schema, brand profile schema, future scope §1–§8. |
 | 3v2 | [flow-diagrams-v2.md](flow-diagrams-v2.md) | **v2 flow additions** §9–§11: performance feedback import, fatigue score computation, agent/MCP caller session flows. Read after flow-diagrams.md §8. |
-| 4 | [attributes-screen-requirements.md](attributes-screen-requirements.md) | **What each screen must show**: S1–S7 (S6 Performance Dashboard and S7 Fatigue Report are v2 additions). |
-| 5 | [mockup.html](mockup.html) | **What it looks like**: rough static HTML mockups of S1–S5 (S6/S7 mocks TBD). |
-| 6 | [prototype/](prototype/) | **What it feels like**: clickable vanilla-React prototype. See [prototype/README.md](prototype/README.md) to run it. |
+| 4 | [attributes-screen-requirements-v2.md](attributes-screen-requirements-v2.md) | **What each screen must show**: S1–S7 (S6 Performance Dashboard and S7 Fatigue Report are v2 additions). |
+| 5 | [mockup.html](../mockup.html) | **What it looks like**: rough static HTML mockups of S1–S5 (S6/S7 mocks TBD). |
+| 6 | [prototype/](../prototype/) | **What it feels like**: clickable vanilla-React prototype. See [prototype/README.md](../prototype/README.md) to run it. |
 
 ## Reference docs
 
 | Doc | Purpose |
 | --- | --- |
-| [design/](design/) | Brand guideline HTML books for Onda, Brisa, Volt, and Cast. |
-| [brand-extraction.md](brand-extraction.md) | How the brand HTMLs are reduced to the runtime `brandProfileSchema` (Part 1), the Qdrant `cast-knowledge` knowledge base (Part 2), historical asset ingestion (Part 3 — Step 13–16), and output versioning. |
+| [design/](../design/) | Brand guideline HTML books for Onda, Brisa, Volt, and Cast. |
+| [brand-extraction-v2.md](brand-extraction-v2.md) | How the brand HTMLs are reduced to the runtime `brandProfileSchema` (Part 1), the Qdrant `cast-knowledge` knowledge base (Part 2), historical asset ingestion (Part 3 — Step 13–16), and output versioning. |
 | [agent-integration.md](agent-integration.md) | **New in v2.** How Cast exposes its pipeline to agents, schedulers, and external marketing automation systems. Covers all 13 MCP tools (9 core + 4 post-Qdrant), 3 MCP resources, stdio-first transport with ready-to-paste `mcp.json` config, progress streaming model, tool annotations, the performance flywheel, human-in-the-loop checkpoints, the `AdsPerformanceProvider` interface, and the Fastify split path. |
 
 ## What changed in v2

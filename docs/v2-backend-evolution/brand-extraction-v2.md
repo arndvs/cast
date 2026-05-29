@@ -8,10 +8,10 @@
 
 | Brand | HTML | Runtime profile? | Knowledge docs? |
 | --- | --- | --- | --- |
-| Brisa | [docs/design/brisa-brand-guidelines.html](design/brisa-brand-guidelines.html) | Yes — `inputs/brands/brisa/` | Yes — `inputs/knowledge/brisa/` |
-| Volt  | [docs/design/volt-brand-guidelines.html](design/volt-brand-guidelines.html)   | Yes — `inputs/brands/volt/`  | Yes — `inputs/knowledge/volt/` |
-| Cast  | [docs/design/cast-brand-guidelines.html](design/cast-brand-guidelines.html)   | **No** — Cast is the tool's own UI brand | **No** |
-| Onda  | [docs/design/onda-brand-guidelines.html](design/onda-brand-guidelines.html)   | **No** — narrative framing only | **No** |
+| Brisa | [docs/design/brisa-brand-guidelines.html](../design/brisa-brand-guidelines.html) | Yes — `inputs/brands/brisa/` | Yes — `inputs/knowledge/brisa/` |
+| Volt  | [docs/design/volt-brand-guidelines.html](../design/volt-brand-guidelines.html)   | Yes — `inputs/brands/volt/`  | Yes — `inputs/knowledge/volt/` |
+| Cast  | [docs/design/cast-brand-guidelines.html](../design/cast-brand-guidelines.html)   | **No** — Cast is the tool's own UI brand | **No** |
+| Onda  | [docs/design/onda-brand-guidelines.html](../design/onda-brand-guidelines.html)   | **No** — narrative framing only | **No** |
 
 ---
 
