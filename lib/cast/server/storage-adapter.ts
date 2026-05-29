@@ -52,6 +52,9 @@ export interface StorageAdapter {
   /** List all file keys under a prefix (recursive). Returns keys relative to the container root. */
   listFiles(container: Container, prefix: string): Promise<string[]>
 
+  /** List immediate child directory names under a prefix (non-recursive). */
+  listPrefixes(container: Container, prefix: string): Promise<string[]>
+
   /** Check whether a file exists. */
   fileExists(container: Container, key: string): Promise<boolean>
 
@@ -131,6 +134,21 @@ export class LocalFsAdapter implements StorageAdapter {
       }
     }
     return results
+  }
+
+  async listPrefixes(container: Container, prefix: string): Promise<string[]> {
+    const segments = prefix.split(/[/\\]/).filter(Boolean)
+    const abs = safeJoin(container as RootKey, ...segments)
+    let entries: import("node:fs").Dirent[]
+    try {
+      entries = await fs.readdir(abs, { withFileTypes: true })
+    } catch (err: unknown) {
+      if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+        return []
+      }
+      throw err
+    }
+    return entries.filter((e) => e.isDirectory()).map((e) => e.name).sort()
   }
 
   async fileExists(container: Container, key: string): Promise<boolean> {

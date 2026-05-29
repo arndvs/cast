@@ -133,6 +133,22 @@ export class AzureBlobAdapter implements StorageAdapter {
     return keys
   }
 
+  async listPrefixes(container: Container, prefix: string): Promise<string[]> {
+    let normalizedPrefix = this.normalizeBlobName(prefix)
+    if (normalizedPrefix && !normalizedPrefix.endsWith("/")) {
+      normalizedPrefix += "/"
+    }
+    const containerClient = this.getContainerClient(container)
+    const names: string[] = []
+    for await (const item of containerClient.listBlobsByHierarchy("/", { prefix: normalizedPrefix })) {
+      if (item.kind === "prefix" && item.name.endsWith("/")) {
+        const stripped = item.name.slice(normalizedPrefix.length).replace(/\/$/, "")
+        if (stripped) names.push(stripped)
+      }
+    }
+    return names.sort()
+  }
+
   async fileExists(container: Container, key: string): Promise<boolean> {
     const blobName = this.normalizeBlobName(key)
     const blobClient = this.getContainerClient(container).getBlobClient(blobName)

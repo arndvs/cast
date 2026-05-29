@@ -228,24 +228,12 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
 /** List every brand directory under inputs/brands/. Returns sorted slugs. */
 export async function listBrandSlugs(): Promise<string[]> {
   const storage = await getStorageAdapter()
-  // listFiles returns [] when the directory is missing (adapter handles ENOENT);
-  // permission/IO errors propagate.
-  const keys = await storage.listFiles("inputs", "brands")
-  if (keys.length === 0) {
+  const dirs = await storage.listPrefixes("inputs", "brands")
+  if (dirs.length === 0) {
     maybeWarnNoBrands("missing")
     return []
   }
-  // Extract unique slugs from keys that include brand.json — only list
-  // brands that loadBrandProfile() will be able to load.
-  const slugSet = new Set<string>()
-  for (const key of keys) {
-    const parts = key.split("/")
-    // Match keys like "brands/<slug>/brand.json"
-    if (parts.length >= 3 && parts[2] === "brand.json" && SLUG_RE.test(parts[1])) {
-      slugSet.add(parts[1])
-    }
-  }
-  const slugs = [...slugSet].sort()
+  const slugs = dirs.filter((name) => SLUG_RE.test(name)).sort()
   if (slugs.length === 0) maybeWarnNoBrands("empty")
   return slugs
 }

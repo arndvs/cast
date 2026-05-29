@@ -226,6 +226,35 @@ describe("LocalFsAdapter", () => {
     })
   })
 
+  // ── listPrefixes ──────────────────────────────────────────────────────
+
+  describe("listPrefixes", () => {
+    it("returns only directory names, sorted", async () => {
+      vi.mocked(fs.readdir).mockResolvedValue([
+        { name: "bravo", isFile: () => false, isDirectory: () => true },
+        { name: "report.json", isFile: () => true, isDirectory: () => false },
+        { name: "alpha", isFile: () => false, isDirectory: () => true },
+      ] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
+
+      const result = await adapter.listPrefixes("inputs", "brands")
+
+      expect(result).toEqual(["alpha", "bravo"])
+    })
+
+    it("returns empty array for ENOENT", async () => {
+      vi.mocked(fs.readdir).mockRejectedValue(enoent("scandir"))
+
+      const result = await adapter.listPrefixes("inputs", "brands")
+      expect(result).toEqual([])
+    })
+
+    it("rethrows EACCES from readdir", async () => {
+      vi.mocked(fs.readdir).mockRejectedValue(eacces("scandir"))
+
+      await expect(adapter.listPrefixes("inputs", "brands")).rejects.toThrow("EACCES")
+    })
+  })
+
   // ── getPublicUrl ─────────────────────────────────────────────────────
 
   describe("getPublicUrl", () => {

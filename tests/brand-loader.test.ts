@@ -7,6 +7,7 @@ const mockAdapter: {
   readFile: ReturnType<typeof vi.fn>
   fileExists: ReturnType<typeof vi.fn>
   listFiles: ReturnType<typeof vi.fn>
+  listPrefixes: ReturnType<typeof vi.fn>
   writeFile: ReturnType<typeof vi.fn>
   deleteFile: ReturnType<typeof vi.fn>
   deletePrefix: ReturnType<typeof vi.fn>
@@ -15,6 +16,7 @@ const mockAdapter: {
   readFile: vi.fn(),
   fileExists: vi.fn(),
   listFiles: vi.fn(),
+  listPrefixes: vi.fn(),
   writeFile: vi.fn(),
   deleteFile: vi.fn(),
   deletePrefix: vi.fn(),
@@ -89,6 +91,7 @@ beforeEach(() => {
   mockAdapter.readFile.mockReset()
   mockAdapter.fileExists.mockReset()
   mockAdapter.listFiles.mockReset()
+  mockAdapter.listPrefixes.mockReset()
 })
 
 afterEach(() => {
@@ -205,28 +208,18 @@ describe("loadBrandProfile", () => {
 
 describe("listBrandSlugs", () => {
   it("returns sorted slugs that match SLUG_RE", async () => {
-    mockAdapter.listFiles.mockResolvedValue([
-      "brands/zeta/brand.json",
-      "brands/alpha/brand.json",
-      "brands/INVALID/brand.json", // fails SLUG_RE
+    mockAdapter.listPrefixes.mockResolvedValue([
+      "zeta",
+      "alpha",
+      "INVALID", // fails SLUG_RE
     ])
     const slugs = await listBrandSlugs()
     expect(slugs).toEqual(["alpha", "zeta"])
   })
 
-  it("excludes slugs that have files but no brand.json", async () => {
-    mockAdapter.listFiles.mockResolvedValue([
-      "brands/alpha/brand.json",
-      "brands/partial/logos/logo.png", // no brand.json → excluded
-      "brands/partial/voice.json",     // still no brand.json
-    ])
-    const slugs = await listBrandSlugs()
-    expect(slugs).toEqual(["alpha"])
-  })
-
-  it("returns [] when inputs/brands/ is missing (empty listFiles)", async () => {
+  it("returns [] when inputs/brands/ is missing (empty listPrefixes)", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
-    mockAdapter.listFiles.mockResolvedValue([])
+    mockAdapter.listPrefixes.mockResolvedValue([])
     expect(await listBrandSlugs()).toEqual([])
     warn.mockRestore()
   })
@@ -234,7 +227,7 @@ describe("listBrandSlugs", () => {
   it("re-throws non-ENOENT errors (e.g. EACCES)", async () => {
     const eacces = new Error("EACCES") as NodeJS.ErrnoException
     eacces.code = "EACCES"
-    mockAdapter.listFiles.mockRejectedValue(eacces)
+    mockAdapter.listPrefixes.mockRejectedValue(eacces)
     await expect(listBrandSlugs()).rejects.toThrow("EACCES")
   })
 })
@@ -242,7 +235,7 @@ describe("listBrandSlugs", () => {
 describe("listBrandSlugs warn-once", () => {
   it("warns exactly once when inputs/brands/ is missing", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
-    mockAdapter.listFiles.mockResolvedValue([])
+    mockAdapter.listPrefixes.mockResolvedValue([])
     await listBrandSlugs()
     await listBrandSlugs()
     expect(warn).toHaveBeenCalledTimes(1)
@@ -252,8 +245,8 @@ describe("listBrandSlugs warn-once", () => {
 
   it("warns exactly once when no slugs match SLUG_RE", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
-    mockAdapter.listFiles.mockResolvedValue([
-      "brands/INVALID/brand.json",
+    mockAdapter.listPrefixes.mockResolvedValue([
+      "INVALID",
     ])
     await listBrandSlugs()
     await listBrandSlugs()
@@ -264,8 +257,8 @@ describe("listBrandSlugs warn-once", () => {
 
   it("does NOT warn when at least one valid slug is present", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
-    mockAdapter.listFiles.mockResolvedValue([
-      "brands/acme/brand.json",
+    mockAdapter.listPrefixes.mockResolvedValue([
+      "acme",
     ])
     await listBrandSlugs()
     expect(warn).not.toHaveBeenCalled()
