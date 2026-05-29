@@ -63,6 +63,17 @@ export async function GET(
         { status: 404 },
       )
     }
+    // Treat permission errors as "unavailable" (same as pre-migration behavior).
+    // Exposing EACCES/EPERM details would leak filesystem internals.
+    if (err instanceof Error && "code" in err) {
+      const code = (err as NodeJS.ErrnoException).code
+      if (code === "EACCES" || code === "EPERM") {
+        return NextResponse.json(
+          { errors: [{ path: ["logo", id], message: `logo file unavailable for variant: ${id}` }] },
+          { status: 404 },
+        )
+      }
+    }
     throw err
   }
   return new Response(new Uint8Array(buf), {
