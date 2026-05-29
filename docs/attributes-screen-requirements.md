@@ -68,7 +68,7 @@ Loaded by `loadBrandProfile(brand)` at `/api/generate` entry; validated against 
 - bannedWords — **union** of `lib/cast/banned-words.ts` defaults (`getDefaultBannedWords()`) and `inputs/brands/[brand]/banned-words.json` (when present); deduped, lowercased. Defaults always apply. Missing brand file is silently skipped — the floor remains in force.
 - logoVariants[] (`logos/logos.json` — each `{ id, displayName, path, theme? }`; `path` is a container-relative key (e.g. `brands/[brand]/logos/[file]`) resolved by StorageAdapter; `theme` is `"light" | "dark"` when present)
 - defaultLogoId (`logos.json` `default` — used when `brief.logoVariant` is absent)
-- fontPath (absolute, `safeJoin`-validated)
+- fontPath (container-relative key resolved by StorageAdapter)
 - canVariants[] (optional — `products.json`; each `{ id, sku, file, pose, detail }`)
 - backgroundVariants[] (optional — `backgrounds.json`; each `{ id, file, ratio, sku, luminance }`)
 

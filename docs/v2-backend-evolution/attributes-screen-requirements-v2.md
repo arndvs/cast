@@ -43,6 +43,8 @@ All v1 fields preserved. New in v2:
 
 Written alongside each generated creative as `[ratio].metadata.json` in Azure cast-outputs. Also vectorized into Qdrant `cast-creatives`.
 
+**Fields in `imageMetadataSchema` (written to `.metadata.json` sidecar):**
+
 - `campaign` — slug
 - `brand` — slug
 - `product` — slug
@@ -55,6 +57,11 @@ Written alongside each generated creative as `[ratio].metadata.json` in Azure ca
 - `mood[]` — mood/atmosphere tags
 - `generatedAt` — ISO 8601 timestamp
 - `promptUsed?` — the GenAI prompt string (only when `source === "genai"`)
+- `model` — the GenAI model used (nullable)
+- `revisedPrompt` — revised prompt returned by the model (nullable)
+
+**v2 / Qdrant-only (not yet written to `.metadata.json` sidecar):**
+
 - `personaId?` — linked persona (when `brief.personaId` was set)
 - `status` — approval status (mirrors creative)
 - `estimatedCost` — USD float
