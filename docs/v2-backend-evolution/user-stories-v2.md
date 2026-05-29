@@ -143,7 +143,7 @@ Success looks like: Sam **saves** the Brisa summer brief as a template, **config
 | view top-performing creatives | S6 — Performance Dashboard | ✓ |
 | view fatigue report | S7 — Fatigue Report + Refresh Recommendations | ✓ |
 | trigger generation via API | Fastify API layer / Next.js route (no UI required) | ✓ |
-| call Cast via MCP | `lib/cast/server/mcp.ts` tool stubs | ✓ |
+| call Cast via MCP | `lib/cast/server/mcp-tools.ts` tool registry (transport TBD) | ✓ |
 | query creative history | `GET /api/search-creatives` → Qdrant | ✓ |
 | all v1 verbs | S1–S5 (unchanged) | — |
 

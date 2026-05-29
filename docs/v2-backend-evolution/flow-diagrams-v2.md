@@ -199,8 +199,8 @@ flowchart LR
 flowchart TB
     subgraph Phase1["Phase 1: stdio (POC + interview demo)"]
         Agent1["Claude Desktop · Claude Code<br/>VS Code MCP extension<br/>Any stdio-capable LLM agent"]
-        MCPConfig["mcp.json config:<br/>{ command: 'npx', args: ['tsx', 'lib/cast/server/mcp.ts'] }"]
-        StdioTransport["StdioServerTransport<br/>lib/cast/server/mcp.ts<br/>zero infrastructure — subprocess only"]
+        MCPConfig["mcp.json config:<br/>{ command: 'npx', args: ['tsx', 'lib/cast/server/mcp-tools.ts'] }<br/>★ transport wrapper TBD"]
+        StdioTransport["StdioServerTransport<br/>lib/cast/server/mcp-tools.ts (registry)<br/>transport wrapper not yet implemented"]
         Agent1 --> MCPConfig --> StdioTransport
     end
 
@@ -211,7 +211,7 @@ flowchart TB
     end
 
     subgraph Core["lib/cast/server/ — identical for both"]
-        CastMCPServer["castMcpServer<br/>McpServer instance<br/>13 tools · 3 resources"]
+        CastMCPServer["castMcpServer<br/>McpServer instance<br/>6 registered tools · resources TBD"]
     end
 
     StdioTransport --> CastMCPServer
