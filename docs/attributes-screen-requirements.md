@@ -66,7 +66,7 @@ Loaded by `loadBrandProfile(brand)` at `/api/generate` entry; validated against 
 - brand (`brand.json` — `displayName`, `colors`, optional `tokens`)
 - voice (`voice.json` — `tone`, `do`, `dont`, `promptFragments`, `negativePromptFragments`, `moodKeywords`, optional `skuFragments`)
 - bannedWords — **union** of `lib/cast/banned-words.ts` defaults (`getDefaultBannedWords()`) and `inputs/brands/[brand]/banned-words.json` (when present); deduped, lowercased. Defaults always apply. Missing brand file is silently skipped — the floor remains in force.
-- logoVariants[] (`logos/logos.json` — each `{ id, displayName, path, theme? }`; `path` resolved via `safeJoin` against `inputs/brands/[brand]/logos/`; `theme` is `"light" | "dark"` when present)
+- logoVariants[] (`logos/logos.json` — each `{ id, displayName, path, theme? }`; `path` is a container-relative key (e.g. `brands/[brand]/logos/[file]`) resolved by StorageAdapter; `theme` is `"light" | "dark"` when present)
 - defaultLogoId (`logos.json` `default` — used when `brief.logoVariant` is absent)
 - fontPath (absolute, `safeJoin`-validated)
 - canVariants[] (optional — `products.json`; each `{ id, sku, file, pose, detail }`)
@@ -98,7 +98,7 @@ Shape is the same object delivered in the `complete` event's `manifest`. See [fl
 
 - id (slug-format)
 - displayName
-- path (safeJoin-validated, absolute on local fs)
+- path (container-relative key, e.g. `brands/[brand]/logos/[file]`)
 - theme (optional: `"light"` | `"dark"`)
 - Loaded from `inputs/brands/[brand]/logos/logos.json`; served via `GET /api/brands/[slug]/logos/[id]` proxy.
 

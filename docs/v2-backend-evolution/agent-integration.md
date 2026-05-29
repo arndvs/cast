@@ -20,9 +20,9 @@ The UI doesn't disappear — it becomes the human-review layer. The agent does t
 
 ---
 
-## The five Cast MCP tools
+## The seven Cast MCP tools
 
-Defined in `lib/cast/server/mcp.ts`. These wrap the same server functions exposed by the API routes. An MCP transport layer (Fastify + `@modelcontextprotocol/sdk`) is the only addition needed to make these callable by any MCP-compatible agent.
+Defined in `lib/cast/server/mcp-tools.ts`. These wrap the same server functions exposed by the API routes. An MCP transport layer (Fastify + `@modelcontextprotocol/sdk`) is the only addition needed to make these callable by any MCP-compatible agent.
 
 ### `generate_campaign`
 
