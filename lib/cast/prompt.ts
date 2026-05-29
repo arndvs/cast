@@ -47,8 +47,16 @@ const RATIO_HINT: Record<AspectRatio, string> = {
 
 export function buildPromptPreview({ brand, product, market, ratio }: PromptPreviewArgs): string {
   const lang = market.split("-").pop() ?? "en"
-  const palette = brand.paletteHexes.length > 0
-    ? brand.paletteHexes.slice(0, 3).join(", ")
+  const paletteHexes = product.skuFragments?.accentHex
+    ? [
+        product.skuFragments.accentHex,
+        ...brand.paletteHexes.filter(
+          (hex) => hex.toLowerCase() !== product.skuFragments?.accentHex?.toLowerCase(),
+        ),
+      ]
+    : brand.paletteHexes
+  const palette = paletteHexes.length > 0
+    ? paletteHexes.slice(0, 3).join(", ")
     : "brand palette"
 
   // Merge brand voice fragments with per-SKU overrides (SKU frags take

@@ -70,6 +70,21 @@ describe("buildPromptPreview — skuFragments", () => {
     })
     expect(promptWith).toBe(promptWithout)
   })
+
+  it("prepends accentHex to the palette, deduplicating brand colors", () => {
+    const brand = makeBrand({ paletteHexes: ["#FFFFFF", "#000000", "#FF0000"] })
+    const product = makeProduct({ skuFragments: { accentHex: "#00FF00" } })
+    const prompt = buildPromptPreview({ brand, product, market: "us-en", ratio: "1x1" })
+    expect(prompt).toContain("#00FF00, #FFFFFF, #000000")
+  })
+
+  it("deduplicates accentHex when it matches a brand color", () => {
+    const brand = makeBrand({ paletteHexes: ["#FFFFFF", "#000000", "#FF0000"] })
+    const product = makeProduct({ skuFragments: { accentHex: "#ffffff" } })
+    const prompt = buildPromptPreview({ brand, product, market: "us-en", ratio: "1x1" })
+    // accentHex replaces the duplicate; still only 3 colors max
+    expect(prompt).toContain("#ffffff, #000000, #FF0000")
+  })
 })
 
 describe("buildPromptPreview — negativePromptFragments", () => {
