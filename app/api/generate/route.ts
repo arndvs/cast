@@ -263,7 +263,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
           productSlug,
           // Map "products" to "local" for the event (both are local disk reads;
           // the distinction is internal to the resolver). Only include `file`
-          // for true local assets — "products" uses an absolute filesystem path
+          // for true local assets — "products" uses a container-relative key
           // that must not be exposed to clients via NDJSON.
           resolved.source === "genai" ? "genai" : "local",
           resolved.source === "local" ? resolved.file : undefined,
