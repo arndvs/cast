@@ -137,7 +137,7 @@ export async function saveAssetFile(
     await adapter.deleteFile("inputs", `assets/${productSlug}.${e}`)
   }
   const key = `assets/${productSlug}.${ext}`
-  await adapter.writeFile("inputs", key, Buffer.from(bytes))
+  await adapter.writeFile("inputs", key, Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength))
   return path.posix.join("inputs", key)
 }
 
