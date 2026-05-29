@@ -16,13 +16,28 @@ import { safeJoin, type RootKey } from "@/lib/cast/server/safe-join"
 import { getStorageBackend, type StorageBackend } from "@/lib/cast/server/config"
 
 // ---------------------------------------------------------------------------
+// Errors
+// ---------------------------------------------------------------------------
+
+export class StorageNotFoundError extends Error {
+  readonly container: Container
+  readonly key: string
+  constructor(container: Container, key: string) {
+    super(`File not found: ${container}/${key}`)
+    this.name = "StorageNotFoundError"
+    this.container = container
+    this.key = key
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
 export type Container = "inputs" | "outputs"
 
 export interface StorageAdapter {
-  /** Read a file as a Buffer. Throws if not found. */
+  /** Read a file as a Buffer. Throws `StorageNotFoundError` if not found. */
   readFile(container: Container, key: string): Promise<Buffer>
 
   /** Write data to a file. Creates intermediate directories as needed. */
@@ -57,7 +72,14 @@ export class LocalFsAdapter implements StorageAdapter {
     const segments = key.split(/[/\\]/).filter(Boolean)
     // TODO(symlink-hardening): safeJoin is lexical-only — harden with realpath check
     const abs = safeJoin(container as RootKey, ...segments)
-    return fs.readFile(abs)
+    try {
+      return await fs.readFile(abs)
+    } catch (err) {
+      if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+        throw new StorageNotFoundError(container, key)
+      }
+      throw err
+    }
   }
 
   async writeFile(container: Container, key: string, data: Buffer | string, _contentType?: string): Promise<void> {

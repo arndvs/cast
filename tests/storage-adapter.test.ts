@@ -19,7 +19,7 @@ vi.mock("node:fs/promises", () => ({
 
 // Import AFTER mock is installed
 import fs from "node:fs/promises"
-import { LocalFsAdapter } from "@/lib/cast/server/storage-adapter"
+import { LocalFsAdapter, StorageNotFoundError } from "@/lib/cast/server/storage-adapter"
 
 function enoent(syscall = "access"): NodeJS.ErrnoException {
   const err = new Error(`ENOENT: no such file or directory`) as NodeJS.ErrnoException
@@ -58,10 +58,10 @@ describe("LocalFsAdapter", () => {
       expect(result).toBe(buf)
     })
 
-    it("propagates ENOENT from fs.readFile", async () => {
+    it("throws StorageNotFoundError for missing file", async () => {
       vi.mocked(fs.readFile).mockRejectedValue(enoent("open"))
 
-      await expect(adapter.readFile("inputs", "missing.json")).rejects.toThrow("ENOENT")
+      await expect(adapter.readFile("inputs", "missing.json")).rejects.toThrow(StorageNotFoundError)
     })
   })
 

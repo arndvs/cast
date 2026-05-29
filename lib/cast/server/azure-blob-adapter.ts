@@ -18,6 +18,7 @@ import {
   type BlobDownloadResponseParsed,
 } from "@azure/storage-blob"
 import type { Container, StorageAdapter } from "@/lib/cast/server/storage-adapter"
+import { StorageNotFoundError } from "@/lib/cast/server/storage-adapter"
 import { getAzureConnectionString } from "@/lib/cast/server/config"
 
 // ---------------------------------------------------------------------------
@@ -65,7 +66,15 @@ export class AzureBlobAdapter implements StorageAdapter {
   async readFile(container: Container, key: string): Promise<Buffer> {
     const blobName = this.normalizeBlobName(key)
     const blobClient = this.getContainerClient(container).getBlobClient(blobName)
-    const response: BlobDownloadResponseParsed = await blobClient.download(0)
+    let response: BlobDownloadResponseParsed
+    try {
+      response = await blobClient.download(0)
+    } catch (err) {
+      if (isAzureNotFound(err)) {
+        throw new StorageNotFoundError(container, key)
+      }
+      throw err
+    }
     const body = response.readableStreamBody
     if (!body) {
       throw new Error(`Empty response body for blob "${blobName}" in "${container}"`)
@@ -208,4 +217,13 @@ async function streamToBuffer(readable: NodeJS.ReadableStream): Promise<Buffer> 
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as unknown as Uint8Array))
   }
   return Buffer.concat(chunks)
+}
+
+function isAzureNotFound(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "statusCode" in err &&
+    (err as { statusCode: unknown }).statusCode === 404
+  )
 }

@@ -46,6 +46,7 @@ export * from "./storage"
 export {
   type Container,
   type StorageAdapter,
+  StorageNotFoundError,
   getStorageAdapter,
 } from "./storage-adapter"
 // AzureBlobAdapter is NOT re-exported — it is lazy-loaded by

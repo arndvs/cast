@@ -30,7 +30,7 @@ import {
   BrandInvalidError,
 } from "@/lib/cast/errors"
 import { getDefaultBannedWords } from "@/lib/cast/banned-words"
-import { getStorageAdapter, type StorageAdapter } from "@/lib/cast/server/storage-adapter"
+import { getStorageAdapter, StorageNotFoundError, type StorageAdapter } from "@/lib/cast/server/storage-adapter"
 
 const CACHE_TTL_MS = 90_000
 
@@ -271,7 +271,7 @@ async function readJson(storage: StorageAdapter, slug: string, rel: string): Pro
     const buf = await storage.readFile("inputs", key)
     raw = buf.toString("utf8")
   } catch (err) {
-    if (isENOENT(err)) {
+    if (err instanceof StorageNotFoundError) {
       throw new BrandIncompleteError(slug, rel)
     }
     throw err
@@ -375,13 +375,4 @@ function unionLowercase(a: readonly string[], b: readonly string[]): string[] {
     if (w) set.add(w)
   }
   return [...set].sort()
-}
-
-function isENOENT(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code: unknown }).code === "ENOENT"
-  )
 }

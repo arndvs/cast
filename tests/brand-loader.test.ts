@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
 import type { StorageAdapter } from "@/lib/cast/server/storage-adapter"
+import { StorageNotFoundError } from "@/lib/cast/server/storage-adapter"
 
 // Mock getStorageAdapter to return a controllable adapter.
 const mockAdapter: {
@@ -20,9 +21,13 @@ const mockAdapter: {
   getPublicUrl: vi.fn(),
 }
 
-vi.mock("@/lib/cast/server/storage-adapter", () => ({
-  getStorageAdapter: vi.fn(async () => mockAdapter as unknown as StorageAdapter),
-}))
+vi.mock("@/lib/cast/server/storage-adapter", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/cast/server/storage-adapter")>()
+  return {
+    ...original,
+    getStorageAdapter: vi.fn(async () => mockAdapter as unknown as StorageAdapter),
+  }
+})
 
 import {
   loadBrandProfile,
@@ -55,10 +60,8 @@ const VALID_LOGOS = {
   ],
 }
 
-function enoent(): NodeJS.ErrnoException {
-  const err = new Error("ENOENT") as NodeJS.ErrnoException
-  err.code = "ENOENT"
-  return err
+function notFound(key = "unknown"): StorageNotFoundError {
+  return new StorageNotFoundError("inputs", key)
 }
 
 function mountValidBrandFixture(slug = "acme"): void {
@@ -73,10 +76,10 @@ function mountValidBrandFixture(slug = "acme"): void {
     if (key === `brands/${slug}/brand.json`) return Buffer.from(JSON.stringify(VALID_BRAND))
     if (key === `brands/${slug}/voice.json`) return Buffer.from(JSON.stringify(VALID_VOICE))
     if (key === `brands/${slug}/logos/logos.json`) return Buffer.from(JSON.stringify(VALID_LOGOS))
-    if (key === `brands/${slug}/banned-words.json`) throw enoent()
-    if (key === `brands/${slug}/products.json`) throw enoent()
-    if (key === `brands/${slug}/backgrounds.json`) throw enoent()
-    throw enoent()
+    if (key === `brands/${slug}/banned-words.json`) throw notFound()
+    if (key === `brands/${slug}/products.json`) throw notFound()
+    if (key === `brands/${slug}/backgrounds.json`) throw notFound()
+    throw notFound()
   })
 }
 
@@ -107,10 +110,10 @@ describe("loadBrandProfile", () => {
   it("throws BrandIncompleteError when a required file is missing", async () => {
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/voice.json") throw enoent()
+      if (key === "brands/acme/voice.json") throw notFound()
       if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
       if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
-      throw enoent()
+      throw notFound()
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
       BrandIncompleteError,
@@ -170,10 +173,10 @@ describe("loadBrandProfile", () => {
       if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
       if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
       if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
-      if (key === "brands/acme/banned-words.json") throw enoent()
-      if (key === "brands/acme/products.json") throw enoent()
-      if (key === "brands/acme/backgrounds.json") throw enoent()
-      throw enoent()
+      if (key === "brands/acme/banned-words.json") throw notFound()
+      if (key === "brands/acme/products.json") throw notFound()
+      if (key === "brands/acme/backgrounds.json") throw notFound()
+      throw notFound()
     })
     const profile = await loadBrandProfile("acme")
     expect(profile.fontPath).toBe("brands/acme/font.otf")
@@ -189,10 +192,10 @@ describe("loadBrandProfile", () => {
       if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
       if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
       if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
-      if (key === "brands/acme/banned-words.json") throw enoent()
-      if (key === "brands/acme/products.json") throw enoent()
-      if (key === "brands/acme/backgrounds.json") throw enoent()
-      throw enoent()
+      if (key === "brands/acme/banned-words.json") throw notFound()
+      if (key === "brands/acme/products.json") throw notFound()
+      if (key === "brands/acme/backgrounds.json") throw notFound()
+      throw notFound()
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
       BrandIncompleteError,
@@ -288,10 +291,10 @@ describe("tryLoadBrand", () => {
   it("returns { ok: false, error: BrandIncompleteError } on missing required file", async () => {
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/voice.json") throw enoent()
+      if (key === "brands/acme/voice.json") throw notFound()
       if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
       if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
-      throw enoent()
+      throw notFound()
     })
     const result = await tryLoadBrand("acme")
     expect(result.ok).toBe(false)
@@ -329,9 +332,9 @@ describe("canVariants — products.json", () => {
       if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
       if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
       if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(VALID_PRODUCTS))
-      if (key === "brands/acme/banned-words.json") throw enoent()
-      if (key === "brands/acme/backgrounds.json") throw enoent()
-      throw enoent()
+      if (key === "brands/acme/banned-words.json") throw notFound()
+      if (key === "brands/acme/backgrounds.json") throw notFound()
+      throw notFound()
     })
     const profile = await loadBrandProfile("acme")
     expect(profile.canVariants).toHaveLength(2)
@@ -353,9 +356,9 @@ describe("canVariants — products.json", () => {
       if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
       if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
       if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify({ items: [] })) // min(1) violation
-      if (key === "brands/acme/banned-words.json") throw enoent()
-      if (key === "brands/acme/backgrounds.json") throw enoent()
-      throw enoent()
+      if (key === "brands/acme/banned-words.json") throw notFound()
+      if (key === "brands/acme/backgrounds.json") throw notFound()
+      throw notFound()
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
   })
@@ -370,9 +373,9 @@ describe("canVariants — products.json", () => {
       if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
       if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
       if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(TRAVERSAL_PRODUCTS))
-      if (key === "brands/acme/banned-words.json") throw enoent()
-      if (key === "brands/acme/backgrounds.json") throw enoent()
-      throw enoent()
+      if (key === "brands/acme/banned-words.json") throw notFound()
+      if (key === "brands/acme/backgrounds.json") throw notFound()
+      throw notFound()
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
   })
@@ -387,9 +390,9 @@ describe("canVariants — products.json", () => {
       if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
       if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
       if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(BACKSLASH_PRODUCTS))
-      if (key === "brands/acme/banned-words.json") throw enoent()
-      if (key === "brands/acme/backgrounds.json") throw enoent()
-      throw enoent()
+      if (key === "brands/acme/banned-words.json") throw notFound()
+      if (key === "brands/acme/backgrounds.json") throw notFound()
+      throw notFound()
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
   })
@@ -404,9 +407,9 @@ describe("canVariants — products.json", () => {
       if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
       if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
       if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(BACKSLASH_ONLY))
-      if (key === "brands/acme/banned-words.json") throw enoent()
-      if (key === "brands/acme/backgrounds.json") throw enoent()
-      throw enoent()
+      if (key === "brands/acme/banned-words.json") throw notFound()
+      if (key === "brands/acme/backgrounds.json") throw notFound()
+      throw notFound()
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
   })
@@ -421,9 +424,9 @@ describe("canVariants — products.json", () => {
       if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
       if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
       if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(EMPTY_KEY))
-      if (key === "brands/acme/banned-words.json") throw enoent()
-      if (key === "brands/acme/backgrounds.json") throw enoent()
-      throw enoent()
+      if (key === "brands/acme/banned-words.json") throw notFound()
+      if (key === "brands/acme/backgrounds.json") throw notFound()
+      throw notFound()
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
   })
@@ -444,9 +447,9 @@ describe("backgroundVariants — backgrounds.json", () => {
       if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
       if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
       if (key === "brands/acme/backgrounds.json") return Buffer.from(JSON.stringify(VALID_BACKGROUNDS))
-      if (key === "brands/acme/banned-words.json") throw enoent()
-      if (key === "brands/acme/products.json") throw enoent()
-      throw enoent()
+      if (key === "brands/acme/banned-words.json") throw notFound()
+      if (key === "brands/acme/products.json") throw notFound()
+      throw notFound()
     })
     const profile = await loadBrandProfile("acme")
     expect(profile.backgroundVariants).toHaveLength(2)
@@ -471,9 +474,9 @@ describe("backgroundVariants — backgrounds.json", () => {
       if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
       if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
       if (key === "brands/acme/backgrounds.json") return Buffer.from(JSON.stringify(TRAVERSAL_BG))
-      if (key === "brands/acme/banned-words.json") throw enoent()
-      if (key === "brands/acme/products.json") throw enoent()
-      throw enoent()
+      if (key === "brands/acme/banned-words.json") throw notFound()
+      if (key === "brands/acme/products.json") throw notFound()
+      throw notFound()
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
   })

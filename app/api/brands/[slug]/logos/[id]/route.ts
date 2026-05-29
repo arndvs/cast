@@ -5,7 +5,7 @@ import {
   BrandIncompleteError,
   BrandInvalidError,
 } from "@/lib/cast/errors"
-import { getStorageAdapter } from "@/lib/cast/server/storage-adapter"
+import { getStorageAdapter, StorageNotFoundError } from "@/lib/cast/server/storage-adapter"
 
 export const runtime = "nodejs"
 
@@ -57,8 +57,7 @@ export async function GET(
   try {
     buf = await storage.readFile("inputs", variant.path)
   } catch (err) {
-    const code = (err as NodeJS.ErrnoException).code
-    if (code === "ENOENT" || code === "EACCES" || code === "EPERM") {
+    if (err instanceof StorageNotFoundError) {
       return NextResponse.json(
         { errors: [{ path: ["logo", id], message: `logo file unavailable for variant: ${id}` }] },
         { status: 404 },

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { readOutputFile } from "@/lib/cast/server/storage"
 import { PathTraversalError } from "@/lib/cast/server/safe-join"
-import { isENOENT } from "@/lib/cast/server/api-helpers"
+import { isStorageNotFound } from "@/lib/cast/server/api-helpers"
 
 export const runtime = "nodejs"
 
@@ -43,7 +43,7 @@ export async function GET(
   try {
     bytes = await readOutputFile(...segments)
   } catch (err) {
-    if (err instanceof PathTraversalError || isENOENT(err)) {
+    if (err instanceof PathTraversalError || isStorageNotFound(err)) {
       return new NextResponse(null, { status: 404 })
     }
     return new NextResponse(null, { status: 500 })
