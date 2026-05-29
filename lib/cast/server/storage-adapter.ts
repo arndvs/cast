@@ -138,6 +138,8 @@ export class LocalFsAdapter implements StorageAdapter {
 
   async listPrefixes(container: Container, prefix: string): Promise<string[]> {
     const segments = prefix.split(/[/\\]/).filter(Boolean)
+    // TODO(symlink-hardening): safeJoin is lexical-only; add fs.realpath
+    // re-validation before production use.
     const abs = safeJoin(container as RootKey, ...segments)
     let entries: import("node:fs").Dirent[]
     try {
