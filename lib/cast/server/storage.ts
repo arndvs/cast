@@ -111,12 +111,12 @@ export async function writeReport(
 export async function detectAssetFiles(
   slugs: string[],
 ): Promise<{ slug: string; foundFile: string | null }[]> {
-  const results: { slug: string; foundFile: string | null }[] = []
-  for (const slug of slugs) {
-    const found = await findLocalAsset(slug)
-    results.push({ slug, foundFile: found ? path.posix.basename(found) : null })
-  }
-  return results
+  return Promise.all(
+    slugs.map(async (slug) => {
+      const found = await findLocalAsset(slug)
+      return { slug, foundFile: found ? path.posix.basename(found) : null }
+    }),
+  )
 }
 
 /**
