@@ -23,7 +23,7 @@ This folder is the design record for the POC and v2 evolution. Read top-to-botto
 | --- | --- |
 | [design/](../design/) | Brand guideline HTML books for Onda, Brisa, Volt, and Cast. |
 | [brand-extraction-v2.md](brand-extraction-v2.md) | How the brand HTMLs are reduced to the runtime `brandProfileSchema` (Part 1), the Qdrant `cast-knowledge` knowledge base (Part 2), historical asset ingestion (Part 3 — Step 13–16), and output versioning. |
-| [agent-integration.md](agent-integration.md) | **New in v2.** How Cast exposes its pipeline to agents, schedulers, and external marketing automation systems. Covers all 13 MCP tools (9 core + 4 post-Qdrant), 3 MCP resources, stdio-first transport with ready-to-paste `mcp.json` config, progress streaming model, tool annotations, the performance flywheel, human-in-the-loop checkpoints, the `AdsPerformanceProvider` interface, and the Fastify split path. |
+| [agent-integration.md](agent-integration.md) | **New in v2.** How Cast exposes its pipeline to agents, schedulers, and external marketing automation systems. Covers the 6 registered MCP tool definitions (+ 5 roadmap tools), progress streaming model, tool annotations, the performance flywheel, human-in-the-loop checkpoints, the planned `AdsPerformanceProvider` interface, and the Fastify split path. |
 
 ## What changed in v2
 
@@ -39,7 +39,7 @@ This folder is the design record for the POC and v2 evolution. Read top-to-botto
 | Performance tracking | None | `POST /api/performance` → performanceScore on Qdrant payloads |
 | Fatigue detection | None | `fatigueScore` + `GET /api/fatigue-report` with refresh recommendations |
 | Cost tracking | None | `costs { estimated, actual }` on manifest + run |
-| Agent / MCP | None | 13 MCP tools (9 core + 4 post-Qdrant), 3 MCP resources, stdio-first transport, `mcp.json` config |
+| Agent / MCP | None | 6 registered read-only MCP tool definitions in `mcp-tools.ts`; additional tools, resources, and transport documented as roadmap |
 | API callers | UI only | UI · Fastify API · MCP transport (three callers, one server layer) |
 | Flow diagrams | §1–§8 (screens + API contract) | + §9 (performance feedback) · §10 (fatigue) · §11 (agent/MCP) in flow-diagrams-v2.md |
 | Backend split | Not planned | Documented in `agent-integration.md` — mechanical, not architectural |

@@ -222,7 +222,7 @@ The approval queue in S3 is the interface between agent actions and human review
 
 ## Ad platform provider interface
 
-Defined in `lib/cast/server/integrations/ads-performance.ts`. Any ad platform can be plugged in by implementing this interface.
+Planned for `lib/cast/server/integrations/ads-performance.ts` once the ad-platform integration slice lands. Any ad platform can be plugged in by implementing this interface.
 
 ```typescript
 export interface AdsPerformanceProvider {
