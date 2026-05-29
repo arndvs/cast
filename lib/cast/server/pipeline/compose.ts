@@ -17,8 +17,8 @@ export interface ComposeArgs {
   base: Buffer
   ratio: AspectRatio
   headline: string
-  /** Absolute path to the chosen logo variant PNG. */
-  logoPath: string
+  /** Logo variant PNG bytes (read via StorageAdapter). */
+  logoBuffer: Buffer
   /**
    * Hex of the brand primary — used to tint a translucent text panel behind
    * the headline so the type stays legible across photo backgrounds.
@@ -49,7 +49,7 @@ export async function composeCreative(args: ComposeArgs): Promise<Buffer> {
   //    with a 4% margin.
   const logoSize = Math.round(Math.max(width, height) * 0.12)
   const margin = Math.round(Math.max(width, height) * 0.04)
-  const logo = await sharp(args.logoPath)
+  const logo = await sharp(args.logoBuffer)
     .resize({
       width: logoSize,
       height: logoSize,

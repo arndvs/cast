@@ -147,13 +147,15 @@ export async function POST(req: Request): Promise<Response> {
 
   // 4. Open stream.
   const mode = getGenAIMode()
+  const storage = await getStorageAdapter()
+  const logoBuffer = await storage.readFile("inputs", logo.path)
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
         const manifest = await runPipeline({
           brief,
           brand,
-          logoPath: logo.path,
+          logoBuffer,
           mode,
           emit: (chunk) => controller.enqueue(chunk),
         })
@@ -186,7 +188,7 @@ export async function POST(req: Request): Promise<Response> {
 interface RunPipelineArgs {
   brief: Brief
   brand: BrandProfile
-  logoPath: string
+  logoBuffer: Buffer
   mode: GenAIMode
   emit: (chunk: Uint8Array) => void
 }
@@ -213,7 +215,7 @@ class StageError extends Error {
 }
 
 export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
-  const { brief, brand, logoPath, mode, emit } = args
+  const { brief, brand, logoBuffer, mode, emit } = args
   const pipelineStartedAt = new Date().toISOString()
 
   const creatives: Creative[] = []
@@ -383,7 +385,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
                 base: sized,
                 ratio,
                 headline,
-                logoPath,
+                logoBuffer,
                 primaryHex: brand.brand.colors.primary,
               }),
             )

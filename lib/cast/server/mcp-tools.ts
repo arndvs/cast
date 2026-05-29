@@ -61,8 +61,14 @@ export interface McpToolDeps {
       voice: readonly string[]
       paletteHexes: readonly string[]
       bannedWords: readonly string[]
+      negativePromptFragments?: readonly string[]
+      moodKeywords?: readonly string[]
     }
-    product: { name: string; sku: string }
+    product: {
+      name: string
+      sku: string
+      skuFragments?: { promptFragments: string[]; accentHex?: string; sceneMood?: string }
+    }
     market: string
     ratio: z.infer<typeof ratioSchema>
   }) => string
@@ -207,8 +213,14 @@ export function buildToolRegistry(deps: McpToolDeps): CastMcpTool[] {
               profile.brand.colors.background ?? "",
             ].filter(Boolean),
             bannedWords: profile.bannedWords,
+            negativePromptFragments: profile.voice.negativePromptFragments,
+            moodKeywords: profile.voice.moodKeywords,
           },
-          product: { name: input.productName, sku: input.productSku },
+          product: {
+            name: input.productName,
+            sku: input.productSku,
+            skuFragments: profile.voice.skuFragments?.[input.productSku],
+          },
           market: input.market,
           ratio: input.ratio,
         })
