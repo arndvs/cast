@@ -13,7 +13,6 @@
 
 import { z } from "zod"
 import {
-  briefSchema,
   SLUG_RE,
   MARKET_RE,
   ratioSchema,
@@ -292,27 +291,10 @@ export function buildToolRegistry(deps: McpToolDeps): CastMcpTool[] {
       },
     }),
 
-    // ── Mutating tools ────────────────────────────────────────────────
-    defineTool({
-      name: "generate_campaign",
-      title: "Generate Campaign",
-      description:
-        "Run the full creative generation pipeline for a brief. Generates images for all product/market/ratio combinations. Long-running — sends progress notifications.",
-      inputSchema: briefSchema,
-      outputSchema: z.object({
-        campaign: z.string(),
-        status: z.enum(["complete", "partial", "failed"]),
-        creativeCount: z.number(),
-        errorCount: z.number(),
-      }),
-      annotations: { destructiveHint: true, idempotentHint: true },
-      handler: async () => {
-        // Placeholder — wired in Slice 14b when the MCP server transport is added.
-        throw new Error(
-          "generate_campaign handler not yet wired (Slice 14b)",
-        )
-      },
-    }),
+    // generate_campaign is deferred to Slice 14b when the MCP server
+    // transport is added. Registering a tool that always throws is worse
+    // than omitting it — MCP clients that discover the registry would
+    // encounter an unusable destructive tool.
   ]
 }
 

@@ -20,9 +20,26 @@ The UI doesn't disappear — it becomes the human-review layer. The agent does t
 
 ---
 
-## The seven Cast MCP tools
+## Cast MCP tools
 
 Defined in `lib/cast/server/mcp-tools.ts`. These wrap the same server functions exposed by the API routes. An MCP transport layer (Fastify + `@modelcontextprotocol/sdk`) is the only addition needed to make these callable by any MCP-compatible agent.
+
+### Registered (v1) — 6 tools
+
+The following tools are registered in `mcp-tools.ts` today with working handlers:
+
+| Tool | Type | Description |
+|------|------|-------------|
+| `list_brands` | Read-only | Lists available brand slugs from `inputs/brands/` |
+| `get_brand_profile` | Read-only | Returns the full `BrandProfile` for a slug |
+| `detect_assets` | Read-only | Detects available assets for a product |
+| `preview_prompt` | Read-only | Previews the GenAI prompt for given brief parameters |
+| `check_compliance` | Read-only | Runs banned-word and logo compliance checks |
+| `get_manifest` | Read-only | Retrieves `report.json` for a completed campaign |
+
+### Roadmap (v2) — 5 tools
+
+These tools are documented below but **not yet registered**. They will be wired when their backing server functions and Qdrant infrastructure are in place.
 
 ### `generate_campaign`
 
