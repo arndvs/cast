@@ -173,10 +173,13 @@ export function buildToolRegistry(deps: McpToolDeps): CastMcpTool[] {
       annotations: { readOnlyHint: true },
       handler: async (input) => {
         const results = await Promise.all(
-          input.slugs.map(async (slug) => ({
-            slug,
-            foundFile: await deps.findLocalAsset(slug),
-          })),
+          input.slugs.map(async (slug) => {
+            const found = await deps.findLocalAsset(slug)
+            return {
+              slug,
+              foundFile: found ? found.split("/").pop() ?? found : null,
+            }
+          }),
         )
         const found = results.filter((r) => r.foundFile).length
         return {
