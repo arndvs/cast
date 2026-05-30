@@ -30,11 +30,11 @@ graph LR
     Product -->|resolves to| InputAsset
     Product -.->|falls back to| HeroImage
     Product -->|matches| CanVariant
-    Product -->|matches| BackgroundVariant
+    Product -.->|may reference (v2)| BackgroundVariant
     InputAsset -->|source for| Creative
     HeroImage -->|source for| Creative
-    CanVariant -->|composited onto| Creative
-    BackgroundVariant -->|composited onto| Creative
+    CanVariant -->|source for| Creative
+    BackgroundVariant -.->|future composition input| Creative
     Message -->|composited onto| Creative
     Creative -->|evaluated by| Compliance
     Creative -->|listed in| Report

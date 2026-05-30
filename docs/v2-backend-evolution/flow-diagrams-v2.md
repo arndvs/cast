@@ -249,10 +249,10 @@ sequenceDiagram
     Storage-->>Lib: [{ slug, foundFile }, ...]
     MCP-->>Agent: [{ slug: "brisa-citrus", foundFile: "brisa-citrus.png" }, { slug: "brisa-berry", foundFile: null }]
 
-    Agent->>MCP: tool call check_compliance({ brand: "brisa", messages: { en: "...", es: "..." } })
-    MCP->>Lib: checkCompliance(brand, messages)
-    Lib-->>MCP: { passed: true, violations: [] }
-    MCP-->>Agent: compliance passed
+    Agent->>MCP: tool call check_compliance({ headline: "Summer refresh", bannedWords: ["free", "guaranteed"] })
+    MCP->>Lib: runCompliance({ headline, bannedWords })
+    Lib-->>MCP: { badge: "OK", checks: { logoPresent: true, bannedWords: [] } }
+    MCP-->>Agent: compliance OK
 
     Note over Agent: Generate — with progress streaming
     Agent->>MCP: tool call generate_campaign({ brief }, meta: { progressToken: "run-1" })
