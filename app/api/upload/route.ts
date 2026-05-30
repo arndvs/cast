@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
-import fs from "node:fs/promises"
-import { safeJoin } from "@/lib/cast/server/safe-join"
-import { isENOENT, jsonError } from "@/lib/cast/server/api-helpers"
+import { saveAssetFile } from "@/lib/cast/server/storage"
+import { jsonError } from "@/lib/cast/server/api-helpers"
 import { magicBytesMatch } from "@/lib/cast/server/magic-bytes"
 import { UPLOAD_MAX_BYTES, UPLOAD_MAX_DISPLAY } from "@/lib/cast/upload-constraints"
 import { SLUG_RE } from "@/lib/cast/schemas"
@@ -27,7 +26,6 @@ const MIME_TO_EXT: Record<string, "png" | "jpg" | "webp"> = {
   "image/jpeg": "jpg",
   "image/webp": "webp",
 }
-const ALL_EXTS = ["png", "jpg", "jpeg", "webp"] as const
 
 export async function POST(req: Request): Promise<NextResponse> {
   // Require Content-Length so we can short-circuit oversize bodies before
@@ -104,31 +102,14 @@ export async function POST(req: Request): Promise<NextResponse> {
     ])
   }
 
-  // Ensure inputs/assets/ exists.
-  // TODO(symlink-hardening): re-validate assetsDir with realpath
-  const assetsDir = safeJoin("inputs", "assets")
-  await fs.mkdir(assetsDir, { recursive: true })
-
-  // Delete-then-write: clear any existing variant for this slug.
-  for (const e of ALL_EXTS) {
-    // TODO(symlink-hardening): re-validate with realpath
-    const existing = safeJoin("inputs", "assets", `${productSlug}.${e}`)
-    try {
-      await fs.unlink(existing)
-    } catch (err) {
-      if (!isENOENT(err)) throw err
-    }
-  }
-
-  // TODO(symlink-hardening): re-validate target with realpath
-  const target = safeJoin("inputs", "assets", `${productSlug}.${ext}`)
-  await fs.writeFile(target, bytes)
+  // Save via StorageAdapter — deletes any existing variant, then writes the new file.
+  const savedAs = await saveAssetFile(productSlug, ext, bytes)
 
   return NextResponse.json(
     {
       ok: true,
       productSlug,
-      savedAs: `inputs/assets/${productSlug}.${ext}`,
+      savedAs,
       size: bytes.byteLength,
     },
     { headers: { "Cache-Control": "no-store" } },

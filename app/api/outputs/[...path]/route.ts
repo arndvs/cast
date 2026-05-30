@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
-import fs from "node:fs/promises"
-import nodePath from "node:path"
-import { safeJoin, PathTraversalError } from "@/lib/cast/server/safe-join"
-import { isENOENT } from "@/lib/cast/server/api-helpers"
+import { readOutputFile } from "@/lib/cast/server/storage"
+import { PathTraversalError } from "@/lib/cast/server/safe-join"
+import { isStorageNotFound } from "@/lib/cast/server/api-helpers"
 
 export const runtime = "nodejs"
 
@@ -13,7 +12,8 @@ export const runtime = "nodejs"
  * prior run; this route is the only way the browser can pull a generated PNG.
  *
  * Hardening:
- *   - safeJoin against ROOTS.outputs (rejects `..`, absolute, null bytes)
+ *   - readOutputFile validates segments (rejects `..`, absolute, null bytes,
+ *     backslash-smuggled components) before delegating to the StorageAdapter
  *   - .png whitelist — anything else 404s, never reveals MIME of other files
  *   - X-Content-Type-Options: nosniff so a malicious upstream can't trick
  *     the browser into rendering the bytes as HTML/JS
@@ -39,28 +39,11 @@ export async function GET(
     return new NextResponse(null, { status: 404 })
   }
 
-  let resolved: string
-  try {
-    // TODO(symlink-hardening): re-validate with realpath before readFile.
-    resolved = safeJoin("outputs", ...segments)
-  } catch (err) {
-    if (err instanceof PathTraversalError) {
-      return new NextResponse(null, { status: 404 })
-    }
-    throw err
-  }
-
-  // Defense in depth — safeJoin already rejected absolute/.. but extension
-  // check ran on the raw segment. Re-check on the resolved path too.
-  if (nodePath.extname(resolved).toLowerCase() !== ".png") {
-    return new NextResponse(null, { status: 404 })
-  }
-
   let bytes: Buffer
   try {
-    bytes = await fs.readFile(resolved)
+    bytes = await readOutputFile(...segments)
   } catch (err) {
-    if (isENOENT(err)) {
+    if (err instanceof PathTraversalError || isStorageNotFound(err)) {
       return new NextResponse(null, { status: 404 })
     }
     return new NextResponse(null, { status: 500 })

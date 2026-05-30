@@ -7,7 +7,8 @@
  */
 
 import type { AspectRatio } from "@/lib/cast/schemas"
-import { writeCreative as writeToDisk } from "@/lib/cast/server/storage"
+import { writeCreative as writeToDisk, writeMetadata as writeMetaToDisk } from "@/lib/cast/server/storage"
+import type { ImageMetadata } from "@/lib/cast/server/metadata"
 
 export async function writeCreativeOutput(args: {
   campaign: string
@@ -15,6 +16,18 @@ export async function writeCreativeOutput(args: {
   productSlug: string
   ratio: AspectRatio
   png: Buffer
+  metadata?: ImageMetadata
 }): Promise<string> {
-  return writeToDisk(args.campaign, args.market, args.productSlug, args.ratio, args.png)
+  const outputPath = await writeToDisk(args.campaign, args.market, args.productSlug, args.ratio, args.png)
+
+  if (args.metadata) {
+    try {
+      await writeMetaToDisk(args.campaign, args.market, args.productSlug, args.ratio, args.metadata)
+    } catch {
+      // Best-effort — metadata sidecar failure must not block the pipeline.
+      // The PNG was already written successfully above.
+    }
+  }
+
+  return outputPath
 }

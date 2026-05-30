@@ -21,5 +21,35 @@
     "studio product shot, single can, sharp edge",
     "metallic surface, anodized texture, no condensation",
     "minimal composition, type-led, registry-precise"
-  ]
+  ],
+  "negativePromptFragments": [
+    "no gym equipment or sweating athletes",
+    "no aggressive posing or explosion effects",
+    "no neon-on-black rave aesthetic",
+    "no macho clichés or hustle-porn imagery"
+  ],
+  "moodKeywords": ["kinetic", "electric", "bold", "high-voltage"],
+  "skuFragments": {
+    "VLT-ORG-12": {
+      "promptFragments": [
+        "citric edge",
+        "electric finish",
+        "sharp clean classic",
+        "ion blue accent"
+      ],
+      "accentHex": "#00D4FF",
+      "sceneMood": "lift · ride · code"
+    },
+    "VLT-TRP-12": {
+      "promptFragments": [
+        "mango passionfruit",
+        "sweet-edge loud ripe",
+        "plasma orange accent",
+        "long-burn energy"
+      ],
+      "accentHex": "#FF5A1F",
+      "sceneMood": "run · shift · finish"
+    }
+  }
 }
+

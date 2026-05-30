@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server"
-import fs from "node:fs/promises"
-import { safeJoin } from "@/lib/cast/server/safe-join"
-import { isENOENT } from "@/lib/cast/server/api-helpers"
+import { detectAssetFiles } from "@/lib/cast/server/storage"
 import { SLUG_RE } from "@/lib/cast/schemas"
 
 export const runtime = "nodejs"
@@ -13,10 +11,8 @@ export const runtime = "nodejs"
  * Resolver lookup order: png, jpg, jpeg, webp (first hit wins).
  *
  * Every slug is SLUG_RE-validated before any filesystem call. Lookups go
- * through safeJoin('inputs', 'assets', ...).
+ * through the StorageAdapter via `detectAssetFiles`.
  */
-
-const LOOKUP_ORDER = ["png", "jpg", "jpeg", "webp"] as const
 
 export async function GET(req: Request): Promise<NextResponse> {
   const url = new URL(req.url)
@@ -42,23 +38,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     }
   }
 
-  const results: { slug: string; foundFile: string | null }[] = []
-  for (const slug of slugs) {
-    let found: string | null = null
-    for (const ext of LOOKUP_ORDER) {
-      // TODO(symlink-hardening): re-validate with realpath
-      const candidate = safeJoin("inputs", "assets", `${slug}.${ext}`)
-      try {
-        await fs.access(candidate)
-        found = `${slug}.${ext}`
-        break
-      } catch (err) {
-        if (!isENOENT(err)) throw err
-        // miss — try next ext
-      }
-    }
-    results.push({ slug, foundFile: found })
-  }
+  const results = await detectAssetFiles(slugs)
 
   return NextResponse.json(results, {
     headers: { "Cache-Control": "no-store" },

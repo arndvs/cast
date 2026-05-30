@@ -44,6 +44,7 @@ import {
   getGenAIMode,
   type GenAIMode,
 } from "@/lib/cast/server/pipeline/genai"
+import { analyzeImage, type ImageMetadata } from "@/lib/cast/server/metadata"
 import { resizeForRatio } from "@/lib/cast/server/pipeline/resize"
 import { composeCreative } from "@/lib/cast/server/pipeline/compose"
 import { runCompliance } from "@/lib/cast/server/pipeline/compliance"
@@ -60,6 +61,7 @@ import {
   writeBriefSnapshot,
   writeReport,
 } from "@/lib/cast/server/storage"
+import { getStorageAdapter } from "@/lib/cast/server/storage-adapter"
 import {
   emitAssetResolved,
   emitComplete,
@@ -145,13 +147,15 @@ export async function POST(req: Request): Promise<Response> {
 
   // 4. Open stream.
   const mode = getGenAIMode()
+  const storage = await getStorageAdapter()
+  const logoBuffer = await storage.readFile("inputs", logo.path)
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
         const manifest = await runPipeline({
           brief,
           brand,
-          logoPath: logo.path,
+          logoBuffer,
           mode,
           emit: (chunk) => controller.enqueue(chunk),
         })
@@ -184,7 +188,7 @@ export async function POST(req: Request): Promise<Response> {
 interface RunPipelineArgs {
   brief: Brief
   brand: BrandProfile
-  logoPath: string
+  logoBuffer: Buffer
   mode: GenAIMode
   emit: (chunk: Uint8Array) => void
 }
@@ -211,7 +215,7 @@ class StageError extends Error {
 }
 
 export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
-  const { brief, brand, logoPath, mode, emit } = args
+  const { brief, brand, logoBuffer, mode, emit } = args
   const pipelineStartedAt = new Date().toISOString()
 
   const creatives: Creative[] = []
@@ -227,12 +231,13 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
     // also keys by ratio because dall-e-3 native sizes differ per ratio.
     // Cheap mode keys by productSlug only (single 1024² master per product).
     const baseImageCache = new Map<string, Buffer>()
+    const genMetaCache = new Map<string, { model: string; revisedPrompt: string | null; promptUsed: string }>()
 
     for (const product of brief.products) {
       const productSlug = slugify(product.name)
       let resolved: Awaited<ReturnType<typeof resolveAsset>>
       try {
-        resolved = await resolveAsset(productSlug)
+        resolved = await resolveAsset(productSlug, product.sku, brand)
       } catch (err) {
         // Non-ENOENT fs errors (EACCES, EPERM, EIO, …) bubble up from
         // findLocalAsset. Attribute them to the resolve stage per slot so
@@ -256,21 +261,31 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
       emit(
         emitAssetResolved(
           productSlug,
-          resolved.source,
+          // Map "products" to "local" for the event (both are local disk reads;
+          // the distinction is internal to the resolver). Only include `file`
+          // for true local assets — "products" uses a container-relative key
+          // that must not be exposed to clients via NDJSON.
+          resolved.source === "genai" ? "genai" : "local",
           resolved.source === "local" ? resolved.file : undefined,
         ),
       )
 
       // Materialize the master once per product (per market). For local
-      // assets, one disk read. For cheap-mode genai, one 1024² generation
-      // here — done OUTSIDE the per-ratio Promise.all so the prompt is
-      // deterministic (ratio "1x1" stands in for the canonical square master).
-      // Default-mode genai is per-ratio and stays inside the ratio loop.
+      // assets and brand-can variants, one disk read. For cheap-mode genai,
+      // one 1024² generation here — done OUTSIDE the per-ratio Promise.all
+      // so the prompt is deterministic (ratio "1x1" stands in for the
+      // canonical square master). Default-mode genai stays inside the ratio
+      // loop.
       let localBaseImage: Buffer | undefined
       let baseImageGenerationError: { stage: ErrorStage; message: string } | undefined
-      if (resolved.source === "local") {
+      if (resolved.source === "local" || resolved.source === "products") {
         try {
-          localBaseImage = await readAsset(resolved.file)
+          // "local" → repo-relative path via readAsset; "products" → container-relative
+          // key via readBrandAsset.
+          localBaseImage =
+            resolved.source === "local"
+              ? await readAsset(resolved.file)
+              : await readBrandAsset(resolved.file)
         } catch (err) {
           const message = errMessage(err)
           for (const ratio of brief.ratios) {
@@ -289,11 +304,10 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
         }
       } else if (mode === "cheap") {
         try {
-          const master = await generateImage({
-            prompt: buildPrompt(brief, brand, product, market, "1x1"),
-            mode: "cheap",
-          })
-          baseImageCache.set(productSlug, master)
+          const cheapPrompt = buildPrompt(brief, brand, product, market, "1x1")
+          const cheapResult = await generateImage({ prompt: cheapPrompt, mode: "cheap" })
+          baseImageCache.set(productSlug, cheapResult.png)
+          genMetaCache.set(productSlug, { model: cheapResult.meta.model, revisedPrompt: cheapResult.meta.revisedPrompt, promptUsed: cheapPrompt })
         } catch (err) {
           // Defer attribution to the per-ratio loop so each (market × ratio)
           // gets its own error event + manifest entry.
@@ -333,7 +347,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
 
             // ---- genai (only if missing) ----
             let master: Buffer
-            if (resolved.source === "local") {
+            if (resolved.source === "local" || resolved.source === "products") {
               master = localBaseImage!
             } else if (mode === "cheap") {
               // Already in cache (generated outside the ratio loop above).
@@ -346,14 +360,13 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
                 master = cached
               } else {
                 emit(emitStep("genai", slot, `generating ${ratio} native`))
-                master = await runStage("genai", () =>
-                  generateImage({
-                    prompt: buildPrompt(brief, brand, product, market, ratio),
-                    ratio,
-                    mode: "default",
-                  }),
+                const genPrompt = buildPrompt(brief, brand, product, market, ratio)
+                const genResult = await runStage("genai", () =>
+                  generateImage({ prompt: genPrompt, ratio, mode: "default" }),
                 )
-                baseImageCache.set(cacheKey, master)
+                master = genResult.png
+                baseImageCache.set(cacheKey, genResult.png)
+                genMetaCache.set(cacheKey, { model: genResult.meta.model, revisedPrompt: genResult.meta.revisedPrompt, promptUsed: genPrompt })
               }
             }
 
@@ -372,7 +385,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
                 base: sized,
                 ratio,
                 headline,
-                logoPath,
+                logoBuffer,
                 primaryHex: brand.brand.colors.primary,
               }),
             )
@@ -388,6 +401,30 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
               emitComplianceResult(slot, compliance.badge, compliance.checks.bannedWords),
             )
 
+            // ---- metadata (best-effort — failure must not block pipeline) ----
+            let metadata: ImageMetadata | undefined
+            const metaSource: "local" | "genai" = resolved.source === "genai" ? "genai" : "local"
+            const metaCacheKey = resolved.source === "genai"
+              ? (mode === "cheap" ? productSlug : `${productSlug}|${ratio}`)
+              : null
+            const cachedGenMeta = metaCacheKey ? genMetaCache.get(metaCacheKey) : null
+            try {
+              metadata = await analyzeImage(composed, {
+                campaign: brief.campaign,
+                brand: brief.brand,
+                product: productSlug,
+                market,
+                ratio,
+                source: metaSource,
+                promptUsed: cachedGenMeta?.promptUsed ?? null,
+                model: cachedGenMeta?.model ?? null,
+                revisedPrompt: cachedGenMeta?.revisedPrompt ?? null,
+              })
+            } catch {
+              // Swallowed — analyzeImage already handles internal failures
+              // via graceful degradation. This outer catch is belt-and-suspenders.
+            }
+
             // ---- write ----
             currentStage = "write"
             emit(emitStep("write", slot))
@@ -398,9 +435,10 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
                 productSlug,
                 ratio,
                 png: composed,
+                metadata,
               }),
             )
-            emit(emitCreativeReady(slot, outputPath, resolved.source))
+            emit(emitCreativeReady(slot, outputPath, resolved.source === "products" ? "local" : resolved.source))
           } catch (err) {
             failedAt =
               err instanceof StageError
@@ -413,11 +451,15 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
             errors.push({ ...slot, stage: failedAt.stage, message: failedAt.message })
             // Omit `compliance` from the creative entry unless the
             // failure was at the `write` stage (compliance had already run).
+            // Map internal 'products' source to 'local' for the manifest
+            // schema (both represent a local disk read; the distinction is
+            // internal to the resolver stage).
+            const manifestSource = resolved.source === "products" ? "local" : resolved.source
             const entry: Creative = {
               product: productSlug,
               market,
               ratio,
-              source: resolved.source,
+              source: manifestSource,
               path: null,
               duration: (Date.now() - slotStart) / 1000,
               ...(failedAt.stage === "write" && compliance
@@ -426,11 +468,12 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
             }
             creatives.push(entry)
           } else {
+            const manifestSource = resolved.source === "products" ? "local" : resolved.source
             creatives.push({
               product: productSlug,
               market,
               ratio,
-              source: resolved.source,
+              source: manifestSource,
               path: outputPath,
               duration: (Date.now() - slotStart) / 1000,
               ...(compliance ? { compliance: toComplianceField(compliance) } : {}),
@@ -459,6 +502,7 @@ function buildPrompt(
   market: string,
   ratio: AspectRatio,
 ): string {
+  const skuEntry = brand.voice.skuFragments?.[product.sku]
   return buildPromptPreview({
     brand: {
       displayName: brand.brand.displayName,
@@ -469,8 +513,19 @@ function buildPrompt(
         brand.brand.colors.background ?? "",
       ].filter(Boolean),
       bannedWords: brand.bannedWords,
+      negativePromptFragments: brand.voice.negativePromptFragments,
+      moodKeywords: brand.voice.moodKeywords,
     },
-    product,
+    product: {
+      ...product,
+      skuFragments: skuEntry
+        ? {
+            promptFragments: skuEntry.promptFragments,
+            accentHex: skuEntry.accentHex,
+            sceneMood: skuEntry.sceneMood,
+          }
+        : undefined,
+    },
     market,
     ratio,
   })
@@ -493,5 +548,13 @@ async function runStage<T>(stage: ErrorStage, fn: () => Promise<T>): Promise<T> 
 
 function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
+}
+
+/**
+ * Read a brand asset file via StorageAdapter using a container-relative key
+ * (e.g. `brands/brisa/products/can-citrus.png`).
+ */
+async function readBrandAsset(key: string): Promise<Buffer> {
+  return (await getStorageAdapter()).readFile("inputs", key)
 }
 
