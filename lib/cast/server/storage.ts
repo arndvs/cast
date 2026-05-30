@@ -103,20 +103,32 @@ export async function writeReport(
   return path.posix.join("outputs", key)
 }
 
+/** Max concurrent storage lookups in detectAssetFiles to avoid throttling. */
+const DETECT_CONCURRENCY = 8
+
 /**
  * Detect which asset files exist for the given product slugs.
  * Returns `{ slug, foundFile }` pairs where `foundFile` is the filename
  * (e.g. `"slug.png"`) or `null` if no asset was found.
+ *
+ * Concurrency is capped at {@link DETECT_CONCURRENCY} to prevent unbounded
+ * fan-out against Azure Blob Storage on large requests.
  */
 export async function detectAssetFiles(
   slugs: string[],
 ): Promise<{ slug: string; foundFile: string | null }[]> {
-  return Promise.all(
-    slugs.map(async (slug) => {
-      const found = await findLocalAsset(slug)
-      return { slug, foundFile: found ? path.posix.basename(found) : null }
-    }),
-  )
+  const results: { slug: string; foundFile: string | null }[] = []
+  for (let i = 0; i < slugs.length; i += DETECT_CONCURRENCY) {
+    const batch = slugs.slice(i, i + DETECT_CONCURRENCY)
+    const batchResults = await Promise.all(
+      batch.map(async (slug) => {
+        const found = await findLocalAsset(slug)
+        return { slug, foundFile: found ? path.posix.basename(found) : null }
+      }),
+    )
+    results.push(...batchResults)
+  }
+  return results
 }
 
 /**
