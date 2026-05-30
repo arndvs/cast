@@ -41,7 +41,7 @@ All v1 fields preserved. New in v2:
 
 ### Image Metadata *(new)*
 
-Written alongside each generated creative as `[ratio].metadata.json` in Azure cast-outputs. Also vectorized into Qdrant `cast-creatives`.
+Written alongside each generated creative as `[ratio].metadata.json` in Azure cast-outputs. Qdrant vectorization into `cast-creatives` is planned but not yet implemented.
 
 **Fields in `imageMetadataSchema` (written to `.metadata.json` sidecar):**
 

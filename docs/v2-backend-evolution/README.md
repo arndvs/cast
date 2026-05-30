@@ -32,7 +32,7 @@ This folder is the design record for the POC and v2 evolution. Read top-to-botto
 | User stories | 3 personas (Maya, Priya, Aaron) | 5 personas (+ Jordan, Sam) |
 | Audience field | Free-text string | Persona typeahead (saved personas in Qdrant) with free-text fallback |
 | Storage | Local filesystem only | StorageAdapter interface: LocalFsAdapter (dev) + AzureBlobAdapter (prod) |
-| Image metadata | None | Auto-analyzed post-generation (gpt-4o-mini), stored as `.metadata.json` + Qdrant vector |
+| Image metadata | None | Auto-analyzed post-generation (gpt-4o-mini), stored as `.metadata.json` sidecars; Qdrant vectorization is roadmap |
 | Vector database | None | Qdrant Cloud: `cast-creatives` · `cast-knowledge` · `cast-personas` |
 | Knowledge base | `voice.json` promptFragments (static) | Chunked markdown → Qdrant RAG (dynamic, market-aware) |
 | Approval workflow | None | `status: pending/approved/rejected` + `rejectionReason` on creative metadata |

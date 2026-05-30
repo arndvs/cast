@@ -31,7 +31,7 @@ The following tools are registered in `mcp-tools.ts` today with working handlers
 | Tool | Type | Description |
 |------|------|-------------|
 | `list_brands` | Read-only | Lists available brand slugs from `inputs/brands/` |
-| `get_brand_profile` | Read-only | Returns the full `BrandProfile` for a slug |
+| `get_brand_profile` | Read-only | Returns a brand profile summary (slug, display name, palette hexes, and counts of logos, voice fragments, and banned words) |
 | `detect_assets` | Read-only | Detects available assets for a product |
 | `preview_prompt` | Read-only | Previews the GenAI prompt for given brief parameters |
 | `check_compliance` | Read-only | Runs banned-word and logo compliance checks |
