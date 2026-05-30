@@ -150,7 +150,7 @@ export async function saveAssetFile(
 export async function readOutputFile(...segments: string[]): Promise<Buffer> {
   // Reject obviously invalid raw segments before normalization.
   for (const seg of segments) {
-    if (!seg || path.isAbsolute(seg)) {
+    if (!seg || path.isAbsolute(seg) || path.win32.isAbsolute(seg)) {
       throw new PathTraversalError(`invalid output path segment: "${seg}"`)
     }
   }
