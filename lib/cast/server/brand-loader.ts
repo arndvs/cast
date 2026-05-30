@@ -101,10 +101,13 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
 
   const storage = await getStorageAdapter()
 
-  // Brand dir must exist — check via a known child (brand.json).
+  // Distinguish "brand directory doesn't exist" (BrandNotFoundError) from
+  // "directory exists but brand.json is missing" (BrandIncompleteError).
   const brandDirKey = `brands/${slug}`
   if (!(await storage.fileExists("inputs", `${brandDirKey}/brand.json`))) {
-    throw new BrandNotFoundError(slug)
+    const slugs = await storage.listPrefixes("inputs", "brands")
+    if (!slugs.includes(slug)) throw new BrandNotFoundError(slug)
+    throw new BrandIncompleteError(slug, "brand.json")
   }
 
   const brandJson = await readJson(storage, slug, "brand.json")

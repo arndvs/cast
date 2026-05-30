@@ -107,7 +107,14 @@ describe("loadBrandProfile", () => {
 
   it("throws BrandNotFoundError when brand dir is missing", async () => {
     mockAdapter.fileExists.mockResolvedValue(false)
+    mockAdapter.listPrefixes.mockResolvedValue([])
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandNotFoundError)
+  })
+
+  it("throws BrandIncompleteError when brand dir exists but brand.json is missing", async () => {
+    mockAdapter.fileExists.mockResolvedValue(false)
+    mockAdapter.listPrefixes.mockResolvedValue(["acme"])
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandIncompleteError)
   })
 
   it("throws BrandIncompleteError when a required file is missing", async () => {
@@ -276,6 +283,7 @@ describe("tryLoadBrand", () => {
 
   it("returns { ok: false, error: BrandNotFoundError } when brand dir is missing", async () => {
     mockAdapter.fileExists.mockResolvedValue(false)
+    mockAdapter.listPrefixes.mockResolvedValue([])
     const result = await tryLoadBrand("acme")
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error).toBeInstanceOf(BrandNotFoundError)

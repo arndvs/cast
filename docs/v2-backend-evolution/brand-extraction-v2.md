@@ -48,14 +48,7 @@ Lift rule:
 
 ### `logos/` (variants + `logos.json`)
 
-Four variants per brand:
-
-| Variant id | When used | Source |
-| --- | --- | --- |
-| `primary-on-light` | Default. Light hero backgrounds. | Screenshot on light surface |
-| `primary-on-dark` | Dark hero backgrounds. | Screenshot on dark surface |
-| `mono-white` | Busy dark hero backgrounds. | White-only logo screenshot |
-| `mono-black` | Busy light hero backgrounds. | Black-only logo screenshot |
+The number and naming of logo variants are brand-specific. Use descriptive IDs derived from the logo treatment and surface (for example, `lockup-on-light`, `wordmark-on-dark`, or `bolt-on-dark`), and declare the available variants in `logos/logos.json` with an optional `theme` hint.
 
 ### `font.ttf` / `font.otf`
 
