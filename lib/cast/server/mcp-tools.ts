@@ -172,15 +172,21 @@ export function buildToolRegistry(deps: McpToolDeps): CastMcpTool[] {
       }),
       annotations: { readOnlyHint: true },
       handler: async (input) => {
-        const results = await Promise.all(
-          input.slugs.map(async (slug) => {
-            const found = await deps.findLocalAsset(slug)
-            return {
-              slug,
-              foundFile: found ? found.split("/").pop() ?? found : null,
-            }
-          }),
-        )
+        const BATCH = 8
+        const results: { slug: string; foundFile: string | null }[] = []
+        for (let i = 0; i < input.slugs.length; i += BATCH) {
+          const batch = input.slugs.slice(i, i + BATCH)
+          const batchResults = await Promise.all(
+            batch.map(async (slug) => {
+              const found = await deps.findLocalAsset(slug)
+              return {
+                slug,
+                foundFile: found ? found.split("/").pop() ?? found : null,
+              }
+            }),
+          )
+          results.push(...batchResults)
+        }
         const found = results.filter((r) => r.foundFile).length
         return {
           structuredContent: { results },
