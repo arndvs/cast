@@ -124,7 +124,7 @@ export function buildToolRegistry(deps: McpToolDeps): CastMcpTool[] {
       name: "get_brand_profile",
       title: "Get Brand Profile",
       description:
-        "Load the full brand profile for a given slug, including palette, voice, logos, and banned words.",
+        "Load a brand profile summary for a given slug, including palette hex codes, and counts of logos, voice fragments, and banned words.",
       inputSchema: z.object({
         slug: z.string().regex(SLUG_RE, "slug must be lowercase-kebab"),
       }),
