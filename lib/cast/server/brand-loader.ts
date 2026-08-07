@@ -10,16 +10,17 @@
  *   each with a structured `{ errors: [...] }` body.
  * - Banned-words list is the **union** of `getDefaultBannedWords()` + brand file
  *   (deduped, lowercased). Defaults always apply; missing brand file is allowed.
- * - Every disk read goes through `safeJoin("inputs", ...)`.
+ * - All file I/O goes through StorageAdapter (local FS or Azure Blob).
  */
 
-import fs from "node:fs/promises"
 import type { ZodType } from "zod"
 import {
   brandJsonSchema,
   voiceJsonSchema,
   bannedWordsSchema,
   logosManifestSchema,
+  productsManifestSchema,
+  backgroundsManifestSchema,
   SLUG_RE,
   type BrandProfile,
 } from "@/lib/cast/schemas"
@@ -28,8 +29,8 @@ import {
   BrandIncompleteError,
   BrandInvalidError,
 } from "@/lib/cast/errors"
-import { safeJoin } from "@/lib/cast/server/safe-join"
 import { getDefaultBannedWords } from "@/lib/cast/banned-words"
+import { getStorageAdapter, StorageNotFoundError, type StorageAdapter } from "@/lib/cast/server/storage-adapter"
 
 const CACHE_TTL_MS = 90_000
 
@@ -98,25 +99,47 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
     return cached.profile
   }
 
-  // TODO(symlink-hardening): re-validate with realpath after lexical safeJoin.
-  const brandDir = safeJoin("inputs", "brands", slug)
-  await assertExists(brandDir, slug, slug)
+  const storage = await getStorageAdapter()
 
-  const brandJson = await readJson(slug, "brand.json")
-  const voiceJson = await readJson(slug, "voice.json")
-  const logosJson = await readJson(slug, "logos/logos.json")
+  // Distinguish "brand directory doesn't exist" (BrandNotFoundError) from
+  // "directory exists but brand.json is missing" (BrandIncompleteError).
+  const brandDirKey = `brands/${slug}`
+  if (!(await storage.fileExists("inputs", `${brandDirKey}/brand.json`))) {
+    const slugs = await storage.listPrefixes("inputs", "brands")
+    if (!slugs.includes(slug)) throw new BrandNotFoundError(slug)
+    throw new BrandIncompleteError(slug, "brand.json")
+  }
+
+  const brandJson = await readJson(storage, slug, "brand.json")
+  const voiceJson = await readJson(storage, slug, "voice.json")
+  const logosJson = await readJson(storage, slug, "logos/logos.json")
 
   // banned-words.json is optional
   let bannedWordsRaw: unknown[] = []
   try {
-    bannedWordsRaw = (await readJson(slug, "banned-words.json")) as unknown[]
+    bannedWordsRaw = (await readJson(storage, slug, "banned-words.json")) as unknown[]
+  } catch (err) {
+    if (!(err instanceof BrandIncompleteError)) throw err
+  }
+
+  // products.json is optional — present for Brisa, absent for Volt
+  let productsRaw: unknown = null
+  try {
+    productsRaw = await readJson(storage, slug, "products.json")
+  } catch (err) {
+    if (!(err instanceof BrandIncompleteError)) throw err
+  }
+
+  // backgrounds.json is optional — present for Brisa, absent for Volt
+  let backgroundsRaw: unknown = null
+  try {
+    backgroundsRaw = await readJson(storage, slug, "backgrounds.json")
   } catch (err) {
     if (!(err instanceof BrandIncompleteError)) throw err
   }
 
   // font.ttf / font.otf is existence-checked only — either filename is accepted.
-  // TODO(symlink-hardening): re-validate fontPath with realpath
-  const fontPath = await resolveFontPath(slug)
+  const fontKey = await resolveFontKey(storage, slug)
 
   const brand = parse(slug, "brand.json", brandJsonSchema, brandJson)
   const voice = parse(slug, "voice.json", voiceJsonSchema, voiceJson)
@@ -128,21 +151,66 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
   )
   const logos = parse(slug, "logos/logos.json", logosManifestSchema, logosJson)
 
-  // Verify each declared logo variant file actually exists on disk.
+  // Verify each declared logo variant file actually exists.
   const logoVariants: BrandProfile["logoVariants"] = []
   for (const variant of logos.variants) {
-    // TODO(symlink-hardening): re-validate variant.path with realpath
-    const variantPath = safeJoin("inputs", "brands", slug, "logos", variant.file)
-    await assertExists(variantPath, slug, `logos/${variant.file}`)
+    const variantKey = `brands/${slug}/logos/${variant.file}`
+    await assertExists(storage, variantKey, slug, `logos/${variant.file}`)
     logoVariants.push({
       id: variant.id,
       displayName: variant.displayName,
-      path: variantPath,
+      path: variantKey,
       theme: variant.theme,
     })
   }
 
   const bannedWords = unionLowercase(getDefaultBannedWords(), bannedFromFile)
+
+  // Resolve can variant keys (container-relative)
+  const canVariants: BrandProfile["canVariants"] = []
+  if (productsRaw !== null) {
+    const productsManifest = parse(
+      slug,
+      "products.json",
+      productsManifestSchema,
+      productsRaw,
+    )
+    for (const item of productsManifest.items) {
+      const segments = validateItemFile(slug, "products.json", item.file)
+      const itemKey = `brands/${slug}/${segments.join("/")}`
+      await assertExists(storage, itemKey, slug, item.file)
+      canVariants.push({
+        id: item.id,
+        sku: item.sku,
+        file: itemKey,
+        pose: item.pose,
+        detail: item.detail,
+      })
+    }
+  }
+
+  // Resolve background variant keys (container-relative)
+  const backgroundVariants: BrandProfile["backgroundVariants"] = []
+  if (backgroundsRaw !== null) {
+    const backgroundsManifest = parse(
+      slug,
+      "backgrounds.json",
+      backgroundsManifestSchema,
+      backgroundsRaw,
+    )
+    for (const item of backgroundsManifest.items) {
+      const segments = validateItemFile(slug, "backgrounds.json", item.file)
+      const itemKey = `brands/${slug}/${segments.join("/")}`
+      await assertExists(storage, itemKey, slug, item.file)
+      backgroundVariants.push({
+        id: item.id,
+        file: itemKey,
+        ratio: item.ratio,
+        sku: item.sku,
+        luminance: item.luminance,
+      })
+    }
+  }
 
   const profile: BrandProfile = {
     slug,
@@ -151,7 +219,9 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
     bannedWords,
     logoVariants,
     defaultLogoId: logos.default,
-    fontPath,
+    fontPath: fontKey,
+    canVariants,
+    backgroundVariants,
   }
 
   cache.set(slug, { profile, expiresAt: Date.now() + CACHE_TTL_MS })
@@ -160,23 +230,13 @@ export async function loadBrandProfile(slug: string): Promise<BrandProfile> {
 
 /** List every brand directory under inputs/brands/. Returns sorted slugs. */
 export async function listBrandSlugs(): Promise<string[]> {
-  // TODO(symlink-hardening): re-validate with realpath
-  const dir = safeJoin("inputs", "brands")
-  let entries: import("node:fs").Dirent[]
-  try {
-    entries = await fs.readdir(dir, { withFileTypes: true })
-  } catch (err) {
-    // Missing inputs/brands/ is allowed; permission/IO errors must surface.
-    if (isENOENT(err)) {
-      maybeWarnNoBrands("missing")
-      return []
-    }
-    throw err
+  const storage = await getStorageAdapter()
+  const dirs = await storage.listPrefixes("inputs", "brands")
+  if (dirs.length === 0) {
+    maybeWarnNoBrands("missing")
+    return []
   }
-  const slugs = entries
-    .filter((e) => e.isDirectory() && SLUG_RE.test(e.name))
-    .map((e) => e.name)
-    .sort()
+  const slugs = dirs.filter((name) => SLUG_RE.test(name)).sort()
   if (slugs.length === 0) maybeWarnNoBrands("empty")
   return slugs
 }
@@ -195,17 +255,14 @@ function maybeWarnNoBrands(reason: "missing" | "empty"): void {
 
 // ---------------------------------------------------------------------------
 
-async function readJson(slug: string, rel: string): Promise<unknown> {
-  // rel is a controlled internal constant ("brand.json", "voice.json", ...).
-  // We still safeJoin to be defensive.
-  const segments = rel.split("/").filter(Boolean)
-  // TODO(symlink-hardening): re-validate with realpath
-  const filePath = safeJoin("inputs", "brands", slug, ...segments)
+async function readJson(storage: StorageAdapter, slug: string, rel: string): Promise<unknown> {
+  const key = `brands/${slug}/${rel}`
   let raw: string
   try {
-    raw = await fs.readFile(filePath, "utf8")
+    const buf = await storage.readFile("inputs", key)
+    raw = buf.toString("utf8")
   } catch (err) {
-    if (isENOENT(err)) {
+    if (err instanceof StorageNotFoundError) {
       throw new BrandIncompleteError(slug, rel)
     }
     throw err
@@ -220,19 +277,15 @@ async function readJson(slug: string, rel: string): Promise<unknown> {
 }
 
 async function assertExists(
-  absPath: string,
+  storage: StorageAdapter,
+  key: string,
   slug: string,
   rel: string,
 ): Promise<void> {
-  try {
-    await fs.access(absPath)
-  } catch (err) {
-    if (isENOENT(err)) {
-      // brand-dir miss is "not found"; child miss is "incomplete"
-      if (rel === slug) throw new BrandNotFoundError(slug)
-      throw new BrandIncompleteError(slug, rel)
-    }
-    throw err
+  if (!(await storage.fileExists("inputs", key))) {
+    // brand-dir miss is "not found"; child miss is "incomplete"
+    if (rel === slug) throw new BrandNotFoundError(slug)
+    throw new BrandIncompleteError(slug, rel)
   }
 }
 
@@ -241,15 +294,11 @@ async function assertExists(
  * `font.ttf` or `font.otf` is accepted. If neither exists, throw
  * `BrandIncompleteError` against `font.ttf` (canonical name in the contract).
  */
-async function resolveFontPath(slug: string): Promise<string> {
+async function resolveFontKey(storage: StorageAdapter, slug: string): Promise<string> {
   for (const file of ["font.ttf", "font.otf"] as const) {
-    // TODO(symlink-hardening): re-validate with realpath
-    const candidate = safeJoin("inputs", "brands", slug, file)
-    try {
-      await fs.access(candidate)
-      return candidate
-    } catch (err) {
-      if (!isENOENT(err)) throw err
+    const key = `brands/${slug}/${file}`
+    if (await storage.fileExists("inputs", key)) {
+      return key
     }
   }
   throw new BrandIncompleteError(slug, "font.ttf")
@@ -277,6 +326,39 @@ function parse<T>(
   return result.data
 }
 
+/**
+ * Reject item.file values containing backslashes, traversal segments (.., .),
+ * or absolute paths. Container keys use forward slashes only — any backslash
+ * is rejected outright. Surfaces violations as BrandInvalidError so callers
+ * get a clear 400 instead of an unexpected PathTraversalError from the adapter.
+ */
+function validateItemFile(slug: string, manifestFile: string, raw: string): string[] {
+  if (raw.includes("\\")) {
+    throw new BrandInvalidError(slug, manifestFile, [
+      { path: ["file"], message: `backslashes not allowed in container key: "${raw}"` },
+    ])
+  }
+  const segments = raw.split("/").filter(Boolean)
+  for (const seg of segments) {
+    if (seg === "." || seg === "..") {
+      throw new BrandInvalidError(slug, manifestFile, [
+        { path: ["file"], message: `path traversal segment "${seg}" in "${raw}"` },
+      ])
+    }
+  }
+  if (/^[a-zA-Z]:/.test(raw) || raw.startsWith("/")) {
+    throw new BrandInvalidError(slug, manifestFile, [
+      { path: ["file"], message: `absolute path not allowed: "${raw}"` },
+    ])
+  }
+  if (segments.length === 0) {
+    throw new BrandInvalidError(slug, manifestFile, [
+      { path: ["file"], message: `empty container key: "${raw}"` },
+    ])
+  }
+  return segments
+}
+
 function unionLowercase(a: readonly string[], b: readonly string[]): string[] {
   const set = new Set<string>()
   for (const s of [...a, ...b]) {
@@ -284,13 +366,4 @@ function unionLowercase(a: readonly string[], b: readonly string[]): string[] {
     if (w) set.add(w)
   }
   return [...set].sort()
-}
-
-function isENOENT(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code: unknown }).code === "ENOENT"
-  )
 }

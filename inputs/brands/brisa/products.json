@@ -1,0 +1,10 @@
+{
+  "items": [
+    { "id": "citrus-front",        "sku": "BRS-CIT-12", "file": "products/can-citrus-front.png",        "pose": "upright-center", "detail": "clean"        },
+    { "id": "citrus-condensation", "sku": "BRS-CIT-12", "file": "products/can-citrus-condensation.png", "pose": "upright-center", "detail": "condensation" },
+    { "id": "citrus-tilt",         "sku": "BRS-CIT-12", "file": "products/can-citrus-tilt-left.png",    "pose": "tilt-left",      "detail": "clean"        },
+    { "id": "berry-front",         "sku": "BRS-BRY-12", "file": "products/can-berry-front.png",         "pose": "upright-center", "detail": "clean"        },
+    { "id": "berry-condensation",  "sku": "BRS-BRY-12", "file": "products/can-berry-condensation.png",  "pose": "upright-center", "detail": "condensation" },
+    { "id": "berry-tilt",          "sku": "BRS-BRY-12", "file": "products/can-berry-tilt-right.png",    "pose": "tilt-right",     "detail": "clean"        }
+  ]
+}

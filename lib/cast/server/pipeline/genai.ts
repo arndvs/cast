@@ -13,20 +13,21 @@ import OpenAI from "openai"
 import type { AspectRatio } from "@/lib/cast/schemas"
 import { RATIO_PIXELS } from "@/lib/cast/ratios"
 import { retry, type RetryableError } from "@/lib/cast/server/retry"
+import {
+  getGenAIMode as getConfigGenAIMode,
+  getOpenAIApiKey,
+} from "@/lib/cast/server/config"
 
 export type GenAIMode = "default" | "cheap"
 
 export function getGenAIMode(): GenAIMode {
-  return process.env.CAST_GENAI_MODE === "cheap" ? "cheap" : "default"
+  return getConfigGenAIMode()
 }
 
 let openaiClient: OpenAI | null = null
 function getClient(): OpenAI {
   if (openaiClient) return openaiClient
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not set")
-  }
-  openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  openaiClient = new OpenAI({ apiKey: getOpenAIApiKey() })
   return openaiClient
 }
 
@@ -41,11 +42,20 @@ export interface GenerateImageArgs {
   retryDeps?: { sleep?: (ms: number) => Promise<void>; random?: () => number }
 }
 
+export interface GenerationResult {
+  png: Buffer
+  meta: {
+    model: string
+    revisedPrompt: string | null
+    size: string
+  }
+}
+
 /**
- * Returns the raw PNG bytes for a single image generation. Throws after
- * exhausting retries.
+ * Returns the raw PNG bytes and generation metadata for a single image
+ * generation. Throws after exhausting retries.
  */
-export async function generateImage(args: GenerateImageArgs): Promise<Buffer> {
+export async function generateImage(args: GenerateImageArgs): Promise<GenerationResult> {
   const mode = args.mode ?? getGenAIMode()
   const client = args.client ?? getClient()
 
@@ -76,7 +86,14 @@ export async function generateImage(args: GenerateImageArgs): Promise<Buffer> {
         new Error(`OpenAI images response missing b64_json (model=${model})`),
       )
     }
-    return Buffer.from(base64Image, "base64")
+    return {
+      png: Buffer.from(base64Image, "base64"),
+      meta: {
+        model,
+        revisedPrompt: imageData.revised_prompt ?? null,
+        size,
+      },
+    }
   }, args.retryDeps)
 }
 

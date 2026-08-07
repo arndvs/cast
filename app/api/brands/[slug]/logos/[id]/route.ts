@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
-import fs from "node:fs/promises"
 import { loadBrandProfile } from "@/lib/cast/server/brand-loader"
 import {
   BrandNotFoundError,
   BrandIncompleteError,
   BrandInvalidError,
 } from "@/lib/cast/errors"
+import { getStorageAdapter, StorageNotFoundError } from "@/lib/cast/server/storage-adapter"
 
 export const runtime = "nodejs"
 
@@ -50,18 +50,29 @@ export async function GET(
     )
   }
 
-  // TODO(symlink-hardening): variant.path was safeJoin-validated by the loader;
-  // re-validate with realpath when production hardening lands.
+  // variant.path is a container-relative key validated by the loader,
+  // e.g. "brands/brisa/logos/droplet-on-dark.png".
+  const storage = await getStorageAdapter()
   let buf: Buffer
   try {
-    buf = await fs.readFile(variant.path)
+    buf = await storage.readFile("inputs", variant.path)
   } catch (err) {
-    const code = (err as NodeJS.ErrnoException).code
-    if (code === "ENOENT" || code === "EACCES" || code === "EPERM") {
+    if (err instanceof StorageNotFoundError) {
       return NextResponse.json(
         { errors: [{ path: ["logo", id], message: `logo file unavailable for variant: ${id}` }] },
         { status: 404 },
       )
+    }
+    // Treat permission errors as "unavailable" (same as pre-migration behavior).
+    // Exposing EACCES/EPERM details would leak filesystem internals.
+    if (err instanceof Error && "code" in err) {
+      const code = (err as NodeJS.ErrnoException).code
+      if (code === "EACCES" || code === "EPERM") {
+        return NextResponse.json(
+          { errors: [{ path: ["logo", id], message: `logo file unavailable for variant: ${id}` }] },
+          { status: 404 },
+        )
+      }
     }
     throw err
   }

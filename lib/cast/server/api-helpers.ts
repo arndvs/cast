@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server"
+import { StorageNotFoundError } from "@/lib/cast/server/storage-adapter"
 
-/** True when `err` is a Node.js `ENOENT` filesystem error. */
-export function isENOENT(err: unknown): boolean {
+/** True when `err` is a not-found error from the storage layer. */
+export function isStorageNotFound(err: unknown): boolean {
+  if (err instanceof StorageNotFoundError) return true
   return (
     typeof err === "object" &&
     err !== null &&
@@ -9,6 +11,9 @@ export function isENOENT(err: unknown): boolean {
     (err as { code: unknown }).code === "ENOENT"
   )
 }
+
+/** @deprecated Use `isStorageNotFound` — retained for non-adapter call sites. */
+export const isENOENT = isStorageNotFound
 
 /**
  * Return a JSON error response shaped as `{ errors: [...] }` with the

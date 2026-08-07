@@ -137,7 +137,7 @@ See [docs/](docs/) for the full design trail: [user stories](docs/user-stories.m
 - **One asset per product slug at a time.** Re-uploading a photo for the same product overwrites the previous file (and its alternate-extension siblings).
 - **GenAI provider: OpenAI Images API.** Default model `dall-e-3` calls one of three native sizes (1024×1024 / 1792×1024 / 1024×1792) per requested ratio, behind `OPENAI_API_KEY`. Setting `CAST_GENAI_MODE=cheap` swaps to `gpt-image-1` + Sharp center-crop. Provider abstraction is deferred to v2.
 - **Static raster only.** Output creatives are PNG. Animated formats (GIF, MP4, WebM) are rejected at upload (`415`) and ignored by the resolver. Motion creatives are a separate capability, out of POC scope.
-- **Compliance checks are heuristic, not a legal review.** Logo presence is detected by template match in a configurable corner; brand-color check samples dominant colors; banned-word check is a flat list scan against the resolved overlay string per `(market, ratio)` (the exact string the compositor draws — not an OCR pass on the PNG). The editor pre-flights the same matcher against the same merged list — `BrandProfile.bannedWords` (default floor ∪ `inputs/brands/[slug]/banned-words.json`, built once on the server in `loadBrandProfile` and forwarded to the client) — across the audience + every locale message, and disables Generate when a banned-list term is present, so the spend is gated before the GenAI call rather than after compliance fails post-hoc.
+- **Compliance checks are heuristic, not a legal review.** Logo presence is detected by template match in a configurable corner; banned-word check uses case-insensitive word-boundary matching (pure-word terms match on `\b`; phrases/hyphenated terms match as escaped substrings) against a merged list per `(market, ratio)` (the exact string the compositor draws — not an OCR pass on the PNG). Color compliance is deferred to v2 — see [docs/flow-diagrams.md](docs/flow-diagrams.md) for rationale. The editor pre-flights the same matcher against the same merged list — `BrandProfile.bannedWords` (default floor ∪ `inputs/brands/[slug]/banned-words.json`, built once on the server in `loadBrandProfile` and forwarded to the client) — across the audience + every locale message, and disables Generate when a banned-list term is present, so the spend is gated before the GenAI call rather than after compliance fails post-hoc.
 - **Banned-word floor is intentionally narrow for the POC.** `getDefaultBannedWords()` covers a small universal floor (violence, hate, NSFW, weapons, drugs, self-harm) plus per-brand additions from `inputs/brands/[brand]/banned-words.json`. A production list would expand to common slurs, the strong-profanity family, and leetspeak/punctuation-obfuscation variants of items already on the floor (`n@zi`, `b0mb`, `m3th`, etc.) to defeat trivial bypass. False-positive review against shipping brand fixtures is the gating cost — out of POC scope.
 - **No run history.** Each Generate run is independent. No multi-run comparison view in the POC.
 - **Cloud export requires a tunnel or public deployment.** The Dropbox Saver (v2 path) requires Dropbox's servers to fetch files from your URLs — `localhost` is unreachable from the internet. See [V2 Upgrade Paths](#v2-upgrade-paths).
@@ -222,15 +222,16 @@ Drop a directory under `inputs/brands/`:
 ```
 inputs/brands/[brand-slug]/
 ├── brand.json          # primary/accent colors (hex), tokens
-├── voice.json          # tone, do/don't lists, prompt fragments
-├── logos/              # corner-composited logo variants (four per brand: primary-on-light/dark, mono-white/black)
-│   ├── logos.json      # { default: variantId, variants: [{ id, displayName, file }] }
-│   ├── primary-on-light.png
-│   ├── primary-on-dark.png
-│   ├── mono-white.png
-│   └── mono-black.png
-├── font.ttf            # OFL display font
-└── banned-words.json?  # optional brand-specific terms (added on top of lib defaults — union, never replacement)
+├── voice.json          # tone, do/don't lists, prompt fragments, negative fragments, mood keywords, per-SKU overrides
+├── logos/              # corner-composited logo variants (PNG with alpha) — N per brand, descriptive naming
+│   ├── logos.json      # { default: variantId, variants: [{ id, displayName, file, theme? }] }
+│   └── *.png           # one file per variant declared in logos.json
+├── font.ttf | font.otf # OFL display font (loader accepts either)
+├── banned-words.json?  # optional brand-specific terms (added on top of lib defaults — union, never replacement)
+├── products.json?      # optional product-can manifest: { items: [{ id, sku, file: "products/<name>.png", pose, detail }] }
+├── products/           # product-can cutout PNGs referenced by products.json
+├── backgrounds.json?   # optional background-plate manifest: { items: [{ id, file: "backgrounds/<name>.png", ratio, sku, luminance }] }
+└── backgrounds/        # background-plate PNGs referenced by backgrounds.json
 ```
 
 Reference it from a brief: `"brand": "[brand-slug]"`. No code change. The repo ships two seed profiles — `inputs/brands/brisa/` (sparkling water) and `inputs/brands/volt/` (energy) — representing two sub-brands of the fictional Onda Beverages portfolio. Use them as templates. The recipe for reducing a brand book (HTML, PDF, Figma) into the JSON files above is in [docs/brand-extraction.md](docs/brand-extraction.md).

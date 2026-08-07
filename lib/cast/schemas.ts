@@ -120,11 +120,23 @@ export const brandJsonSchema = z.object({
   tokens: z.record(z.string(), z.string()).optional(),
 })
 
+export const skuFragmentSchema = z.object({
+  promptFragments: z.array(z.string()).default([]),
+  accentHex: z.string().regex(HEX_RE).optional(),
+  sceneMood: z.string().optional(),
+})
+
 export const voiceJsonSchema = z.object({
   tone: z.string().min(1),
   do: z.array(z.string()).default([]),
   dont: z.array(z.string()).default([]),
   promptFragments: z.array(z.string()).default([]),
+  /** Visual negative-prompt fragments — what to avoid in AI-generated images. */
+  negativePromptFragments: z.array(z.string()).default([]),
+  /** Mood keywords — short scene-setting adjectives for the prompt. */
+  moodKeywords: z.array(z.string()).default([]),
+  /** Per-SKU overrides — differentiated visual fragments per product variant. */
+  skuFragments: z.record(z.string(), skuFragmentSchema).optional(),
 })
 
 export const bannedWordsSchema = z.array(z.string().min(1))
@@ -171,6 +183,50 @@ export const brandProfileSchema = z.object({
   logos: logosManifestSchema,
 })
 
+// ---------------------------------------------------------------------------
+// Products manifest (inputs/brands/[slug]/products.json)
+// ---------------------------------------------------------------------------
+
+export const canPoseSchema = z.enum(["upright-center", "tilt-left", "tilt-right"])
+export const canDetailSchema = z.enum(["clean", "condensation"])
+
+export const canItemSchema = z.object({
+  id: z.string().regex(SLUG_RE),
+  sku: z.string().min(1),
+  /** Path relative to the brand directory, e.g. "products/can-citrus-front.png". */
+  file: z.string().min(1),
+  pose: canPoseSchema,
+  detail: canDetailSchema.default("clean"),
+})
+
+export const productsManifestSchema = z.object({
+  items: z.array(canItemSchema).min(1),
+})
+
+export type CanItem = z.infer<typeof canItemSchema>
+
+// ---------------------------------------------------------------------------
+// Backgrounds manifest (inputs/brands/[slug]/backgrounds.json)
+// ---------------------------------------------------------------------------
+
+export const backgroundLuminanceSchema = z.enum(["light", "dark"])
+
+export const backgroundItemSchema = z.object({
+  id: z.string().regex(SLUG_RE),
+  /** Path relative to the brand directory, e.g. "backgrounds/bg-A-studio-citrus-1x1.png". */
+  file: z.string().min(1),
+  ratio: ratioSchema,
+  /** SKU this background is paired with; "*" means any SKU. */
+  sku: z.string().min(1),
+  luminance: backgroundLuminanceSchema,
+})
+
+export const backgroundsManifestSchema = z.object({
+  items: z.array(backgroundItemSchema).min(1),
+})
+
+export type BackgroundItem = z.infer<typeof backgroundItemSchema>
+
 export type BrandProfile = {
   slug: string
   brand: z.infer<typeof brandJsonSchema>
@@ -183,8 +239,32 @@ export type BrandProfile = {
     theme?: "light" | "dark"
   }[]
   defaultLogoId: string
-  /** Absolute path to the brand's display font. `font.ttf` or `font.otf`. */
+  /** Container-relative key to the brand's display font, e.g. `brands/acme/font.otf`. */
   fontPath: string
+  /**
+   * Can/product PNG variants from products.json.
+   * `file` is a container-relative key (e.g. `brands/acme/products/can.png`).
+   * Empty array when products.json is absent (e.g. Volt).
+   */
+  canVariants: Array<{
+    id: string
+    sku: string
+    file: string
+    pose: z.infer<typeof canPoseSchema>
+    detail: z.infer<typeof canDetailSchema>
+  }>
+  /**
+   * Background image variants from backgrounds.json.
+   * `file` is a container-relative key (e.g. `brands/acme/backgrounds/bg.png`).
+   * Empty array when backgrounds.json is absent (e.g. Volt).
+   */
+  backgroundVariants: Array<{
+    id: string
+    file: string
+    ratio: z.infer<typeof ratioSchema>
+    sku: string
+    luminance: z.infer<typeof backgroundLuminanceSchema>
+  }>
 }
 
 // ---------------------------------------------------------------------------
