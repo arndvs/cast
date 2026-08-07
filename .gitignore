@@ -52,3 +52,9 @@ Thumbs.db
 !.vscode/extensions.json
 !.vscode/settings.json.example
 .idea/
+
+# Artifact lifecycle — ignored runtime lanes
+# Never blanket-ignore working/ — only specific subdirectories containing runtime noise.
+working/runtime/
+working/tmp/
+working/logs/
