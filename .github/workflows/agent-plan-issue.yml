@@ -24,7 +24,7 @@ jobs:
       - name: Checkout workflow actions
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: main
 
       - name: Proxy preflight
         id: proxy-preflight
@@ -40,7 +40,7 @@ jobs:
           trigger-label: agent:review
           object-type: issue
           object-number: ${{ env.ISSUE_NUMBER }}
-          checkout-ref: dev
+          checkout-ref: main
           skip-checkout: true
           install-engine: ${{ steps.proxy-preflight.outputs.should_run }}
           token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}

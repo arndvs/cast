@@ -61,7 +61,7 @@ jobs:
       - name: Checkout workflow actions
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: main
 
       - name: Fetch PR head sandcastle.config.json
         id: fetch-pr-head-config
@@ -158,7 +158,7 @@ jobs:
         if: always()
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: main
 
       - name: Sandcastle teardown
         if: always()

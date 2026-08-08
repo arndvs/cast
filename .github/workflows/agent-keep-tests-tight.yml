@@ -26,7 +26,7 @@ jobs:
       - name: Checkout workflow actions
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: main
 
       - name: Proxy preflight
         id: proxy-preflight
@@ -46,7 +46,7 @@ jobs:
         if: steps.proxy-preflight.outputs.should_run == 'true'
         uses: ./.github/actions/sandcastle-setup
         with:
-          checkout-ref: dev
+          checkout-ref: main
           checkout-fetch-depth: 0
           skip-checkout: true
           token: ${{ secrets.AGENT_PAT || secrets.GITHUB_TOKEN }}

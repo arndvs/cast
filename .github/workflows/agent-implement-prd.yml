@@ -118,7 +118,7 @@ jobs:
         if: steps.shape.outputs.mode == 'run'
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: main
 
       - name: Proxy preflight
         if: steps.shape.outputs.mode == 'run'
@@ -136,7 +136,7 @@ jobs:
           trigger-label: agent:implement-prd
           object-type: issue
           object-number: ${{ env.PRD_NUMBER }}
-          checkout-ref: dev
+          checkout-ref: main
           checkout-fetch-depth: 0
           skip-checkout: ${{ steps.proxy-preflight.outputs.should_run != 'true' }}
           install-engine: ${{ steps.proxy-preflight.outputs.should_run }}
@@ -331,7 +331,7 @@ jobs:
         if: always() && steps.shape.outputs.mode == 'run'
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: main
 
       - name: Sandcastle teardown
         if: always() && steps.shape.outputs.mode == 'run'
