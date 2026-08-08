@@ -1,6 +1,6 @@
 {
   "model": "claude-opus-4-6",
-  "baseBranch": "dev",
+  "baseBranch": "main",
   "sandbox": "none",
   "promptDir": ".sandcastle/prompts",
   "codingStandards": ".sandcastle/CODING_STANDARDS.md",
