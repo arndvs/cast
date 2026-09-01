@@ -1,11 +1,10 @@
 /**
  * Persistent cross-run master cache (S3).
  *
- * MCRDSE's asset-first reuse proven: re-running an unchanged brief must not
- * re-pay for identical generations. Cast's existing `baseImageCache` is a
- * per-request Map; this adds a DISK cache keyed by a hash of the prompt text,
- * so a second run of the same campaign with the same brief skips the genai
- * call entirely.
+ * Re-running an unchanged brief must not re-pay for identical generations.
+ * Cast's existing `baseImageCache` is a per-request Map; this adds a DISK
+ * cache keyed by a hash of the prompt text, so a second run of the same
+ * campaign with the same brief skips the genai call entirely.
  *
  * Design:
  *   - Keys: `sha1(prompt).slice(0, 16)` — the prompt fully determines the

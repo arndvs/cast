@@ -1,5 +1,5 @@
 /**
- * Deterministic seeds (S4) — ported from MCRDSE-Content-Ship's `seed.mjs`.
+ * Deterministic seeds (S4).
  *
  * Derive a stable 31-bit seed from the prompt + ratio so the same brief
  * reproduces the same images in default (dall-e-3) mode. gpt-image-1
@@ -8,8 +8,7 @@
 
 /**
  * DJB2-style hash → positive 31-bit integer.
- * Same algorithm MCRDSE uses (`seed.mjs`), extended to accept multiple
- * parts so prompt + ratio join the key.
+ * Accepts multiple parts so prompt + ratio join the key.
  */
 function hash(str: string): number {
   let h = 5381

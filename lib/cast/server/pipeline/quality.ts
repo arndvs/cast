@@ -1,8 +1,7 @@
 /**
  * Output quality stage — `quality`.
  *
- * Ported from MCRDSE-Content-Ship's `scripts/lib/quality-gate.mjs` (S9):
- * three server-side checks on the composed PNG before it's written, so a
+ * Three server-side checks on the composed PNG before it's written, so a
  * broken/blank/garbled creative never reaches the outputs grid:
  *
  *   1. Byte-size floor   — reject suspiciously small images (corrupt/blank).
@@ -10,9 +9,9 @@
  *   3. Text-leak density — flag sharp-edge density in the bottom text zone
  *                          (the model baked text the compositor shouldn't need).
  *
- * MCRDSE parses raw PNG; Cast already depends on `sharp`, so we decode to
- * raw RGB via `sharp(...).raw()` and run the same heuristics over pixels —
- * no PNG parser needed. All thresholds mirror the MCRDSE originals.
+ * Cast already depends on `sharp`, so we decode to raw RGB via
+ * `sharp(...).raw()` and run the heuristics over pixels — no PNG parser
+ * needed.
  */
 
 import sharp from "sharp"
@@ -108,7 +107,7 @@ export function meanLuma(
 
 /**
  * Horizontal-gradient sharp-edge density in the bottom TEXT_ZONE_BOTTOM_FRACTION
- * of the frame. Thresholded at the same 40-luma-delta as MCRDSE.
+ * of the frame. Thresholded at a 40-luma-delta.
  */
 export function edgeDensity(
   pixels: Buffer | Uint8Array,

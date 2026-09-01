@@ -22,7 +22,7 @@ export interface PromptPreviewBrand {
   /**
    * S5: cross-frame identity lock — a sentence appended to every prompt so a
    * campaign's 1:1 / 9:16 / 16:9 renditions share subject, palette, and
-   * lighting language (port of MCRDSE brand.mjs identityLock).
+   * lighting language.
    */
   identityLock?: string
 }
@@ -45,8 +45,8 @@ export interface PromptPreviewArgs {
   ratio: AspectRatio
   /**
    * S6: this slot's job in the ratio series — `hero` (first / primary),
-   * `mid` (supporting), `payoff` (closing). Port of MCRDSE's per-frame role
-   * clause (Serial Position / Peak-End applied to prompts).
+   * `mid` (supporting), `payoff` (closing). Serial Position / Peak-End
+   * applied to prompts.
    */
   frameRole?: "hero" | "mid" | "payoff"
 }
