@@ -126,3 +126,64 @@ describe("buildPromptPreview — moodKeywords", () => {
     expect(prompt).not.toContain("Mood:")
   })
 })
+
+describe("buildPromptPreview — identity lock (S5)", () => {
+  it("appends the identity lock when the brand carries one", () => {
+    const brand = makeBrand({ identityLock: "Same subject, same palette, same lighting across all frames." })
+    const prompt = buildPromptPreview({ brand, product: makeProduct(), market: "us-en", ratio: "1x1" })
+    expect(prompt).toContain("Identity lock: Same subject, same palette, same lighting across all frames.")
+  })
+
+  it("omits the identity lock when absent (backward compatible)", () => {
+    const brand = makeBrand({ identityLock: undefined })
+    const prompt = buildPromptPreview({ brand, product: makeProduct(), market: "us-en", ratio: "1x1" })
+    expect(prompt).not.toContain("Identity lock:")
+  })
+})
+
+describe("buildPromptPreview — frame role (S6)", () => {
+  it("appends a hero clause for the first ratio", () => {
+    const prompt = buildPromptPreview({
+      brand: makeBrand(),
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "1x1",
+      frameRole: "hero",
+    })
+    expect(prompt).toContain("primary hero visual")
+  })
+
+  it("appends a mid clause for a supporting frame", () => {
+    const prompt = buildPromptPreview({
+      brand: makeBrand(),
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "9x16",
+      frameRole: "mid",
+    })
+    expect(prompt).toContain("supporting frame")
+  })
+
+  it("appends a payoff clause for the closing frame", () => {
+    const prompt = buildPromptPreview({
+      brand: makeBrand(),
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "16x9",
+      frameRole: "payoff",
+    })
+    expect(prompt).toContain("closing visual")
+  })
+
+  it("omits the frame clause when frameRole is undefined", () => {
+    const prompt = buildPromptPreview({
+      brand: makeBrand(),
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "1x1",
+    })
+    expect(prompt).not.toContain("This is the primary hero visual")
+    expect(prompt).not.toContain("supporting frame")
+    expect(prompt).not.toContain("closing visual")
+  })
+})

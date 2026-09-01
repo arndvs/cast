@@ -10,10 +10,13 @@
 import type {
   AssetResolvedEvent,
   CompleteEvent,
+  ComplianceFailedEvent,
   ComplianceResultEvent,
   CreativeReadyEvent,
+  CreativeStubEvent,
   ErrorEvent,
   PipelineEvent,
+  QualityResultEvent,
   Slot,
   StepEvent,
 } from "@/lib/cast/events"
@@ -63,6 +66,46 @@ export function emitComplianceResult(
     slot,
     badge,
     bannedWords,
+  }
+  return serializeEvent(event)
+}
+
+export function emitComplianceFailed(
+  slot: Slot,
+  bannedWords: string[],
+): Uint8Array {
+  const event: ComplianceFailedEvent = {
+    type: "compliance_failed",
+    slot,
+    bannedWords,
+  }
+  return serializeEvent(event)
+}
+
+export function emitQualityResult(
+  slot: Slot,
+  badge: "pass" | "fail",
+  failures: string[],
+  retried: boolean,
+): Uint8Array {
+  const event: QualityResultEvent = {
+    type: "quality_result",
+    slot,
+    badge,
+    failures,
+    retried,
+  }
+  return serializeEvent(event)
+}
+
+export function emitCreativeStub(
+  slot: Slot,
+  message: string,
+): Uint8Array {
+  const event: CreativeStubEvent = {
+    type: "creative_stub",
+    slot,
+    message,
   }
   return serializeEvent(event)
 }

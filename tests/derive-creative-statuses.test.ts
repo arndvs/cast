@@ -189,3 +189,42 @@ describe("countTerminal", () => {
     expect(counts.total).toBe(8)
   })
 })
+
+describe("deriveCreativeStatuses — S1/S2/S7 event types", () => {
+  it("creative_stub flips a slot to failed (S7)", () => {
+    const brief = mkBrief()
+    const events: PipelineEvent[] = [
+      stepEvent("berry", "us-en", "1x1"),
+      { type: "creative_stub", slot: { product: "berry", market: "us-en", ratio: "1x1" }, message: "API failed after retries" },
+    ]
+    const map = deriveCreativeStatuses(events, brief)
+    const slot = map.get("berry/us-en/1x1")!
+    expect(slot.status).toBe("failed")
+    const counts = countTerminal(map)
+    expect(counts.failed).toBe(1)
+  })
+
+  it("compliance_failed flips a slot to failed with FAIL badge (S1)", () => {
+    const brief = mkBrief()
+    const events: PipelineEvent[] = [
+      { type: "compliance_failed", slot: { product: "lime", market: "de-de", ratio: "9x16" }, bannedWords: ["cocaine"] },
+    ]
+    const map = deriveCreativeStatuses(events, brief)
+    const slot = map.get("lime/de-de/9x16")!
+    expect(slot.status).toBe("failed")
+    expect(slot.badge).toBe("FAIL")
+  })
+
+  it("quality_result keeps a slot complete (S2)", () => {
+    const brief = mkBrief()
+    const events: PipelineEvent[] = [
+      stepEvent("berry", "us-en", "1x1"),
+      readyEvent("berry", "us-en", "1x1"),
+      { type: "quality_result", slot: { product: "berry", market: "us-en", ratio: "1x1" }, badge: "fail", failures: ["white-out"], retried: true },
+    ]
+    const map = deriveCreativeStatuses(events, brief)
+    const slot = map.get("berry/us-en/1x1")!
+    // A quality-fail creative still produced a path — it's complete, not failed.
+    expect(slot.status).toBe("complete")
+  })
+})

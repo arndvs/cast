@@ -71,6 +71,43 @@ export const errorEventSchema = z.object({
   message: z.string(),
 })
 
+/**
+ * Emitted when a market's localized headline is rejected by the banned-words
+ * gate BEFORE any genai call — the pre-spend compliance backstop. Carries the
+ * offending terms so the log view can show why the slot was skipped.
+ */
+export const complianceFailedEventSchema = z.object({
+  type: z.literal("compliance_failed"),
+  slot: slotSchema,
+  /** Banned terms that matched the headline. */
+  bannedWords: z.array(z.string()),
+})
+
+/**
+ * Emitted after the post-compose output quality gate runs. `failures` lists
+ * which checks tripped (byte-floor / luma / text-leak). `retried` is true when
+ * the slot regenerated once with a bumped seed before this result.
+ */
+export const qualityResultEventSchema = z.object({
+  type: z.literal("quality_result"),
+  slot: slotSchema,
+  badge: z.enum(["pass", "fail"]),
+  failures: z.array(z.string()),
+  retried: z.boolean(),
+})
+
+/**
+ * Emitted when a genai call fails after all retries and a 1×1 stub PNG is
+ * written at the slot path so the grid shows a visible placeholder tile —
+ * never a false success. The manifest entry for this slot is `path: null`
+ * with `stubbed: true`.
+ */
+export const creativeStubEventSchema = z.object({
+  type: z.literal("creative_stub"),
+  slot: slotSchema,
+  message: z.string(),
+})
+
 export const completeEventSchema = z.object({
   type: z.literal("complete"),
   manifest: manifestSchema,
@@ -81,6 +118,9 @@ export const pipelineEventSchema = z.discriminatedUnion("type", [
   assetResolvedEventSchema,
   creativeReadyEventSchema,
   complianceResultEventSchema,
+  complianceFailedEventSchema,
+  qualityResultEventSchema,
+  creativeStubEventSchema,
   errorEventSchema,
   completeEventSchema,
 ])
@@ -90,6 +130,9 @@ export type StepEvent = z.infer<typeof stepEventSchema>
 export type AssetResolvedEvent = z.infer<typeof assetResolvedEventSchema>
 export type CreativeReadyEvent = z.infer<typeof creativeReadyEventSchema>
 export type ComplianceResultEvent = z.infer<typeof complianceResultEventSchema>
+export type ComplianceFailedEvent = z.infer<typeof complianceFailedEventSchema>
+export type QualityResultEvent = z.infer<typeof qualityResultEventSchema>
+export type CreativeStubEvent = z.infer<typeof creativeStubEventSchema>
 export type ErrorEvent = z.infer<typeof errorEventSchema>
 export type CompleteEvent = z.infer<typeof completeEventSchema>
 export type Slot = z.infer<typeof slotSchema>

@@ -12,6 +12,7 @@
 import path from "node:path"
 import { getStorageAdapter } from "@/lib/cast/server/storage-adapter"
 import { PathTraversalError } from "@/lib/cast/server/safe-join"
+import { CACHE_DIR } from "@/lib/cast/server/pipeline/cache"
 import type { AspectRatio } from "@/lib/cast/schemas"
 
 const ASSET_EXTS = ["png", "jpg", "jpeg", "webp"] as const
@@ -44,11 +45,36 @@ export async function readAsset(repoRelativePath: string): Promise<Buffer> {
 }
 
 /**
- * Wipe `outputs/[campaign]/` before writing anything for run idempotency.
+ * Wipe `outputs/[campaign]/` before writing anything for run idempotency —
+ * EXCEPT `.pipeline-cache/` (S3). The persistent master cache must survive
+ * the idempotent wipe so re-running an unchanged brief skips genai entirely;
+ * it's only removed by the opt-in `prunePipelineCache` brief flag.
  * Safe on first run (no-op if prefix doesn't exist).
  */
 export async function clearCampaignOutput(campaign: string): Promise<void> {
-  await (await getStorageAdapter()).deletePrefix("outputs", `${campaign}/`)
+  const adapter = await getStorageAdapter()
+  // Enumerate everything under the campaign; delete per-market/product
+  // subtree prefixes, then the campaign-root files (brief.json), leaving
+  // `.pipeline-cache/` untouched.
+  const files = await adapter.listFiles("outputs", campaign + "/")
+  const marketPrefixes = new Set<string>()
+  const rootFiles: string[] = []
+  for (const key of files) {
+    const rest = key.slice(campaign.length + 1) // after "campaign/"
+    const top = rest.split("/")[0]
+    if (!top) continue
+    if (top === CACHE_DIR) continue // exempt
+    if (rest.includes("/")) marketPrefixes.add(top)
+    else rootFiles.push(key)
+  }
+  await Promise.all(
+    [...marketPrefixes].map((m) =>
+      adapter.deletePrefix("outputs", `${campaign}/${m}/`),
+    ),
+  )
+  for (const f of rootFiles) {
+    await adapter.deleteFile("outputs", f)
+  }
 }
 
 /**
@@ -64,6 +90,37 @@ export async function writeCreative(
 ): Promise<string> {
   const key = `${campaign}/${market}/${productSlug}/${ratio}.png`
   await (await getStorageAdapter()).writeFile("outputs", key, png, "image/png")
+  return path.posix.join("outputs", key)
+}
+
+/**
+ * Write a 1×1 transparent PNG stub at the slot path (S7). Used on final
+ * genai failure so the outputs grid shows a placeholder tile instead of a
+ * silent gap. The manifest still records `path: null` + `stubbed: true` —
+ * a stub is never counted as a succeeded creative.
+ */
+const STUB_PNG_HEX =
+  "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489" +
+  "0000000a49444154789c626000000002000198e7399f0000000049454e44ae426082"
+
+export async function writeCreativeStub(
+  campaign: string,
+  market: string,
+  productSlug: string,
+  ratio: AspectRatio,
+): Promise<string> {
+  const key = `${campaign}/${market}/${productSlug}/${ratio}.png`
+  try {
+    await (await getStorageAdapter()).writeFile(
+      "outputs",
+      key,
+      Buffer.from(STUB_PNG_HEX, "hex"),
+      "image/png",
+    )
+  } catch {
+    // Stub write is best-effort — a failure to place the placeholder must not
+    // mask the underlying genai error already recorded.
+  }
   return path.posix.join("outputs", key)
 }
 

@@ -133,6 +133,30 @@ export function deriveCreativeStatuses(events: readonly StampedEvent[], brief: B
         slot.badge = event.badge
         break
       }
+      case "compliance_failed": {
+        const key = slotKey(event.slot.product, event.slot.market, event.slot.ratio)
+        const slot = map.get(key)
+        if (!slot) break
+        slot.status = "failed"
+        slot.badge = "FAIL"
+        break
+      }
+      case "quality_result": {
+        const key = slotKey(event.slot.product, event.slot.market, event.slot.ratio)
+        const slot = map.get(key)
+        if (!slot) break
+        // A quality fail is still a *succeeded* creative (it has a path) —
+        // keep the terminal status `complete`; the grid surfaces the badge
+        // separately. A quality pass/fail never flips a slot to failed.
+        break
+      }
+      case "creative_stub": {
+        const key = slotKey(event.slot.product, event.slot.market, event.slot.ratio)
+        const slot = map.get(key)
+        if (!slot) break
+        slot.status = "failed"
+        break
+      }
       case "error": {
         if (!event.slot) break
         const key = slotKey(event.slot.product, event.slot.market, event.slot.ratio)

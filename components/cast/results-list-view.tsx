@@ -70,7 +70,9 @@ export function ResultsListView({
           {creatives.map((creative) => {
             const key = creativeKey(creative)
             const isSelected = selected.has(key)
-            const failed = creative.path === null
+            const failed = creative.path === null && !creative.stubbed
+            const stubbed = creative.path === null && creative.stubbed === true
+            const qualityFail = creative.quality === "fail"
             const badge: "OK" | "WARN" | "FAIL" =
               failed ? "FAIL" : (creative.compliance?.badge ?? "OK")
 
@@ -80,6 +82,7 @@ export function ResultsListView({
                 className={cn(
                   "border-b border-border/50 transition-colors hover:bg-muted/30",
                   isSelected && "bg-primary/5",
+                  stubbed && "text-muted-foreground/70",
                 )}
               >
                 <td className="p-3">
@@ -105,7 +108,7 @@ export function ResultsListView({
                         src={buildCreativeProxyUrl(campaign, creative.market, creative.product, creative.ratio)}
                         alt=""
                         loading="lazy"
-                        className="h-full w-full object-cover"
+                        className={cn("h-full w-full object-cover", stubbed && "opacity-40")}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center">
@@ -127,7 +130,25 @@ export function ResultsListView({
                 <td className="p-3 text-xs text-muted-foreground">{creative.source}</td>
                 <td className="p-3 text-xs text-muted-foreground">{logoVariant || "—"}</td>
                 <td className="p-3">
-                  <ComplianceBadgePill badge={badge} />
+                  <div className="flex items-center gap-1">
+                    {stubbed && (
+                      <span
+                        className="rounded bg-bad/90 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-white"
+                        title="Generation failed — placeholder stub"
+                      >
+                        stub
+                      </span>
+                    )}
+                    {qualityFail && (
+                      <span
+                        className="rounded bg-warn/90 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-black"
+                        title="Failed the output quality gate"
+                      >
+                        quality
+                      </span>
+                    )}
+                    <ComplianceBadgePill badge={badge} />
+                  </div>
                 </td>
                 <td className="p-3 font-mono text-xs text-muted-foreground">
                   {creative.duration != null ? `${creative.duration.toFixed(1)}s` : "—"}

@@ -59,18 +59,31 @@ import {
   clearCampaignOutput,
   readAsset,
   writeBriefSnapshot,
+  writeCreativeStub,
   writeReport,
 } from "@/lib/cast/server/storage"
 import { getStorageAdapter } from "@/lib/cast/server/storage-adapter"
 import {
   emitAssetResolved,
   emitComplete,
+  emitComplianceFailed,
   emitComplianceResult,
   emitCreativeReady,
+  emitCreativeStub,
   emitError,
+  emitQualityResult,
   emitStep,
 } from "@/lib/cast/server/ndjson-emit"
+import { containsBannedWord } from "@/lib/cast/banned-words"
 import { buildPromptPreview } from "@/lib/cast/prompt"
+import { checkComposedPng } from "@/lib/cast/server/pipeline/quality"
+import { slotLabel } from "@/lib/cast/format-pipeline-event"
+import { seedForSlot } from "@/lib/cast/server/pipeline/seed"
+import {
+  clearPipelineCache,
+  lookupCachedMaster,
+  writeCachedMaster,
+} from "@/lib/cast/server/pipeline/cache"
 import { jsonError } from "@/lib/cast/server/api-helpers"
 import type { Slot } from "@/lib/cast/events"
 
@@ -143,6 +156,11 @@ export async function POST(req: Request): Promise<Response> {
 
   // 3. Idempotency + brief snapshot.
   await clearCampaignOutput(brief.campaign)
+  // S3: optional cache prune — an operator who wants a from-scratch
+  // regeneration of the campaign opts in by setting prunePipelineCache.
+  if (brief.prunePipelineCache) {
+    await clearPipelineCache(brief.campaign)
+  }
   await writeBriefSnapshot(brief.campaign, brief)
 
   // 4. Open stream.
@@ -225,13 +243,37 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
     const locale = market.split("-").pop()!
     const headline = brief.message[locale] ?? ""
 
+    // S1: Pre-spend compliance gate. The compliance stage (post-compose) still
+    // runs, but a headline that fails the banned-words union should never reach
+    // a genai call — the image API cost was already spent by the time post-
+    // compose compliance badges it FAIL. Check once per market (the headline is
+    // shared across all products/ratios in that market) and skip the entire
+    // market with zero genai work when it fails. Mirrors the client-side gate
+    // in brief-summary-strip, but backstops *every* locale message, not just
+    // the one surfaced in the editor UI.
+    const bannedHits: string[] = containsBannedWord(headline, brand.bannedWords)
+    if (bannedHits.length > 0) {
+      const message = `headline for ${locale} contains banned term(s): ${bannedHits.join(", ")}`
+      for (const product of brief.products) {
+        const productSlug = slugify(product.name)
+        for (const ratio of brief.ratios) {
+          const slot: Slot = { product: productSlug, market, ratio }
+          emit(emitComplianceFailed(slot, bannedHits))
+          emit(emitError("compliance", message, slot))
+          errors.push({ ...slot, stage: "compliance", message })
+          creatives.push({ product: productSlug, market, ratio, source: "genai", path: null })
+        }
+      }
+      continue
+    }
+
     // Per-MARKET master cache. The genai prompt embeds the market
     // (`buildPromptPreview` writes "Locale: us-en (en)"), so a master
     // generated for one market is NOT reusable across markets. Default mode
     // also keys by ratio because dall-e-3 native sizes differ per ratio.
     // Cheap mode keys by productSlug only (single 1024² master per product).
     const baseImageCache = new Map<string, Buffer>()
-    const genMetaCache = new Map<string, { model: string; revisedPrompt: string | null; promptUsed: string }>()
+    const genMetaCache = new Map<string, { model: string | null; revisedPrompt: string | null; promptUsed: string }>()
 
     for (const product of brief.products) {
       const productSlug = slugify(product.name)
@@ -305,9 +347,23 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
       } else if (mode === "cheap") {
         try {
           const cheapPrompt = buildPrompt(brief, brand, product, market, "1x1")
-          const cheapResult = await generateImage({ prompt: cheapPrompt, mode: "cheap" })
-          baseImageCache.set(productSlug, cheapResult.png)
-          genMetaCache.set(productSlug, { model: cheapResult.meta.model, revisedPrompt: cheapResult.meta.revisedPrompt, promptUsed: cheapPrompt })
+          // S3: cache the cheap-mode master too — keyed by its prompt.
+          const cachedCheap = await lookupCachedMaster(brief.campaign, cheapPrompt)
+          if (cachedCheap) {
+            baseImageCache.set(productSlug, cachedCheap.png)
+            genMetaCache.set(productSlug, { model: cachedCheap.meta.model, revisedPrompt: cachedCheap.meta.revisedPrompt, promptUsed: cheapPrompt })
+            console.error(`[cache] ${productSlug} (cheap) HIT — reused cached master`)
+          } else {
+            const cheapResult = await generateImage({ prompt: cheapPrompt, mode: "cheap" })
+            baseImageCache.set(productSlug, cheapResult.png)
+            genMetaCache.set(productSlug, { model: cheapResult.meta.model, revisedPrompt: cheapResult.meta.revisedPrompt, promptUsed: cheapPrompt })
+            await writeCachedMaster(brief.campaign, cheapPrompt, cheapResult.png, {
+              model: cheapResult.meta.model,
+              revisedPrompt: cheapResult.meta.revisedPrompt,
+              promptUsed: cheapPrompt,
+              mode: "cheap",
+            })
+          }
         } catch (err) {
           // Defer attribution to the per-ratio loop so each (market × ratio)
           // gets its own error event + manifest entry.
@@ -324,6 +380,11 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
           let compliance: ReturnType<typeof runCompliance> | null = null
           let outputPath: string | null = null
           let currentStage: ErrorStage = "resolve"
+          // S2: quality-gate outcome, hoisted so the manifest entry (outside
+          // the try) can record it.
+          let qualityPass = true
+          let qualityRetried = false
+          let qualityFailures: string[] = []
 
           // Cheap-mode master generation already failed for this product;
           // every ratio fails the same way without spending more API calls.
@@ -361,12 +422,32 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
               } else {
                 emit(emitStep("genai", slot, `generating ${ratio} native`))
                 const genPrompt = buildPrompt(brief, brand, product, market, ratio)
-                const genResult = await runStage("genai", () =>
-                  generateImage({ prompt: genPrompt, ratio, mode: "default" }),
-                )
-                master = genResult.png
-                baseImageCache.set(cacheKey, genResult.png)
-                genMetaCache.set(cacheKey, { model: genResult.meta.model, revisedPrompt: genResult.meta.revisedPrompt, promptUsed: genPrompt })
+                // S3: persistent cross-run cache — a second identical run skips
+                // the genai spend entirely and reuses the on-disk master.
+                const cachedMaster = await lookupCachedMaster(brief.campaign, genPrompt)
+                if (cachedMaster) {
+                  master = cachedMaster.png
+                  baseImageCache.set(cacheKey, master)
+                  genMetaCache.set(cacheKey, {
+                    model: cachedMaster.meta.model,
+                    revisedPrompt: cachedMaster.meta.revisedPrompt,
+                    promptUsed: genPrompt,
+                  })
+                  console.error(`[cache] ${slotLabel(slot)} HIT — reused cached master`)
+                } else {
+                  const genResult = await runStage("genai", () =>
+                    generateImage({ prompt: genPrompt, ratio, mode: "default", seed: seedForSlot(genPrompt, ratio) }),
+                  )
+                  master = genResult.png
+                  baseImageCache.set(cacheKey, genResult.png)
+                  genMetaCache.set(cacheKey, { model: genResult.meta.model, revisedPrompt: genResult.meta.revisedPrompt, promptUsed: genPrompt })
+                  await writeCachedMaster(brief.campaign, genPrompt, genResult.png, {
+                    model: genResult.meta.model,
+                    revisedPrompt: genResult.meta.revisedPrompt,
+                    promptUsed: genPrompt,
+                    mode: "default",
+                  })
+                }
               }
             }
 
@@ -380,7 +461,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
             // ---- compose ----
             currentStage = "compose"
             emit(emitStep("compose", slot))
-            const composed = await runStage("compose", () =>
+            let composed = await runStage("compose", () =>
               composeCreative({
                 base: sized,
                 ratio,
@@ -389,6 +470,49 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
                 primaryHex: brand.brand.colors.primary,
               }),
             )
+
+            // ---- quality gate (S2) ----
+            // Byte-floor / luma-band / text-leak checks on the COMPOSED PNG.
+            // On fail, regenerate once (bumped seed in default mode) then
+            // re-resize + re-compose + re-check. A slot that still fails after
+            // the retry is still written (best-effort) but flagged quality:"fail"
+            // so the grid + manifest surface it — the counts invariants treat a
+            // quality-fail as SUCCEEDED (it has a path), never as failed.
+            currentStage = "quality"
+            emit(emitStep("quality", slot))
+            {
+              const qc = await checkComposedPng(composed)
+              if (!qc.pass) {
+                qualityPass = false
+                qualityFailures = qc.failures
+                qualityRetried = true
+                console.error(`[quality] ${slotLabel(slot)} FAIL ${qc.failures.join("; ")} — retrying`)
+                const retryMaster =
+                  resolved.source === "genai" && mode !== "cheap"
+                    ? await regenerateMaster({ brief, brand, product: { name: product.name, sku: product.sku }, market, ratio, mode })
+                    : master
+                if (retryMaster) {
+                  const retrySized = await resizeForRatio(retryMaster, ratio)
+                  const retryComposed = await composeCreative({
+                    base: retrySized,
+                    ratio,
+                    headline,
+                    logoBuffer,
+                    primaryHex: brand.brand.colors.primary,
+                  })
+                  const qc2 = await checkComposedPng(retryComposed)
+                  if (qc2.pass) {
+                    composed = retryComposed
+                    qualityPass = true
+                    qualityFailures = []
+                    qualityRetried = true
+                  } else {
+                    console.error(`[quality] ${slotLabel(slot)} retry also FAIL ${qc2.failures.join("; ")} — using best attempt`)
+                  }
+                }
+              }
+            }
+            emit(emitQualityResult(slot, qualityPass ? "pass" : "fail", qualityFailures, qualityRetried))
 
             // ---- compliance ----
             currentStage = "compliance"
@@ -449,6 +573,15 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
 
           if (failedAt) {
             errors.push({ ...slot, stage: failedAt.stage, message: failedAt.message })
+            // S7: on final genai failure (all retries exhausted), drop a 1×1
+            // stub placeholder at the slot path so the grid shows a tile, and
+            // mark the manifest entry stubbed — a placeholder, never a success.
+            let stubbed = false
+            if (failedAt.stage === "genai") {
+              await writeCreativeStub(brief.campaign, market, productSlug, ratio)
+              stubbed = true
+              emit(emitCreativeStub(slot, failedAt.message))
+            }
             // Omit `compliance` from the creative entry unless the
             // failure was at the `write` stage (compliance had already run).
             // Map internal 'products' source to 'local' for the manifest
@@ -462,6 +595,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
               source: manifestSource,
               path: null,
               duration: (Date.now() - slotStart) / 1000,
+              ...(stubbed ? { stubbed } : {}),
               ...(failedAt.stage === "write" && compliance
                 ? { compliance: toComplianceField(compliance) }
                 : {}),
@@ -476,6 +610,8 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
               source: manifestSource,
               path: outputPath,
               duration: (Date.now() - slotStart) / 1000,
+              ...(qualityPass ? {} : { quality: "fail" as const }),
+              ...(qualityRetried ? { retried: true } : {}),
               ...(compliance ? { compliance: toComplianceField(compliance) } : {}),
             })
           }
@@ -515,6 +651,8 @@ function buildPrompt(
       bannedWords: brand.bannedWords,
       negativePromptFragments: brand.voice.negativePromptFragments,
       moodKeywords: brand.voice.moodKeywords,
+      // S5: cross-frame identity lock when the brand profile carries one.
+      ...(brand.voice.identityLock ? { identityLock: brand.voice.identityLock } : {}),
     },
     product: {
       ...product,
@@ -528,7 +666,29 @@ function buildPrompt(
     },
     market,
     ratio,
+    // S6: slot's job in the ratio set (canonical order 1x1 → 9x16 → 16x9).
+    frameRole: frameRoleForRatio(ratio, brief.ratios),
   })
+}
+
+/**
+ * S6: derive the frame role for a ratio within a campaign's ratio set.
+ * Follows canonical order (1x1 → 9x16 → 16x9): the first is the hero, the
+ * last is the payoff, everything between is supporting.
+ */
+function frameRoleForRatio(
+  ratio: AspectRatio,
+  ratios: readonly AspectRatio[],
+): "hero" | "mid" | "payoff" | undefined {
+  if (!ratios.includes(ratio)) return undefined
+  const order: AspectRatio[] = ["1x1", "9x16", "16x9"]
+  const present = ratios
+    .slice()
+    .sort((a, b) => order.indexOf(a) - order.indexOf(b))
+  const idx = present.indexOf(ratio)
+  if (idx === 0) return "hero"
+  if (idx === present.length - 1) return "payoff"
+  return "mid"
 }
 
 /**
@@ -556,5 +716,35 @@ function errMessage(err: unknown): string {
  */
 async function readBrandAsset(key: string): Promise<Buffer> {
   return (await getStorageAdapter()).readFile("inputs", key)
+}
+
+/**
+ * Re-run the genai master for a slot (quality-gate retry).
+ * Returns `null` if the regeneration throws (the caller keeps the first
+ * best-effort attempt). Only meaningful for `default` (dall-e-3) mode — cheap
+ * mode ignores seeds, so the caller skips this path.
+ */
+async function regenerateMaster(args: {
+  brief: Brief
+  brand: BrandProfile
+  product: { name: string; sku: string }
+  market: string
+  ratio: AspectRatio
+  mode: GenAIMode
+}): Promise<Buffer | null> {
+  const { brief, brand, product, market, ratio, mode } = args
+  try {
+    const prompt = buildPrompt(brief, brand, product, market, ratio)
+    const result = await generateImage({
+      prompt,
+      ratio,
+      mode,
+      // Deterministic seed for the retry too — stable across re-runs.
+      ...(mode !== "cheap" ? { seed: seedForSlot(prompt, ratio) } : {}),
+    })
+    return result.png
+  } catch {
+    return null
+  }
 }
 

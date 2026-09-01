@@ -36,6 +36,12 @@ export interface GenerateImageArgs {
   /** Required in default mode; ignored in cheap mode (always 1024²). */
   ratio?: AspectRatio
   mode?: GenAIMode
+  /**
+   * Deterministic seed (S4). Sent only in default (dall-e-3) mode — gpt-image-1
+   * (cheap mode) ignores seeds, so omitting it there keeps the request valid
+   * and honest.
+   */
+  seed?: number
   /** Test seam — inject a mocked client. */
   client?: OpenAI
   /** Test seam — passed through to `retry`. */
@@ -48,6 +54,8 @@ export interface GenerationResult {
     model: string
     revisedPrompt: string | null
     size: string
+    /** The seed sent with the request, or null in cheap mode (no seed support). */
+    seedUsed: number | null
   }
 }
 
@@ -62,6 +70,8 @@ export async function generateImage(args: GenerateImageArgs): Promise<Generation
   return retry(async () => {
     const size = pickSize(mode, args.ratio)
     const model = mode === "cheap" ? "gpt-image-1" : "dall-e-3"
+    // Only dall-e-3 honors seeds; gpt-image-1 (cheap) has no seed parameter.
+    const seedUsed = mode === "default" && args.seed !== undefined ? args.seed : null
     let response: OpenAI.Images.ImagesResponse
     try {
       const result = await client.images.generate({
@@ -69,6 +79,7 @@ export async function generateImage(args: GenerateImageArgs): Promise<Generation
         prompt: args.prompt,
         size,
         n: 1,
+        ...(seedUsed !== null ? { seed: seedUsed } : {}),
         // dall-e-3 returns a URL by default; force base64 so we don't add an
         // extra HTTP fetch (and another retry surface).
         response_format: model === "dall-e-3" ? "b64_json" : undefined,
@@ -92,6 +103,7 @@ export async function generateImage(args: GenerateImageArgs): Promise<Generation
         model,
         revisedPrompt: imageData.revised_prompt ?? null,
         size,
+        seedUsed,
       },
     }
   }, args.retryDeps)

@@ -40,12 +40,13 @@ export function buildManifest(
   const flagged = succeededList.filter(
     (c) => c.compliance?.badge === "WARN" || c.compliance?.badge === "FAIL",
   ).length
+  const quality_flag = succeededList.filter((c) => c.quality === "fail").length
 
   return {
     campaign: brief.campaign,
     brand: brief.brand,
     outputDir: `outputs/${brief.campaign}`,
-    counts: { requested, succeeded, failed, generated, reused, flagged },
+    counts: { requested, succeeded, failed, generated, reused, flagged, quality_flag },
     creatives,
     errors,
     ...(startedAt ? { startedAt } : {}),

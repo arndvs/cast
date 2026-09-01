@@ -181,4 +181,20 @@ describe("deriveCounts", () => {
     const d = deriveCounts(m)
     expect(d.averageDuration).toBe(2.0)
   })
+
+  it("qualityFlagged: counts quality === 'fail' on succeeded creatives only", () => {
+    const qualityFailOk: Creative = { ...ok("a"), quality: "fail" }
+    const clean: Creative = ok("b")
+    const failed: Creative = hardFail("c")
+    const withRetry: Creative = { ...ok("d"), quality: "pass", retried: true }
+    const m = mkManifest([qualityFailOk, clean, failed, withRetry])
+    const d = deriveCounts(m)
+    expect(d.qualityFlagged).toBe(1)
+  })
+
+  it("qualityFlagged: zero when nothing trips the gate", () => {
+    const m = mkManifest([ok("a"), ok("b")])
+    const d = deriveCounts(m)
+    expect(d.qualityFlagged).toBe(0)
+  })
 })

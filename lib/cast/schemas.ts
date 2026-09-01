@@ -63,6 +63,9 @@ export const briefSchema = z
     // at /api/generate entry (briefSchema alone has no brand state). When
     // omitted, the orchestrator falls back to `brandProfile.defaultLogoId`.
     logoVariant: z.string().regex(SLUG_RE).optional(),
+    // S3: when true, the persistent `.pipeline-cache/` for this campaign is
+    // wiped at run start (opt-in regeneration from scratch).
+    prunePipelineCache: z.boolean().optional(),
   })
   .superRefine((brief, ctx) => {
     // Every market's locale (suffix after `-`) must have a message string.
@@ -135,6 +138,12 @@ export const voiceJsonSchema = z.object({
   negativePromptFragments: z.array(z.string()).default([]),
   /** Mood keywords — short scene-setting adjectives for the prompt. */
   moodKeywords: z.array(z.string()).default([]),
+  /**
+   * S5: cross-frame identity lock — appended to every prompt so a campaign's
+   * ratio variants share subject/palette/lighting language. Optional; absent
+   * brands get no lock (backward compatible).
+   */
+  identityLock: z.string().optional(),
   /** Per-SKU overrides — differentiated visual fragments per product variant. */
   skuFragments: z.record(z.string(), skuFragmentSchema).optional(),
 })
@@ -276,6 +285,7 @@ export const errorStageSchema = z.enum([
   "genai",
   "resize",
   "compose",
+  "quality",
   "compliance",
   "write",
 ])
@@ -290,6 +300,7 @@ export const PIPELINE_STAGES = [
   "genai",
   "resize",
   "compose",
+  "quality",
   "compliance",
   "write",
 ] as const satisfies readonly ErrorStage[]
@@ -312,6 +323,12 @@ export const creativeSchema = z.object({
   source: z.enum(["local", "genai"]),
   path: z.string().nullable(), // null on failure (write stage skips compliance)
   compliance: complianceSchema.optional(),
+  /** Output quality gate result — `"fail"` set on succeeded creatives that tripped the gate. */
+  quality: z.enum(["pass", "fail"]).optional(),
+  /** True when the quality gate regenerated this slot once (bumped seed). */
+  retried: z.boolean().optional(),
+  /** True when a genai failure wrote a 1×1 stub placeholder at the slot path. */
+  stubbed: z.boolean().optional(),
   duration: z.number().nonnegative().optional(),
 })
 
@@ -330,6 +347,8 @@ export const countsSchema = z.object({
   generated: z.number().int().nonnegative(),
   reused: z.number().int().nonnegative(),
   flagged: z.number().int().nonnegative(),
+  /** Succeeded creatives that tripped the output quality gate (quality === "fail"). */
+  quality_flag: z.number().int().nonnegative().optional(),
 })
 
 export const manifestSchema = z.object({
