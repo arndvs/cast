@@ -53,7 +53,6 @@ export async function readAsset(repoRelativePath: string): Promise<Buffer> {
  */
 export async function clearCampaignOutput(campaign: string): Promise<void> {
   const adapter = await getStorageAdapter()
-  const cachePrefix = `${campaign}/${CACHE_DIR}/`
   // Enumerate everything under the campaign; delete per-market/product
   // subtree prefixes, then the campaign-root files (brief.json), leaving
   // `.pipeline-cache/` untouched.

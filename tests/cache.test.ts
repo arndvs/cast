@@ -19,7 +19,6 @@ vi.mock("node:fs/promises", () => ({
 }))
 
 import fs from "node:fs/promises"
-import { LocalFsAdapter } from "@/lib/cast/server/storage-adapter"
 import { cacheKey, lookupCachedMaster, writeCachedMaster, clearPipelineCache } from "@/lib/cast/server/pipeline/cache"
 
 function enoent(): NodeJS.ErrnoException {
@@ -57,7 +56,6 @@ describe("lookupCachedMaster / writeCachedMaster", () => {
   it("returns null when the meta is unreadable (graceful miss)", async () => {
     const key = cacheKey("some prompt")
     const pngKey = path.join(ROOTS.outputs, "summer", ".pipeline-cache", `${key}.png`)
-    const metaKey = path.join(ROOTS.outputs, "summer", ".pipeline-cache", `${key}.meta.json`)
     vi.mocked(fs.access).mockResolvedValue(undefined)
     vi.mocked(fs.readFile).mockImplementation((p: unknown) => {
       if (String(p) === pngKey) return Promise.resolve(Buffer.from("fake-png-bytes"))
