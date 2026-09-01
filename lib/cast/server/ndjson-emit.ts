@@ -10,6 +10,7 @@
 import type {
   AssetResolvedEvent,
   CompleteEvent,
+  ComplianceFailedEvent,
   ComplianceResultEvent,
   CreativeReadyEvent,
   ErrorEvent,
@@ -62,6 +63,18 @@ export function emitComplianceResult(
     type: "compliance_result",
     slot,
     badge,
+    bannedWords,
+  }
+  return serializeEvent(event)
+}
+
+export function emitComplianceFailed(
+  slot: Slot,
+  bannedWords: string[],
+): Uint8Array {
+  const event: ComplianceFailedEvent = {
+    type: "compliance_failed",
+    slot,
     bannedWords,
   }
   return serializeEvent(event)

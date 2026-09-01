@@ -10,6 +10,8 @@ export function eventLabel(event: PipelineEvent): string {
       return "ready"
     case "compliance_result":
       return event.badge
+    case "compliance_failed":
+      return "blocked"
     case "error":
       return `err:${event.stage}`
     case "complete":
@@ -30,6 +32,12 @@ export function eventDetail(event: PipelineEvent): string {
         ? ` · banned=[${event.bannedWords.join(",")}]`
         : ""
       return `${slotLabel(event.slot)}${banned}`
+    }
+    case "compliance_failed": {
+      const banned = event.bannedWords.length
+        ? ` · banned=[${event.bannedWords.join(",")}]`
+        : ""
+      return `${slotLabel(event.slot)}${banned} · pre-spend gate`
     }
     case "error":
       return `${event.slot ? slotLabel(event.slot) + " · " : ""}${event.message}`

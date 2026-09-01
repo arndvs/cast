@@ -71,6 +71,18 @@ export const errorEventSchema = z.object({
   message: z.string(),
 })
 
+/**
+ * Emitted when a market's localized headline is rejected by the banned-words
+ * gate BEFORE any genai call — the pre-spend compliance backstop. Carries the
+ * offending terms so the log view can show why the slot was skipped.
+ */
+export const complianceFailedEventSchema = z.object({
+  type: z.literal("compliance_failed"),
+  slot: slotSchema,
+  /** Banned terms that matched the headline. */
+  bannedWords: z.array(z.string()),
+})
+
 export const completeEventSchema = z.object({
   type: z.literal("complete"),
   manifest: manifestSchema,
@@ -81,6 +93,7 @@ export const pipelineEventSchema = z.discriminatedUnion("type", [
   assetResolvedEventSchema,
   creativeReadyEventSchema,
   complianceResultEventSchema,
+  complianceFailedEventSchema,
   errorEventSchema,
   completeEventSchema,
 ])
@@ -90,6 +103,7 @@ export type StepEvent = z.infer<typeof stepEventSchema>
 export type AssetResolvedEvent = z.infer<typeof assetResolvedEventSchema>
 export type CreativeReadyEvent = z.infer<typeof creativeReadyEventSchema>
 export type ComplianceResultEvent = z.infer<typeof complianceResultEventSchema>
+export type ComplianceFailedEvent = z.infer<typeof complianceFailedEventSchema>
 export type ErrorEvent = z.infer<typeof errorEventSchema>
 export type CompleteEvent = z.infer<typeof completeEventSchema>
 export type Slot = z.infer<typeof slotSchema>

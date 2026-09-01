@@ -65,11 +65,13 @@ import { getStorageAdapter } from "@/lib/cast/server/storage-adapter"
 import {
   emitAssetResolved,
   emitComplete,
+  emitComplianceFailed,
   emitComplianceResult,
   emitCreativeReady,
   emitError,
   emitStep,
 } from "@/lib/cast/server/ndjson-emit"
+import { containsBannedWord } from "@/lib/cast/banned-words"
 import { buildPromptPreview } from "@/lib/cast/prompt"
 import { jsonError } from "@/lib/cast/server/api-helpers"
 import type { Slot } from "@/lib/cast/events"
@@ -224,6 +226,30 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
   for (const market of brief.markets) {
     const locale = market.split("-").pop()!
     const headline = brief.message[locale] ?? ""
+
+    // S1: Pre-spend compliance gate. The compliance stage (post-compose) still
+    // runs, but a headline that fails the banned-words union should never reach
+    // a genai call — the image API cost was already spent by the time post-
+    // compose compliance badges it FAIL. Check once per market (the headline is
+    // shared across all products/ratios in that market) and skip the entire
+    // market with zero genai work when it fails. Mirrors the client-side gate
+    // in brief-summary-strip, but backstops *every* locale message, not just
+    // the one surfaced in the editor UI.
+    const bannedHits: string[] = containsBannedWord(headline, brand.bannedWords)
+    if (bannedHits.length > 0) {
+      const message = `headline for ${locale} contains banned term(s): ${bannedHits.join(", ")}`
+      for (const product of brief.products) {
+        const productSlug = slugify(product.name)
+        for (const ratio of brief.ratios) {
+          const slot: Slot = { product: productSlug, market, ratio }
+          emit(emitComplianceFailed(slot, bannedHits))
+          emit(emitError("compliance", message, slot))
+          errors.push({ ...slot, stage: "compliance", message })
+          creatives.push({ product: productSlug, market, ratio, source: "genai", path: null })
+        }
+      }
+      continue
+    }
 
     // Per-MARKET master cache. The genai prompt embeds the market
     // (`buildPromptPreview` writes "Locale: us-en (en)"), so a master
