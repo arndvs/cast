@@ -96,6 +96,18 @@ export const qualityResultEventSchema = z.object({
   retried: z.boolean(),
 })
 
+/**
+ * Emitted when a genai call fails after all retries and a 1×1 stub PNG is
+ * written at the slot path so the grid shows a visible placeholder tile —
+ * never a false success. The manifest entry for this slot is `path: null`
+ * with `stubbed: true`.
+ */
+export const creativeStubEventSchema = z.object({
+  type: z.literal("creative_stub"),
+  slot: slotSchema,
+  message: z.string(),
+})
+
 export const completeEventSchema = z.object({
   type: z.literal("complete"),
   manifest: manifestSchema,
@@ -108,6 +120,7 @@ export const pipelineEventSchema = z.discriminatedUnion("type", [
   complianceResultEventSchema,
   complianceFailedEventSchema,
   qualityResultEventSchema,
+  creativeStubEventSchema,
   errorEventSchema,
   completeEventSchema,
 ])
@@ -119,6 +132,7 @@ export type CreativeReadyEvent = z.infer<typeof creativeReadyEventSchema>
 export type ComplianceResultEvent = z.infer<typeof complianceResultEventSchema>
 export type ComplianceFailedEvent = z.infer<typeof complianceFailedEventSchema>
 export type QualityResultEvent = z.infer<typeof qualityResultEventSchema>
+export type CreativeStubEvent = z.infer<typeof creativeStubEventSchema>
 export type ErrorEvent = z.infer<typeof errorEventSchema>
 export type CompleteEvent = z.infer<typeof completeEventSchema>
 export type Slot = z.infer<typeof slotSchema>

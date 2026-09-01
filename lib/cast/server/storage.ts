@@ -94,6 +94,37 @@ export async function writeCreative(
   return path.posix.join("outputs", key)
 }
 
+/**
+ * Write a 1×1 transparent PNG stub at the slot path (S7). Used on final
+ * genai failure so the outputs grid shows a placeholder tile instead of a
+ * silent gap. The manifest still records `path: null` + `stubbed: true` —
+ * a stub is never counted as a succeeded creative.
+ */
+const STUB_PNG_HEX =
+  "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489" +
+  "0000000a49444154789c626000000002000198e7399f0000000049454e44ae426082"
+
+export async function writeCreativeStub(
+  campaign: string,
+  market: string,
+  productSlug: string,
+  ratio: AspectRatio,
+): Promise<string> {
+  const key = `${campaign}/${market}/${productSlug}/${ratio}.png`
+  try {
+    await (await getStorageAdapter()).writeFile(
+      "outputs",
+      key,
+      Buffer.from(STUB_PNG_HEX, "hex"),
+      "image/png",
+    )
+  } catch {
+    // Stub write is best-effort — a failure to place the placeholder must not
+    // mask the underlying genai error already recorded.
+  }
+  return path.posix.join("outputs", key)
+}
+
 /** Write metadata sidecar at `outputs/[campaign]/[market]/[product]/[ratio].metadata.json`. */
 export async function writeMetadata(
   campaign: string,

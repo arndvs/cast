@@ -327,6 +327,8 @@ export const creativeSchema = z.object({
   quality: z.enum(["pass", "fail"]).optional(),
   /** True when the quality gate regenerated this slot once (bumped seed). */
   retried: z.boolean().optional(),
+  /** True when a genai failure wrote a 1×1 stub placeholder at the slot path. */
+  stubbed: z.boolean().optional(),
   duration: z.number().nonnegative().optional(),
 })
 

@@ -59,6 +59,7 @@ import {
   clearCampaignOutput,
   readAsset,
   writeBriefSnapshot,
+  writeCreativeStub,
   writeReport,
 } from "@/lib/cast/server/storage"
 import { getStorageAdapter } from "@/lib/cast/server/storage-adapter"
@@ -68,6 +69,7 @@ import {
   emitComplianceFailed,
   emitComplianceResult,
   emitCreativeReady,
+  emitCreativeStub,
   emitError,
   emitQualityResult,
   emitStep,
@@ -571,6 +573,15 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
 
           if (failedAt) {
             errors.push({ ...slot, stage: failedAt.stage, message: failedAt.message })
+            // S7: on final genai failure (all retries exhausted), drop a 1×1
+            // stub placeholder at the slot path so the grid shows a tile, and
+            // mark the manifest entry stubbed — a placeholder, never a success.
+            let stubbed = false
+            if (failedAt.stage === "genai") {
+              await writeCreativeStub(brief.campaign, market, productSlug, ratio)
+              stubbed = true
+              emit(emitCreativeStub(slot, failedAt.message))
+            }
             // Omit `compliance` from the creative entry unless the
             // failure was at the `write` stage (compliance had already run).
             // Map internal 'products' source to 'local' for the manifest
@@ -584,6 +595,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
               source: manifestSource,
               path: null,
               duration: (Date.now() - slotStart) / 1000,
+              ...(stubbed ? { stubbed } : {}),
               ...(failedAt.stage === "write" && compliance
                 ? { compliance: toComplianceField(compliance) }
                 : {}),

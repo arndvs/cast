@@ -14,6 +14,8 @@ export function eventLabel(event: PipelineEvent): string {
       return "blocked"
     case "quality_result":
       return event.badge
+    case "creative_stub":
+      return "stub"
     case "error":
       return `err:${event.stage}`
     case "complete":
@@ -46,6 +48,8 @@ export function eventDetail(event: PipelineEvent): string {
       const retryNote = event.retried ? " · retried" : ""
       return `${slotLabel(event.slot)}${failDetail}${retryNote}`
     }
+    case "creative_stub":
+      return `${slotLabel(event.slot)} · stub: ${event.message}`
     case "error":
       return `${event.slot ? slotLabel(event.slot) + " · " : ""}${event.message}`
     case "complete":

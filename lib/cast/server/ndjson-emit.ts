@@ -13,6 +13,7 @@ import type {
   ComplianceFailedEvent,
   ComplianceResultEvent,
   CreativeReadyEvent,
+  CreativeStubEvent,
   ErrorEvent,
   PipelineEvent,
   QualityResultEvent,
@@ -93,6 +94,18 @@ export function emitQualityResult(
     badge,
     failures,
     retried,
+  }
+  return serializeEvent(event)
+}
+
+export function emitCreativeStub(
+  slot: Slot,
+  message: string,
+): Uint8Array {
+  const event: CreativeStubEvent = {
+    type: "creative_stub",
+    slot,
+    message,
   }
   return serializeEvent(event)
 }

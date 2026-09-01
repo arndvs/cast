@@ -150,6 +150,13 @@ export function deriveCreativeStatuses(events: readonly StampedEvent[], brief: B
         // separately. A quality pass/fail never flips a slot to failed.
         break
       }
+      case "creative_stub": {
+        const key = slotKey(event.slot.product, event.slot.market, event.slot.ratio)
+        const slot = map.get(key)
+        if (!slot) break
+        slot.status = "failed"
+        break
+      }
       case "error": {
         if (!event.slot) break
         const key = slotKey(event.slot.product, event.slot.market, event.slot.ratio)
