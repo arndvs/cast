@@ -83,6 +83,19 @@ export const complianceFailedEventSchema = z.object({
   bannedWords: z.array(z.string()),
 })
 
+/**
+ * Emitted after the post-compose output quality gate runs. `failures` lists
+ * which checks tripped (byte-floor / luma / text-leak). `retried` is true when
+ * the slot regenerated once with a bumped seed before this result.
+ */
+export const qualityResultEventSchema = z.object({
+  type: z.literal("quality_result"),
+  slot: slotSchema,
+  badge: z.enum(["pass", "fail"]),
+  failures: z.array(z.string()),
+  retried: z.boolean(),
+})
+
 export const completeEventSchema = z.object({
   type: z.literal("complete"),
   manifest: manifestSchema,
@@ -94,6 +107,7 @@ export const pipelineEventSchema = z.discriminatedUnion("type", [
   creativeReadyEventSchema,
   complianceResultEventSchema,
   complianceFailedEventSchema,
+  qualityResultEventSchema,
   errorEventSchema,
   completeEventSchema,
 ])
@@ -104,6 +118,7 @@ export type AssetResolvedEvent = z.infer<typeof assetResolvedEventSchema>
 export type CreativeReadyEvent = z.infer<typeof creativeReadyEventSchema>
 export type ComplianceResultEvent = z.infer<typeof complianceResultEventSchema>
 export type ComplianceFailedEvent = z.infer<typeof complianceFailedEventSchema>
+export type QualityResultEvent = z.infer<typeof qualityResultEventSchema>
 export type ErrorEvent = z.infer<typeof errorEventSchema>
 export type CompleteEvent = z.infer<typeof completeEventSchema>
 export type Slot = z.infer<typeof slotSchema>

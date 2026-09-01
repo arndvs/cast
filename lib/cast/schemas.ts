@@ -276,6 +276,7 @@ export const errorStageSchema = z.enum([
   "genai",
   "resize",
   "compose",
+  "quality",
   "compliance",
   "write",
 ])
@@ -290,6 +291,7 @@ export const PIPELINE_STAGES = [
   "genai",
   "resize",
   "compose",
+  "quality",
   "compliance",
   "write",
 ] as const satisfies readonly ErrorStage[]
@@ -312,6 +314,10 @@ export const creativeSchema = z.object({
   source: z.enum(["local", "genai"]),
   path: z.string().nullable(), // null on failure (write stage skips compliance)
   compliance: complianceSchema.optional(),
+  /** Output quality gate result — `"fail"` set on succeeded creatives that tripped the gate. */
+  quality: z.enum(["pass", "fail"]).optional(),
+  /** True when the quality gate regenerated this slot once (bumped seed). */
+  retried: z.boolean().optional(),
   duration: z.number().nonnegative().optional(),
 })
 
@@ -330,6 +336,8 @@ export const countsSchema = z.object({
   generated: z.number().int().nonnegative(),
   reused: z.number().int().nonnegative(),
   flagged: z.number().int().nonnegative(),
+  /** Succeeded creatives that tripped the output quality gate (quality === "fail"). */
+  quality_flag: z.number().int().nonnegative().optional(),
 })
 
 export const manifestSchema = z.object({

@@ -15,6 +15,7 @@ import type {
   CreativeReadyEvent,
   ErrorEvent,
   PipelineEvent,
+  QualityResultEvent,
   Slot,
   StepEvent,
 } from "@/lib/cast/events"
@@ -76,6 +77,22 @@ export function emitComplianceFailed(
     type: "compliance_failed",
     slot,
     bannedWords,
+  }
+  return serializeEvent(event)
+}
+
+export function emitQualityResult(
+  slot: Slot,
+  badge: "pass" | "fail",
+  failures: string[],
+  retried: boolean,
+): Uint8Array {
+  const event: QualityResultEvent = {
+    type: "quality_result",
+    slot,
+    badge,
+    failures,
+    retried,
   }
   return serializeEvent(event)
 }

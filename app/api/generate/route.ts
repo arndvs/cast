@@ -69,10 +69,13 @@ import {
   emitComplianceResult,
   emitCreativeReady,
   emitError,
+  emitQualityResult,
   emitStep,
 } from "@/lib/cast/server/ndjson-emit"
 import { containsBannedWord } from "@/lib/cast/banned-words"
 import { buildPromptPreview } from "@/lib/cast/prompt"
+import { checkComposedPng } from "@/lib/cast/server/pipeline/quality"
+import { slotLabel } from "@/lib/cast/format-pipeline-event"
 import { jsonError } from "@/lib/cast/server/api-helpers"
 import type { Slot } from "@/lib/cast/events"
 
@@ -350,6 +353,11 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
           let compliance: ReturnType<typeof runCompliance> | null = null
           let outputPath: string | null = null
           let currentStage: ErrorStage = "resolve"
+          // S2: quality-gate outcome, hoisted so the manifest entry (outside
+          // the try) can record it.
+          let qualityPass = true
+          let qualityRetried = false
+          let qualityFailures: string[] = []
 
           // Cheap-mode master generation already failed for this product;
           // every ratio fails the same way without spending more API calls.
@@ -406,7 +414,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
             // ---- compose ----
             currentStage = "compose"
             emit(emitStep("compose", slot))
-            const composed = await runStage("compose", () =>
+            let composed = await runStage("compose", () =>
               composeCreative({
                 base: sized,
                 ratio,
@@ -415,6 +423,49 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
                 primaryHex: brand.brand.colors.primary,
               }),
             )
+
+            // ---- quality gate (S2) ----
+            // Byte-floor / luma-band / text-leak checks on the COMPOSED PNG.
+            // On fail, regenerate once (bumped seed in default mode) then
+            // re-resize + re-compose + re-check. A slot that still fails after
+            // the retry is still written (best-effort) but flagged quality:"fail"
+            // so the grid + manifest surface it — the counts invariants treat a
+            // quality-fail as SUCCEEDED (it has a path), never as failed.
+            currentStage = "quality"
+            emit(emitStep("quality", slot))
+            {
+              const qc = await checkComposedPng(composed)
+              if (!qc.pass) {
+                qualityPass = false
+                qualityFailures = qc.failures
+                qualityRetried = true
+                console.error(`[quality] ${slotLabel(slot)} FAIL ${qc.failures.join("; ")} — retrying`)
+                const retryMaster =
+                  resolved.source === "genai" && mode !== "cheap"
+                    ? await regenerateMaster({ brief, brand, product: { name: product.name, sku: product.sku }, market, ratio, mode })
+                    : master
+                if (retryMaster) {
+                  const retrySized = await resizeForRatio(retryMaster, ratio)
+                  const retryComposed = await composeCreative({
+                    base: retrySized,
+                    ratio,
+                    headline,
+                    logoBuffer,
+                    primaryHex: brand.brand.colors.primary,
+                  })
+                  const qc2 = await checkComposedPng(retryComposed)
+                  if (qc2.pass) {
+                    composed = retryComposed
+                    qualityPass = true
+                    qualityFailures = []
+                    qualityRetried = true
+                  } else {
+                    console.error(`[quality] ${slotLabel(slot)} retry also FAIL ${qc2.failures.join("; ")} — using best attempt`)
+                  }
+                }
+              }
+            }
+            emit(emitQualityResult(slot, qualityPass ? "pass" : "fail", qualityFailures, qualityRetried))
 
             // ---- compliance ----
             currentStage = "compliance"
@@ -502,6 +553,8 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
               source: manifestSource,
               path: outputPath,
               duration: (Date.now() - slotStart) / 1000,
+              ...(qualityPass ? {} : { quality: "fail" as const }),
+              ...(qualityRetried ? { retried: true } : {}),
               ...(compliance ? { compliance: toComplianceField(compliance) } : {}),
             })
           }
@@ -582,5 +635,29 @@ function errMessage(err: unknown): string {
  */
 async function readBrandAsset(key: string): Promise<Buffer> {
   return (await getStorageAdapter()).readFile("inputs", key)
+}
+
+/**
+ * Re-run the genai master for a slot (quality-gate retry).
+ * Returns `null` if the regeneration throws (the caller keeps the first
+ * best-effort attempt). Only meaningful for `default` (dall-e-3) mode — cheap
+ * mode ignores seeds, so the caller skips this path.
+ */
+async function regenerateMaster(args: {
+  brief: Brief
+  brand: BrandProfile
+  product: { name: string; sku: string }
+  market: string
+  ratio: AspectRatio
+  mode: GenAIMode
+}): Promise<Buffer | null> {
+  const { brief, brand, product, market, ratio, mode } = args
+  try {
+    const prompt = buildPrompt(brief, brand, product, market, ratio)
+    const result = await generateImage({ prompt, ratio, mode })
+    return result.png
+  } catch {
+    return null
+  }
 }
 

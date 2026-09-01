@@ -15,6 +15,7 @@ const EXPECTED_STAGES = [
   "genai",
   "resize",
   "compose",
+  "quality",
   "compliance",
   "write",
 ] as const
