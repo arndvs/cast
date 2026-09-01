@@ -144,6 +144,16 @@ function CreativeOutputGridContent({
               </TooltipContent>
             </Tooltip>
           </div>
+          {/* S2: quality-flagged count — succeeded creatives that tripped the gate */}
+          {counts.qualityFlagged > 0 && (
+            <div className="flex items-center gap-2 text-xs">
+              <CreativeCountsSummaryCard label="Quality Flagged" value={counts.qualityFlagged} tone="warn" />
+              <span className="text-fg-3">
+                {counts.qualityFlagged} creative{counts.qualityFlagged === 1 ? "" : "s"} passed the pipeline but
+                failed the output quality gate — review before shipping.
+              </span>
+            </div>
+          )}
 
           {/* Toolbar: search + filters + view toggle + batch actions */}
           <ResultsToolbar

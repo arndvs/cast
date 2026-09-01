@@ -19,6 +19,7 @@ import { getMarket } from "@/lib/cast/markets"
 import { buildCreativeProxyUrl } from "@/lib/cast/creative-proxy-url"
 import type { Creative } from "@/lib/cast/schemas"
 import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
+import { cn } from "@/lib/utils"
 
 interface CreativeDetailDialogProps {
   state: CastAppState
@@ -66,7 +67,9 @@ function CreativeDetailDialogBody({
   dispatch: React.Dispatch<CastAppAction>
 }) {
   const { brief, manifest } = state
-  const failed = creative.path === null
+  const failed = creative.path === null && !creative.stubbed
+  const stubbed = creative.path === null && creative.stubbed === true
+  const qualityFail = creative.quality === "fail"
   const language = getMarket(creative.market)?.language ?? creative.market.split("-").pop() ?? "—"
 
   const proxyUrl = buildCreativeProxyUrl(brief.campaign, creative.market, creative.product, creative.ratio)
@@ -95,6 +98,22 @@ function CreativeDetailDialogBody({
         </DialogDescription>
       </DialogHeader>
 
+      {(qualityFail || stubbed) && (
+        <div
+          className={cn(
+            "rounded-lg border px-3 py-2 text-xs",
+            stubbed
+              ? "border-bad/40 bg-bad/10 text-bad"
+              : "border-warn/40 bg-warn/10 text-warn",
+          )}
+        >
+          {stubbed
+            ? "Generation failed after all retries — this is a 1×1 placeholder stub, not a produced creative."
+            : "This creative passed the pipeline but failed the output quality gate — review before shipping."}
+          {creative.retried && !stubbed && " (one automatic regeneration was attempted)"}
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         {/* Preview */}
         <div className="flex items-center justify-center overflow-hidden rounded-lg border border-border bg-muted">
@@ -117,7 +136,7 @@ function CreativeDetailDialogBody({
             <img
               src={proxyUrl}
               alt={`${creative.product} ${creative.market} ${creative.ratio}`}
-              className="h-auto w-full object-contain"
+              className={cn("h-auto w-full object-contain", stubbed && "opacity-50")}
             />
           )}
         </div>
@@ -134,10 +153,10 @@ function CreativeDetailDialogBody({
             ]}
           />
 
-          {failed ? (
+          {failed || stubbed ? (
             <PipelineErrorPanel
               stage={errorEntry?.stage ?? null}
-              message={errorEntry?.message ?? "unknown failure"}
+              message={errorEntry?.message ?? (stubbed ? "generation failed — placeholder stub" : "unknown failure")}
             />
           ) : (
             <ComplianceChecksList creative={creative} />

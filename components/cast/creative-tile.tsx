@@ -27,6 +27,15 @@ interface CreativeTileProps {
  * candy-stripe placeholder and an implicit FAIL badge instead of an
  * `<img>` so the grid never shows a broken image.
  *
+ * S7 stubs: a `stubbed` creative has `path: null` in the manifest BUT a
+ * 1×1 placeholder PNG was written at the real slot path — we render it via
+ * the proxy with a "stub" chip so the operator sees a visible placeholder
+ * tile rather than a bare stripe.
+ *
+ * S2 quality-fail: a succeeded creative with `quality === "fail"` gets a
+ * warn-tinted border + a small "quality" chip so flagged output is
+ * distinguishable from clean output at a glance.
+ *
  * The image URL is built from the public proxy at `/api/outputs/[...path]`
  * (which whitelists `.png` and reads from `outputs/` outside the static
  * tree). `loading="lazy"` keeps the initial paint cheap for large grids.
@@ -34,10 +43,13 @@ interface CreativeTileProps {
 export function CreativeTile({ creative, campaign, onClick, selected, onSelect }: CreativeTileProps) {
   const aspectClass = aspectClassForRatio(creative.ratio)
 
-  const failed = creative.path === null
+  const failed = creative.path === null && !creative.stubbed
+  const stubbed = creative.path === null && creative.stubbed === true
+  const qualityFail = creative.quality === "fail"
   const badge: "OK" | "WARN" | "FAIL" =
     failed ? "FAIL" : (creative.compliance?.badge ?? "OK")
 
+  // A stub has a real (1×1) file at the slot path — the proxy can serve it.
   const src = failed
     ? null
     : buildCreativeProxyUrl(campaign, creative.market, creative.product, creative.ratio)
@@ -47,6 +59,8 @@ export function CreativeTile({ creative, campaign, onClick, selected, onSelect }
       className={cn(
         "group relative flex flex-col gap-2 rounded-xl border bg-card p-2 transition",
         selected ? "border-primary" : "border-border hover:border-fg-3",
+        qualityFail && !selected && "border-warn/50 hover:border-warn/70",
+        stubbed && !selected && "border-bad/40 hover:border-bad/60",
       )}
     >
       {/* Selection checkbox */}
@@ -89,7 +103,7 @@ export function CreativeTile({ creative, campaign, onClick, selected, onSelect }
               src={src}
               alt={`${creative.product} ${creative.market} ${creative.ratio}`}
               loading="lazy"
-              className="h-full w-full object-cover"
+              className={cn("h-full w-full object-cover", stubbed && "opacity-50")}
             />
           ) : (
             <div
@@ -105,7 +119,23 @@ export function CreativeTile({ creative, campaign, onClick, selected, onSelect }
               </span>
             </div>
           )}
-          <div className="absolute right-1 top-1">
+          <div className="absolute right-1 top-1 flex items-center gap-1">
+            {qualityFail && (
+              <span
+                className="rounded bg-warn/90 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-black"
+                title="Failed the output quality gate"
+              >
+                quality
+              </span>
+            )}
+            {stubbed && (
+              <span
+                className="rounded bg-bad/90 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-white"
+                title="Generation failed — placeholder stub"
+              >
+                stub
+              </span>
+            )}
             <ComplianceBadgePill badge={badge} />
           </div>
 

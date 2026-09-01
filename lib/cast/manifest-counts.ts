@@ -42,6 +42,8 @@ export interface DerivedCounts {
   flagged: number
   /** Mean duration (seconds) across succeeded creatives with `duration` set. `null` when none have timing. */
   averageDuration: number | null
+  /** S2: succeeded creatives that tripped the output quality gate (quality === "fail"). */
+  qualityFlagged: number
 }
 
 export function deriveCounts(manifest: Manifest): DerivedCounts {
@@ -50,6 +52,7 @@ export function deriveCounts(manifest: Manifest): DerivedCounts {
   let fail = 0
   let durationSum = 0
   let durationCount = 0
+  let qualityFlagged = 0
 
   for (const c of manifest.creatives) {
     if (c.path === null) {
@@ -63,6 +66,8 @@ export function deriveCounts(manifest: Manifest): DerivedCounts {
     if (badge === "FAIL") fail += 1
     else if (badge === "WARN") warn += 1
     else ok += 1
+
+    if (c.quality === "fail") qualityFlagged += 1
 
     if (c.duration != null) {
       durationSum += c.duration
@@ -80,5 +85,6 @@ export function deriveCounts(manifest: Manifest): DerivedCounts {
     fail,
     flagged: warn + fail,
     averageDuration: durationCount > 0 ? durationSum / durationCount : null,
+    qualityFlagged,
   }
 }
