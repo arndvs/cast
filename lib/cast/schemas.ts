@@ -63,6 +63,9 @@ export const briefSchema = z
     // at /api/generate entry (briefSchema alone has no brand state). When
     // omitted, the orchestrator falls back to `brandProfile.defaultLogoId`.
     logoVariant: z.string().regex(SLUG_RE).optional(),
+    // S3: when true, the persistent `.pipeline-cache/` for this campaign is
+    // wiped at run start (opt-in regeneration from scratch).
+    prunePipelineCache: z.boolean().optional(),
   })
   .superRefine((brief, ctx) => {
     // Every market's locale (suffix after `-`) must have a message string.

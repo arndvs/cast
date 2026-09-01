@@ -77,6 +77,11 @@ import { buildPromptPreview } from "@/lib/cast/prompt"
 import { checkComposedPng } from "@/lib/cast/server/pipeline/quality"
 import { slotLabel } from "@/lib/cast/format-pipeline-event"
 import { seedForSlot } from "@/lib/cast/server/pipeline/seed"
+import {
+  clearPipelineCache,
+  lookupCachedMaster,
+  writeCachedMaster,
+} from "@/lib/cast/server/pipeline/cache"
 import { jsonError } from "@/lib/cast/server/api-helpers"
 import type { Slot } from "@/lib/cast/events"
 
@@ -149,6 +154,11 @@ export async function POST(req: Request): Promise<Response> {
 
   // 3. Idempotency + brief snapshot.
   await clearCampaignOutput(brief.campaign)
+  // S3: optional cache prune — an operator who wants a from-scratch
+  // regeneration of the campaign opts in by setting prunePipelineCache.
+  if (brief.prunePipelineCache) {
+    await clearPipelineCache(brief.campaign)
+  }
   await writeBriefSnapshot(brief.campaign, brief)
 
   // 4. Open stream.
@@ -261,7 +271,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
     // also keys by ratio because dall-e-3 native sizes differ per ratio.
     // Cheap mode keys by productSlug only (single 1024² master per product).
     const baseImageCache = new Map<string, Buffer>()
-    const genMetaCache = new Map<string, { model: string; revisedPrompt: string | null; promptUsed: string }>()
+    const genMetaCache = new Map<string, { model: string | null; revisedPrompt: string | null; promptUsed: string }>()
 
     for (const product of brief.products) {
       const productSlug = slugify(product.name)
@@ -335,9 +345,23 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
       } else if (mode === "cheap") {
         try {
           const cheapPrompt = buildPrompt(brief, brand, product, market, "1x1")
-          const cheapResult = await generateImage({ prompt: cheapPrompt, mode: "cheap" })
-          baseImageCache.set(productSlug, cheapResult.png)
-          genMetaCache.set(productSlug, { model: cheapResult.meta.model, revisedPrompt: cheapResult.meta.revisedPrompt, promptUsed: cheapPrompt })
+          // S3: cache the cheap-mode master too — keyed by its prompt.
+          const cachedCheap = await lookupCachedMaster(brief.campaign, cheapPrompt)
+          if (cachedCheap) {
+            baseImageCache.set(productSlug, cachedCheap.png)
+            genMetaCache.set(productSlug, { model: cachedCheap.meta.model, revisedPrompt: cachedCheap.meta.revisedPrompt, promptUsed: cheapPrompt })
+            console.error(`[cache] ${productSlug} (cheap) HIT — reused cached master`)
+          } else {
+            const cheapResult = await generateImage({ prompt: cheapPrompt, mode: "cheap" })
+            baseImageCache.set(productSlug, cheapResult.png)
+            genMetaCache.set(productSlug, { model: cheapResult.meta.model, revisedPrompt: cheapResult.meta.revisedPrompt, promptUsed: cheapPrompt })
+            await writeCachedMaster(brief.campaign, cheapPrompt, cheapResult.png, {
+              model: cheapResult.meta.model,
+              revisedPrompt: cheapResult.meta.revisedPrompt,
+              promptUsed: cheapPrompt,
+              mode: "cheap",
+            })
+          }
         } catch (err) {
           // Defer attribution to the per-ratio loop so each (market × ratio)
           // gets its own error event + manifest entry.
@@ -396,12 +420,32 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
               } else {
                 emit(emitStep("genai", slot, `generating ${ratio} native`))
                 const genPrompt = buildPrompt(brief, brand, product, market, ratio)
-                const genResult = await runStage("genai", () =>
-                  generateImage({ prompt: genPrompt, ratio, mode: "default", seed: seedForSlot(genPrompt, ratio) }),
-                )
-                master = genResult.png
-                baseImageCache.set(cacheKey, genResult.png)
-                genMetaCache.set(cacheKey, { model: genResult.meta.model, revisedPrompt: genResult.meta.revisedPrompt, promptUsed: genPrompt })
+                // S3: persistent cross-run cache — a second identical run skips
+                // the genai spend entirely and reuses the on-disk master.
+                const cachedMaster = await lookupCachedMaster(brief.campaign, genPrompt)
+                if (cachedMaster) {
+                  master = cachedMaster.png
+                  baseImageCache.set(cacheKey, master)
+                  genMetaCache.set(cacheKey, {
+                    model: cachedMaster.meta.model,
+                    revisedPrompt: cachedMaster.meta.revisedPrompt,
+                    promptUsed: genPrompt,
+                  })
+                  console.error(`[cache] ${slotLabel(slot)} HIT — reused cached master`)
+                } else {
+                  const genResult = await runStage("genai", () =>
+                    generateImage({ prompt: genPrompt, ratio, mode: "default", seed: seedForSlot(genPrompt, ratio) }),
+                  )
+                  master = genResult.png
+                  baseImageCache.set(cacheKey, genResult.png)
+                  genMetaCache.set(cacheKey, { model: genResult.meta.model, revisedPrompt: genResult.meta.revisedPrompt, promptUsed: genPrompt })
+                  await writeCachedMaster(brief.campaign, genPrompt, genResult.png, {
+                    model: genResult.meta.model,
+                    revisedPrompt: genResult.meta.revisedPrompt,
+                    promptUsed: genPrompt,
+                    mode: "default",
+                  })
+                }
               }
             }
 
