@@ -138,6 +138,12 @@ export const voiceJsonSchema = z.object({
   negativePromptFragments: z.array(z.string()).default([]),
   /** Mood keywords — short scene-setting adjectives for the prompt. */
   moodKeywords: z.array(z.string()).default([]),
+  /**
+   * S5: cross-frame identity lock — appended to every prompt so a campaign's
+   * ratio variants share subject/palette/lighting language. Optional; absent
+   * brands get no lock (backward compatible).
+   */
+  identityLock: z.string().optional(),
   /** Per-SKU overrides — differentiated visual fragments per product variant. */
   skuFragments: z.record(z.string(), skuFragmentSchema).optional(),
 })

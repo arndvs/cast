@@ -19,6 +19,12 @@ export interface PromptPreviewBrand {
   negativePromptFragments?: readonly string[]
   /** Mood keywords — short scene-setting adjectives. */
   moodKeywords?: readonly string[]
+  /**
+   * S5: cross-frame identity lock — a sentence appended to every prompt so a
+   * campaign's 1:1 / 9:16 / 16:9 renditions share subject, palette, and
+   * lighting language (port of MCRDSE brand.mjs identityLock).
+   */
+  identityLock?: string
 }
 
 export interface PromptPreviewProduct {
@@ -37,6 +43,12 @@ export interface PromptPreviewArgs {
   product: PromptPreviewProduct
   market: string
   ratio: AspectRatio
+  /**
+   * S6: this slot's job in the ratio series — `hero` (first / primary),
+   * `mid` (supporting), `payoff` (closing). Port of MCRDSE's per-frame role
+   * clause (Serial Position / Peak-End applied to prompts).
+   */
+  frameRole?: "hero" | "mid" | "payoff"
 }
 
 const RATIO_HINT: Record<AspectRatio, string> = {
@@ -45,7 +57,13 @@ const RATIO_HINT: Record<AspectRatio, string> = {
   "16x9": "wide (landscape)",
 }
 
-export function buildPromptPreview({ brand, product, market, ratio }: PromptPreviewArgs): string {
+const FRAME_ROLE_CLAUSE: Record<"hero" | "mid" | "payoff", string> = {
+  hero: "This is the primary hero visual of the set — bold, must stop the scroll.",
+  mid: "This is a supporting frame in the set — keep it visually consistent with the hero.",
+  payoff: "This is the closing visual of the set — quiet, minimal, room for the call-to-action.",
+}
+
+export function buildPromptPreview({ brand, product, market, ratio, frameRole }: PromptPreviewArgs): string {
   const lang = market.split("-").pop() ?? "en"
   const paletteHexes = product.skuFragments?.accentHex
     ? [
@@ -80,6 +98,14 @@ export function buildPromptPreview({ brand, product, market, ratio }: PromptPrev
   const avoidParts = [...avoidWords, ...negFrags]
   const avoidLine = avoidParts.length > 0 ? `Avoid: ${avoidParts.join("; ")}.` : ""
 
+  // S6: frame-role clause (when present).
+  const frameLine = frameRole ? FRAME_ROLE_CLAUSE[frameRole] : null
+
+  // S5: cross-frame identity lock (when present).
+  const identityLine = brand.identityLock
+    ? `Identity lock: ${brand.identityLock}`
+    : null
+
   return [
     `Hero product photo of ${product.name} (${product.sku}).`,
     `Brand: ${brand.displayName} — ${voice}.`,
@@ -88,6 +114,8 @@ export function buildPromptPreview({ brand, product, market, ratio }: PromptPrev
     `Locale: ${market} (${lang}). No on-image text — text is composited at the compose step.`,
     moodLine ? moodLine.trim() : null,
     sceneMood ? sceneMood.trim() : null,
+    frameLine,
     avoidLine,
+    identityLine,
   ].filter(Boolean).join(" ")
 }

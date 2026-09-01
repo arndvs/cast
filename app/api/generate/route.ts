@@ -639,6 +639,8 @@ function buildPrompt(
       bannedWords: brand.bannedWords,
       negativePromptFragments: brand.voice.negativePromptFragments,
       moodKeywords: brand.voice.moodKeywords,
+      // S5: cross-frame identity lock when the brand profile carries one.
+      ...(brand.voice.identityLock ? { identityLock: brand.voice.identityLock } : {}),
     },
     product: {
       ...product,
@@ -652,7 +654,29 @@ function buildPrompt(
     },
     market,
     ratio,
+    // S6: slot's job in the ratio set (canonical order 1x1 → 9x16 → 16x9).
+    frameRole: frameRoleForRatio(ratio, brief.ratios),
   })
+}
+
+/**
+ * S6: derive the frame role for a ratio within a campaign's ratio set.
+ * Follows canonical order (1x1 → 9x16 → 16x9): the first is the hero, the
+ * last is the payoff, everything between is supporting.
+ */
+function frameRoleForRatio(
+  ratio: AspectRatio,
+  ratios: readonly AspectRatio[],
+): "hero" | "mid" | "payoff" | undefined {
+  if (!ratios.includes(ratio)) return undefined
+  const order: AspectRatio[] = ["1x1", "9x16", "16x9"]
+  const present = ratios
+    .slice()
+    .sort((a, b) => order.indexOf(a) - order.indexOf(b))
+  const idx = present.indexOf(ratio)
+  if (idx === 0) return "hero"
+  if (idx === present.length - 1) return "payoff"
+  return "mid"
 }
 
 /**
