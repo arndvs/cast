@@ -76,6 +76,7 @@ import { containsBannedWord } from "@/lib/cast/banned-words"
 import { buildPromptPreview } from "@/lib/cast/prompt"
 import { checkComposedPng } from "@/lib/cast/server/pipeline/quality"
 import { slotLabel } from "@/lib/cast/format-pipeline-event"
+import { seedForSlot } from "@/lib/cast/server/pipeline/seed"
 import { jsonError } from "@/lib/cast/server/api-helpers"
 import type { Slot } from "@/lib/cast/events"
 
@@ -396,7 +397,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
                 emit(emitStep("genai", slot, `generating ${ratio} native`))
                 const genPrompt = buildPrompt(brief, brand, product, market, ratio)
                 const genResult = await runStage("genai", () =>
-                  generateImage({ prompt: genPrompt, ratio, mode: "default" }),
+                  generateImage({ prompt: genPrompt, ratio, mode: "default", seed: seedForSlot(genPrompt, ratio) }),
                 )
                 master = genResult.png
                 baseImageCache.set(cacheKey, genResult.png)
@@ -654,7 +655,13 @@ async function regenerateMaster(args: {
   const { brief, brand, product, market, ratio, mode } = args
   try {
     const prompt = buildPrompt(brief, brand, product, market, ratio)
-    const result = await generateImage({ prompt, ratio, mode })
+    const result = await generateImage({
+      prompt,
+      ratio,
+      mode,
+      // Deterministic seed for the retry too — stable across re-runs.
+      ...(mode !== "cheap" ? { seed: seedForSlot(prompt, ratio) } : {}),
+    })
     return result.png
   } catch {
     return null
