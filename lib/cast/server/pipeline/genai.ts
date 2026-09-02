@@ -15,20 +15,13 @@ import { RATIO_PIXELS } from "@/lib/cast/ratios"
 import { retry, type RetryableError } from "@/lib/cast/server/retry"
 import {
   getGenAIMode as getConfigGenAIMode,
-  getOpenAIApiKey,
+  getOpenAIClient,
 } from "@/lib/cast/server/config"
 
 export type GenAIMode = "default" | "cheap"
 
 export function getGenAIMode(): GenAIMode {
   return getConfigGenAIMode()
-}
-
-let openaiClient: OpenAI | null = null
-function getClient(): OpenAI {
-  if (openaiClient) return openaiClient
-  openaiClient = new OpenAI({ apiKey: getOpenAIApiKey() })
-  return openaiClient
 }
 
 export interface GenerateImageArgs {
@@ -65,7 +58,7 @@ export interface GenerationResult {
  */
 export async function generateImage(args: GenerateImageArgs): Promise<GenerationResult> {
   const mode = args.mode ?? getGenAIMode()
-  const client = args.client ?? getClient()
+  const client = args.client ?? (await getOpenAIClient())
 
   return retry(async () => {
     const size = pickSize(mode, args.ratio)
