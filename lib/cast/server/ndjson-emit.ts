@@ -24,13 +24,21 @@ import type { ComplianceBadge, ErrorStage, Manifest } from "@/lib/cast/schemas"
 
 const encoder = new TextEncoder()
 
-function serializeEvent(event: PipelineEvent): Uint8Array {
+/**
+ * Encode a single pipeline event as NDJSON bytes: one JSON object followed
+ * by `\n`, ready to push into a `ReadableStream` controller. This is the
+ * single seam between the server emitters and the client decoder — every
+ * `emit*` helper funnels through it, and the round-trip contract test
+ * (`tests/ndjson-contract.test.ts`) pins that `JSON.parse` +
+ * `pipelineEventSchema.safeParse` succeeds for every emitted event.
+ */
+export function encodePipelineEvent(event: PipelineEvent): Uint8Array {
   return encoder.encode(JSON.stringify(event) + "\n")
 }
 
 export function emitStep(stage: ErrorStage, slot: Slot, message?: string): Uint8Array {
   const event: StepEvent = { type: "step", stage, slot, ...(message ? { message } : {}) }
-  return serializeEvent(event)
+  return encodePipelineEvent(event)
 }
 
 export function emitAssetResolved(
@@ -44,7 +52,7 @@ export function emitAssetResolved(
     source,
     ...(file ? { file } : {}),
   }
-  return serializeEvent(event)
+  return encodePipelineEvent(event)
 }
 
 export function emitCreativeReady(
@@ -53,7 +61,7 @@ export function emitCreativeReady(
   source: "local" | "genai",
 ): Uint8Array {
   const event: CreativeReadyEvent = { type: "creative_ready", slot, path, source }
-  return serializeEvent(event)
+  return encodePipelineEvent(event)
 }
 
 export function emitComplianceResult(
@@ -67,7 +75,7 @@ export function emitComplianceResult(
     badge,
     bannedWords,
   }
-  return serializeEvent(event)
+  return encodePipelineEvent(event)
 }
 
 export function emitComplianceFailed(
@@ -79,7 +87,7 @@ export function emitComplianceFailed(
     slot,
     bannedWords,
   }
-  return serializeEvent(event)
+  return encodePipelineEvent(event)
 }
 
 export function emitQualityResult(
@@ -95,7 +103,7 @@ export function emitQualityResult(
     failures,
     retried,
   }
-  return serializeEvent(event)
+  return encodePipelineEvent(event)
 }
 
 export function emitCreativeStub(
@@ -107,7 +115,7 @@ export function emitCreativeStub(
     slot,
     message,
   }
-  return serializeEvent(event)
+  return encodePipelineEvent(event)
 }
 
 export function emitError(
@@ -116,10 +124,10 @@ export function emitError(
   slot?: Slot,
 ): Uint8Array {
   const event: ErrorEvent = { type: "error", stage, message, ...(slot ? { slot } : {}) }
-  return serializeEvent(event)
+  return encodePipelineEvent(event)
 }
 
 export function emitComplete(manifest: Manifest): Uint8Array {
   const event: CompleteEvent = { type: "complete", manifest }
-  return serializeEvent(event)
+  return encodePipelineEvent(event)
 }
