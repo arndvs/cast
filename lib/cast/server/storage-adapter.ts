@@ -14,6 +14,7 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import { safeJoin, type RootKey } from "@/lib/cast/server/safe-join"
 import { getStorageBackend, type StorageBackend } from "@/lib/cast/server/config"
+import { proxyUrl as addressProxyUrl, type CreativeOutputAddress } from "@/lib/cast/creative-output-address"
 
 // ---------------------------------------------------------------------------
 // Errors
@@ -171,27 +172,32 @@ export class LocalFsAdapter implements StorageAdapter {
   }
 
   getPublicUrl(container: Container, key: string): string {
-    // Percent-encode each path segment for safe URL construction.
-    const encoded = key
-      .split(/[/\\]/)
-      .filter(Boolean)
-      .map((seg) => encodeURIComponent(seg))
-      .join("/")
-
-    switch (container) {
-      case "outputs":
-        return `/api/outputs/${encoded}`
-      case "inputs":
-        // Inputs are not publicly served; throw to catch misuse early.
-        throw new Error(
-          `getPublicUrl() does not support the "inputs" container — ` +
-          `only "outputs" assets have public proxy URLs.`,
-        )
-      default: {
-        const _exhaustive: never = container
-        throw new Error(`Unknown container: ${_exhaustive}`)
+    // Outputs keys are creative addresses (`campaign/market/product/ratio.png`)
+    // — delegate through the canonical proxyUrl projection so the adapter's
+    // public URL can never drift from the tile/img URLs.
+    if (container === "outputs") {
+      const segs = key.split("/").filter(Boolean)
+      const [campaign, market, product, file] = segs
+      if (segs.length === 4 && file && file.endsWith(".png")) {
+        const ratio = file.replace(/\.png$/, "") as CreativeOutputAddress["ratio"]
+        if (ratio === "1x1" || ratio === "9x16" || ratio === "16x9") {
+          return addressProxyUrl({ campaign: campaign!, market: market!, product: product!, ratio })
+        }
       }
+      // Fall back to generic percent-encoding for non-creative outputs keys
+      // (brief.json, report.json, metadata sidecars).
+      const encoded = segs.map((seg) => encodeURIComponent(seg)).join("/")
+      return `/api/outputs/${encoded}`
     }
+    if (container === "inputs") {
+      // Inputs are not publicly served; throw to catch misuse early.
+      throw new Error(
+        `getPublicUrl() does not support the "inputs" container — ` +
+          `only "outputs" assets have public proxy URLs.`,
+      )
+    }
+    const _exhaustive: never = container
+    throw new Error(`Unknown container: ${_exhaustive}`)
   }
 }
 

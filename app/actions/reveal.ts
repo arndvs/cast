@@ -3,7 +3,8 @@
 import fs from "node:fs/promises"
 import { execFile } from "node:child_process"
 import { safeJoin, PathTraversalError } from "@/lib/cast/server/safe-join"
-import { MARKET_RE, ratioSchema, SLUG_RE, type AspectRatio } from "@/lib/cast/schemas"
+import { SLUG_RE, type AspectRatio } from "@/lib/cast/schemas"
+import { validateAddress, type CreativeOutputAddress } from "@/lib/cast/creative-output-address"
 
 /**
  * revealOutputFolder — open the per-campaign outputs folder in the OS file
@@ -115,19 +116,11 @@ export async function resolveCreativeAbsolutePath({
   product: string
   ratio: AspectRatio
 }): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
-  if (typeof campaign !== "string" || !SLUG_RE.test(campaign)) {
-    return { ok: false, error: "invalid campaign slug" }
-  }
-  if (typeof market !== "string" || !MARKET_RE.test(market)) {
-    return { ok: false, error: "invalid market code" }
-  }
-  if (typeof product !== "string" || !SLUG_RE.test(product)) {
-    return { ok: false, error: "invalid product slug" }
-  }
-  const ratioParsed = ratioSchema.safeParse(ratio)
-  if (!ratioParsed.success) {
-    return { ok: false, error: "invalid ratio" }
-  }
+  // Validate the full address at one boundary — same regexes as before,
+  // now centralized in the output-address module.
+  const addr: CreativeOutputAddress = { campaign, market, product, ratio }
+  const invalid = validateAddress(addr)
+  if (invalid) return { ok: false, error: invalid }
 
   try {
     // TODO(symlink-hardening): re-validate with realpath before returning.
@@ -136,7 +129,7 @@ export async function resolveCreativeAbsolutePath({
       campaign,
       market,
       product,
-      `${ratioParsed.data}.png`,
+      `${ratio}.png`,
     )
     return { ok: true, path: abs }
   } catch (err) {

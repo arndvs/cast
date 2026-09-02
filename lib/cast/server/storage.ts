@@ -19,6 +19,7 @@ import {
   assetKeysFor,
   type AssetExt,
 } from "@/lib/cast/asset-files"
+import { repoRelativePath } from "@/lib/cast/creative-output-address"
 
 /**
  * Scan `inputs/assets/` for a product photo named after `productSlug`.
@@ -92,7 +93,7 @@ export async function writeCreative(
 ): Promise<string> {
   const key = `${campaign}/${market}/${productSlug}/${ratio}.png`
   await (await getStorageAdapter()).writeFile("outputs", key, png, "image/png")
-  return path.posix.join("outputs", key)
+  return repoRelativePath({ campaign, market, product: productSlug, ratio })
 }
 
 /**
@@ -123,7 +124,7 @@ export async function writeCreativeStub(
     // Stub write is best-effort — a failure to place the placeholder must not
     // mask the underlying genai error already recorded.
   }
-  return path.posix.join("outputs", key)
+  return repoRelativePath({ campaign, market, product: productSlug, ratio })
 }
 
 /** Write metadata sidecar at `outputs/[campaign]/[market]/[product]/[ratio].metadata.json`. */
