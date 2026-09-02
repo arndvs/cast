@@ -9,7 +9,11 @@
  */
 
 import { describe, it, expect, vi } from "vitest"
-import { analyzeImage, imageMetadataSchema, type AnalyzeImageContext } from "@/lib/cast/server/metadata"
+import {
+  analyzeImage,
+  imageMetadataSchema,
+  type AnalyzeImageContext,
+} from "@/lib/cast/server/metadata"
 import type OpenAI from "openai"
 
 // ---------------------------------------------------------------------------
@@ -30,7 +34,13 @@ const CONTEXT: AnalyzeImageContext = {
 
 const VISION_RESPONSE = {
   description: "A vibrant citrus can on a gradient blue-green background",
-  tags: ["product-shot", "gradient-background", "citrus", "beverage", "vibrant"],
+  tags: [
+    "product-shot",
+    "gradient-background",
+    "citrus",
+    "beverage",
+    "vibrant",
+  ],
   colors: ["#00B4D8", "#FF6B35", "#FFFFFF"],
   mood: ["energetic", "refreshing"],
 }
@@ -254,7 +264,9 @@ describe("analyzeImage", () => {
 
   it("returns deterministic-only metadata on schema-invalid response", async () => {
     // Missing required fields
-    const client = makeMockClient({ content: JSON.stringify({ description: "ok" }) })
+    const client = makeMockClient({
+      content: JSON.stringify({ description: "ok" }),
+    })
 
     const result = await analyzeImage(fakeBuffer(), CONTEXT, { client })
 

@@ -13,241 +13,127 @@ function makeCreative(overrides: Partial<Creative> = {}): Creative {
   }
 }
 
+const PASS_ALL = {
+  status: "ALL" as const,
+  ratio: "ALL" as const,
+  market: "ALL" as const,
+}
+
 describe("creativeMatchesFilters", () => {
-  describe("ratio filter", () => {
-    it("passes ALL", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ ratio: "9x16" }), {
-          status: "ALL",
-          ratio: "ALL",
-          market: "ALL",
-        }),
-      ).toBe(true)
-    })
-
-    it("matches exact ratio", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ ratio: "9x16" }), {
-          status: "ALL",
-          ratio: "9x16",
-          market: "ALL",
-        }),
-      ).toBe(true)
-    })
-
-    it("rejects mismatched ratio", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ ratio: "1x1" }), {
-          status: "ALL",
-          ratio: "16x9",
-          market: "ALL",
-        }),
-      ).toBe(false)
-    })
+  it("passes every creative under ALL filters", () => {
+    expect(
+      creativeMatchesFilters(
+        makeCreative({ market: "de-de", ratio: "9x16" }),
+        PASS_ALL
+      )
+    ).toBe(true)
   })
 
-  describe("market filter", () => {
-    it("passes ALL", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ market: "de-de" }), {
-          status: "ALL",
-          ratio: "ALL",
-          market: "ALL",
-        }),
-      ).toBe(true)
-    })
-
-    it("matches exact market", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ market: "de-de" }), {
-          status: "ALL",
-          ratio: "ALL",
-          market: "de-de",
-        }),
-      ).toBe(true)
-    })
-
-    it("rejects mismatched market", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ market: "us-en" }), {
-          status: "ALL",
-          ratio: "ALL",
-          market: "fr-fr",
-        }),
-      ).toBe(false)
-    })
+  it("matches exact ratio and market, rejects mismatches", () => {
+    const base = makeCreative({ market: "de-de", ratio: "9x16" })
+    expect(creativeMatchesFilters(base, { ...PASS_ALL, ratio: "9x16" })).toBe(
+      true
+    )
+    expect(creativeMatchesFilters(base, { ...PASS_ALL, ratio: "1x1" })).toBe(
+      false
+    )
+    expect(creativeMatchesFilters(base, { ...PASS_ALL, market: "de-de" })).toBe(
+      true
+    )
+    expect(creativeMatchesFilters(base, { ...PASS_ALL, market: "fr-fr" })).toBe(
+      false
+    )
   })
 
-  describe("status filter", () => {
-    it("passes ALL regardless of badge", () => {
-      expect(
-        creativeMatchesFilters(
-          makeCreative({ compliance: { badge: "WARN", checks: { logoPresent: true, bannedWords: [] } } }),
-          { status: "ALL", ratio: "ALL", market: "ALL" },
-        ),
-      ).toBe(true)
+  it("classifies status from path and compliance badge", () => {
+    const ok = makeCreative()
+    const warn = makeCreative({
+      compliance: {
+        badge: "WARN",
+        checks: { logoPresent: true, bannedWords: ["free"] },
+      },
     })
+    const failed = makeCreative({ path: null })
+    const noCompliance = makeCreative({ compliance: undefined })
 
-    it("treats null path as FAIL", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ path: null }), {
-          status: "FAIL",
-          ratio: "ALL",
-          market: "ALL",
-        }),
-      ).toBe(true)
-    })
-
-    it("treats null path as not OK", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ path: null }), {
-          status: "OK",
-          ratio: "ALL",
-          market: "ALL",
-        }),
-      ).toBe(false)
-    })
-
-    it("treats missing compliance as OK", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ compliance: undefined }), {
-          status: "OK",
-          ratio: "ALL",
-          market: "ALL",
-        }),
-      ).toBe(true)
-    })
-
-    it("matches WARN badge", () => {
-      expect(
-        creativeMatchesFilters(
-          makeCreative({ compliance: { badge: "WARN", checks: { logoPresent: true, bannedWords: ["free"] } } }),
-          { status: "WARN", ratio: "ALL", market: "ALL" },
-        ),
-      ).toBe(true)
-    })
+    expect(creativeMatchesFilters(ok, { ...PASS_ALL, status: "OK" })).toBe(true)
+    expect(creativeMatchesFilters(warn, { ...PASS_ALL, status: "WARN" })).toBe(
+      true
+    )
+    expect(
+      creativeMatchesFilters(noCompliance, { ...PASS_ALL, status: "OK" })
+    ).toBe(true)
+    // Null path is FAIL — never OK.
+    expect(
+      creativeMatchesFilters(failed, { ...PASS_ALL, status: "FAIL" })
+    ).toBe(true)
+    expect(creativeMatchesFilters(failed, { ...PASS_ALL, status: "OK" })).toBe(
+      false
+    )
+    expect(creativeMatchesFilters(ok, { ...PASS_ALL, status: "ALL" })).toBe(
+      true
+    )
   })
 
-  describe("combined filters", () => {
-    it("all filters must pass", () => {
-      const creative = makeCreative({ market: "us-en", ratio: "9x16" })
-      expect(
-        creativeMatchesFilters(creative, {
-          status: "OK",
-          ratio: "9x16",
-          market: "us-en",
-        }),
-      ).toBe(true)
-    })
-
-    it("rejects when one filter fails", () => {
-      const creative = makeCreative({ market: "us-en", ratio: "9x16" })
-      expect(
-        creativeMatchesFilters(creative, {
-          status: "OK",
-          ratio: "1x1",
-          market: "us-en",
-        }),
-      ).toBe(false)
-    })
+  it("combines all filters, requiring every one to pass", () => {
+    const creative = makeCreative({ market: "us-en", ratio: "9x16" })
+    const filters = {
+      status: "OK" as const,
+      ratio: "9x16" as const,
+      market: "us-en" as const,
+    }
+    expect(creativeMatchesFilters(creative, filters)).toBe(true)
+    expect(creativeMatchesFilters(creative, { ...filters, ratio: "1x1" })).toBe(
+      false
+    )
   })
 
-  describe("query filter", () => {
-    it("matches product substring", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ product: "sunscreen" }), {
-          status: "ALL",
-          ratio: "ALL",
-          market: "ALL",
-          query: "sun",
-        }),
-      ).toBe(true)
+  it("matches the query across product, market, ratio, and source, case-insensitively", () => {
+    const creative = makeCreative({
+      product: "sunscreen",
+      market: "de-de",
+      ratio: "9x16",
     })
+    expect(
+      creativeMatchesFilters(creative, { ...PASS_ALL, query: "sun" })
+    ).toBe(true)
+    expect(
+      creativeMatchesFilters(creative, { ...PASS_ALL, query: "SUNSCREEN" })
+    ).toBe(true)
+    expect(
+      creativeMatchesFilters(creative, { ...PASS_ALL, query: "de-de" })
+    ).toBe(true)
+    expect(
+      creativeMatchesFilters(creative, { ...PASS_ALL, query: "9x16" })
+    ).toBe(true)
+    expect(
+      creativeMatchesFilters(creative, { ...PASS_ALL, query: "genai" })
+    ).toBe(true)
+    expect(
+      creativeMatchesFilters(creative, { ...PASS_ALL, query: "nonexistent" })
+    ).toBe(false)
+    expect(creativeMatchesFilters(creative, { ...PASS_ALL, query: "" })).toBe(
+      true
+    )
+  })
 
-    it("matches market substring", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ market: "de-de" }), {
-          status: "ALL",
-          ratio: "ALL",
-          market: "ALL",
-          query: "de-de",
-        }),
-      ).toBe(true)
-    })
-
-    it("matches ratio", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ ratio: "9x16" }), {
-          status: "ALL",
-          ratio: "ALL",
-          market: "ALL",
-          query: "9x16",
-        }),
-      ).toBe(true)
-    })
-
-    it("matches source", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ source: "genai" }), {
-          status: "ALL",
-          ratio: "ALL",
-          market: "ALL",
-          query: "genai",
-        }),
-      ).toBe(true)
-    })
-
-    it("is case-insensitive", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ product: "sunscreen" }), {
-          status: "ALL",
-          ratio: "ALL",
-          market: "ALL",
-          query: "SUNSCREEN",
-        }),
-      ).toBe(true)
-    })
-
-    it("rejects when query matches nothing", () => {
-      expect(
-        creativeMatchesFilters(makeCreative(), {
-          status: "ALL",
-          ratio: "ALL",
-          market: "ALL",
-          query: "nonexistent",
-        }),
-      ).toBe(false)
-    })
-
-    it("passes all when query is empty", () => {
-      expect(
-        creativeMatchesFilters(makeCreative(), {
-          status: "ALL",
-          ratio: "ALL",
-          market: "ALL",
-          query: "",
-        }),
-      ).toBe(true)
-    })
-
-    it("combines with other filters", () => {
-      expect(
-        creativeMatchesFilters(makeCreative({ product: "sunscreen", ratio: "9x16" }), {
-          status: "OK",
-          ratio: "9x16",
-          market: "ALL",
-          query: "sun",
-        }),
-      ).toBe(true)
-
-      expect(
-        creativeMatchesFilters(makeCreative({ product: "sunscreen", ratio: "9x16" }), {
-          status: "OK",
-          ratio: "1x1",
-          market: "ALL",
-          query: "sun",
-        }),
-      ).toBe(false)
-    })
+  it("applies the query on top of the other filters", () => {
+    const creative = makeCreative({ product: "sunscreen", ratio: "9x16" })
+    expect(
+      creativeMatchesFilters(creative, {
+        status: "OK",
+        ratio: "9x16",
+        market: "ALL",
+        query: "sun",
+      })
+    ).toBe(true)
+    expect(
+      creativeMatchesFilters(creative, {
+        status: "OK",
+        ratio: "1x1",
+        market: "ALL",
+        query: "sun",
+      })
+    ).toBe(false)
   })
 })

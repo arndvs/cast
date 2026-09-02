@@ -3,9 +3,15 @@
  */
 
 import { describe, it, expect } from "vitest"
-import { buildPromptPreview, type PromptPreviewBrand, type PromptPreviewProduct } from "@/lib/cast/prompt"
+import {
+  buildPromptPreview,
+  type PromptPreviewBrand,
+  type PromptPreviewProduct,
+} from "@/lib/cast/prompt"
 
-function makeBrand(overrides: Partial<PromptPreviewBrand> = {}): PromptPreviewBrand {
+function makeBrand(
+  overrides: Partial<PromptPreviewBrand> = {}
+): PromptPreviewBrand {
   return {
     displayName: "Brisa",
     voice: ["mineral palette", "morning light"],
@@ -15,30 +21,52 @@ function makeBrand(overrides: Partial<PromptPreviewBrand> = {}): PromptPreviewBr
   }
 }
 
-function makeProduct(overrides: Partial<PromptPreviewProduct> = {}): PromptPreviewProduct {
+function makeProduct(
+  overrides: Partial<PromptPreviewProduct> = {}
+): PromptPreviewProduct {
   return { name: "Brisa Citrus", sku: "BRS-CIT-12", ...overrides }
 }
 
 describe("buildPromptPreview — baseline", () => {
   it("includes product name and SKU", () => {
-    const prompt = buildPromptPreview({ brand: makeBrand(), product: makeProduct(), market: "us-en", ratio: "1x1" })
+    const prompt = buildPromptPreview({
+      brand: makeBrand(),
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "1x1",
+    })
     expect(prompt).toContain("Brisa Citrus")
     expect(prompt).toContain("BRS-CIT-12")
   })
 
   it("includes brand display name", () => {
-    const prompt = buildPromptPreview({ brand: makeBrand(), product: makeProduct(), market: "us-en", ratio: "1x1" })
+    const prompt = buildPromptPreview({
+      brand: makeBrand(),
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "1x1",
+    })
     expect(prompt).toContain("Brisa")
   })
 
   it("includes the ratio hint", () => {
-    const prompt = buildPromptPreview({ brand: makeBrand(), product: makeProduct(), market: "us-en", ratio: "9x16" })
+    const prompt = buildPromptPreview({
+      brand: makeBrand(),
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "9x16",
+    })
     expect(prompt).toContain("9x16")
     expect(prompt).toContain("story")
   })
 
   it("includes locale marker", () => {
-    const prompt = buildPromptPreview({ brand: makeBrand(), product: makeProduct(), market: "us-en", ratio: "1x1" })
+    const prompt = buildPromptPreview({
+      brand: makeBrand(),
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "1x1",
+    })
     expect(prompt).toContain("us-en")
   })
 })
@@ -48,7 +76,12 @@ describe("buildPromptPreview — skuFragments", () => {
     const product = makeProduct({
       skuFragments: { promptFragments: ["sharp citrus zest", "morning light"] },
     })
-    const prompt = buildPromptPreview({ brand: makeBrand(), product, market: "us-en", ratio: "1x1" })
+    const prompt = buildPromptPreview({
+      brand: makeBrand(),
+      product,
+      market: "us-en",
+      ratio: "1x1",
+    })
     const voiceIdx = prompt.indexOf("mineral palette")
     const skuIdx = prompt.indexOf("sharp citrus zest")
     expect(skuIdx).toBeGreaterThan(-1)
@@ -56,17 +89,30 @@ describe("buildPromptPreview — skuFragments", () => {
   })
 
   it("includes sceneMood in the prompt", () => {
-    const product = makeProduct({ skuFragments: { sceneMood: "morning · meal · move" } })
-    const prompt = buildPromptPreview({ brand: makeBrand(), product, market: "us-en", ratio: "1x1" })
+    const product = makeProduct({
+      skuFragments: { sceneMood: "morning · meal · move" },
+    })
+    const prompt = buildPromptPreview({
+      brand: makeBrand(),
+      product,
+      market: "us-en",
+      ratio: "1x1",
+    })
     expect(prompt).toContain("morning · meal · move")
   })
 
   it("produces same output when skuFragments is undefined", () => {
     const promptWith = buildPromptPreview({
-      brand: makeBrand(), product: makeProduct({ skuFragments: undefined }), market: "us-en", ratio: "1x1",
+      brand: makeBrand(),
+      product: makeProduct({ skuFragments: undefined }),
+      market: "us-en",
+      ratio: "1x1",
     })
     const promptWithout = buildPromptPreview({
-      brand: makeBrand(), product: makeProduct(), market: "us-en", ratio: "1x1",
+      brand: makeBrand(),
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "1x1",
     })
     expect(promptWith).toBe(promptWithout)
   })
@@ -74,14 +120,24 @@ describe("buildPromptPreview — skuFragments", () => {
   it("prepends accentHex to the palette, deduplicating brand colors", () => {
     const brand = makeBrand({ paletteHexes: ["#FFFFFF", "#000000", "#FF0000"] })
     const product = makeProduct({ skuFragments: { accentHex: "#00FF00" } })
-    const prompt = buildPromptPreview({ brand, product, market: "us-en", ratio: "1x1" })
+    const prompt = buildPromptPreview({
+      brand,
+      product,
+      market: "us-en",
+      ratio: "1x1",
+    })
     expect(prompt).toContain("#00FF00, #FFFFFF, #000000")
   })
 
   it("deduplicates accentHex when it matches a brand color", () => {
     const brand = makeBrand({ paletteHexes: ["#FFFFFF", "#000000", "#FF0000"] })
     const product = makeProduct({ skuFragments: { accentHex: "#ffffff" } })
-    const prompt = buildPromptPreview({ brand, product, market: "us-en", ratio: "1x1" })
+    const prompt = buildPromptPreview({
+      brand,
+      product,
+      market: "us-en",
+      ratio: "1x1",
+    })
     // accentHex replaces the duplicate; still only 3 colors max
     expect(prompt).toContain("#ffffff, #000000, #FF0000")
   })
@@ -89,8 +145,18 @@ describe("buildPromptPreview — skuFragments", () => {
 
 describe("buildPromptPreview — negativePromptFragments", () => {
   it("includes negative prompt fragments in the avoid line", () => {
-    const brand = makeBrand({ negativePromptFragments: ["no candy-pastel backgrounds", "no dessert composition"] })
-    const prompt = buildPromptPreview({ brand, product: makeProduct(), market: "us-en", ratio: "1x1" })
+    const brand = makeBrand({
+      negativePromptFragments: [
+        "no candy-pastel backgrounds",
+        "no dessert composition",
+      ],
+    })
+    const prompt = buildPromptPreview({
+      brand,
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "1x1",
+    })
     expect(prompt).toContain("no candy-pastel backgrounds")
     expect(prompt).toContain("no dessert composition")
   })
@@ -100,14 +166,24 @@ describe("buildPromptPreview — negativePromptFragments", () => {
       bannedWords: ["guarantee"],
       negativePromptFragments: ["no gym equipment"],
     })
-    const prompt = buildPromptPreview({ brand, product: makeProduct(), market: "us-en", ratio: "1x1" })
+    const prompt = buildPromptPreview({
+      brand,
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "1x1",
+    })
     expect(prompt).toContain("guarantee")
     expect(prompt).toContain("no gym equipment")
   })
 
   it("omits avoid line when no banned words and no negative fragments", () => {
     const brand = makeBrand({ bannedWords: [], negativePromptFragments: [] })
-    const prompt = buildPromptPreview({ brand, product: makeProduct(), market: "us-en", ratio: "1x1" })
+    const prompt = buildPromptPreview({
+      brand,
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "1x1",
+    })
     expect(prompt).not.toContain("Avoid:")
   })
 })
@@ -115,28 +191,53 @@ describe("buildPromptPreview — negativePromptFragments", () => {
 describe("buildPromptPreview — moodKeywords", () => {
   it("includes mood keywords in the prompt", () => {
     const brand = makeBrand({ moodKeywords: ["mineral", "airy"] })
-    const prompt = buildPromptPreview({ brand, product: makeProduct(), market: "us-en", ratio: "1x1" })
+    const prompt = buildPromptPreview({
+      brand,
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "1x1",
+    })
     expect(prompt).toContain("mineral")
     expect(prompt).toContain("airy")
   })
 
   it("omits mood line when moodKeywords is absent", () => {
     const brand = makeBrand({ moodKeywords: undefined })
-    const prompt = buildPromptPreview({ brand, product: makeProduct(), market: "us-en", ratio: "1x1" })
+    const prompt = buildPromptPreview({
+      brand,
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "1x1",
+    })
     expect(prompt).not.toContain("Mood:")
   })
 })
 
 describe("buildPromptPreview — identity lock (S5)", () => {
   it("appends the identity lock when the brand carries one", () => {
-    const brand = makeBrand({ identityLock: "Same subject, same palette, same lighting across all frames." })
-    const prompt = buildPromptPreview({ brand, product: makeProduct(), market: "us-en", ratio: "1x1" })
-    expect(prompt).toContain("Identity lock: Same subject, same palette, same lighting across all frames.")
+    const brand = makeBrand({
+      identityLock:
+        "Same subject, same palette, same lighting across all frames.",
+    })
+    const prompt = buildPromptPreview({
+      brand,
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "1x1",
+    })
+    expect(prompt).toContain(
+      "Identity lock: Same subject, same palette, same lighting across all frames."
+    )
   })
 
   it("omits the identity lock when absent (backward compatible)", () => {
     const brand = makeBrand({ identityLock: undefined })
-    const prompt = buildPromptPreview({ brand, product: makeProduct(), market: "us-en", ratio: "1x1" })
+    const prompt = buildPromptPreview({
+      brand,
+      product: makeProduct(),
+      market: "us-en",
+      ratio: "1x1",
+    })
     expect(prompt).not.toContain("Identity lock:")
   })
 })

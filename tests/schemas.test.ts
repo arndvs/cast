@@ -16,8 +16,8 @@ describe("briefSchema", () => {
         `briefSchema rejected golden inputs/brief.json: ${JSON.stringify(
           result.error.issues,
           null,
-          2,
-        )}`,
+          2
+        )}`
       )
     }
     expect(result.data.campaign).toBe("summer-refresh-2026")
@@ -40,9 +40,7 @@ describe("briefSchema", () => {
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(
-        result.error.issues.some((i) =>
-          i.message.includes('message["en"]'),
-        ),
+        result.error.issues.some((i) => i.message.includes('message["en"]'))
       ).toBe(true)
     }
   })
@@ -78,9 +76,7 @@ describe("briefSchema", () => {
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(
-        result.error.issues.some((i) =>
-          i.message.includes("empty string"),
-        ),
+        result.error.issues.some((i) => i.message.includes("empty string"))
       ).toBe(true)
     }
   })

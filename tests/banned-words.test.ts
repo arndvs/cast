@@ -15,31 +15,22 @@ describe("getDefaultBannedWords", () => {
 describe("containsBannedWord", () => {
   const list = ["guarantee", "miracle", "free"]
 
-  it("returns [] for empty text", () => {
-    expect(containsBannedWord("", list)).toEqual([])
-  })
-
-  it("returns [] when nothing matches", () => {
-    expect(containsBannedWord("ordinary marketing copy", list)).toEqual([])
-  })
-
-  it("matches whole words case-insensitively", () => {
+  it("matches whole words case-insensitively, not substrings", () => {
     expect(containsBannedWord("100% GUARANTEE included", list)).toEqual([
       "guarantee",
     ])
-  })
-
-  it("does not match substrings (word boundaries)", () => {
     // "freelance" must NOT trigger "free"
     expect(containsBannedWord("freelance designer", list)).toEqual([])
+    expect(containsBannedWord("", list)).toEqual([])
   })
 
   it("returns multiple distinct hits", () => {
-    const hits = containsBannedWord("our miracle product is free", list)
-    expect(hits.sort()).toEqual(["free", "miracle"])
+    expect(
+      containsBannedWord("our miracle product is free", list).sort()
+    ).toEqual(["free", "miracle"])
   })
 
-  it("ignores empty / whitespace list entries", () => {
+  it("skips empty and whitespace list entries", () => {
     expect(containsBannedWord("free trial", ["", "  ", "free"])).toEqual([
       "free",
     ])

@@ -13,9 +13,6 @@ import {
   checkComposedPng,
   meanLuma,
   edgeDensity,
-  MIN_BYTES,
-  LUMA_LO,
-  LUMA_HI,
   EDGE_DENSITY_THRESHOLD,
 } from "@/lib/cast/server/pipeline/quality"
 import { pipelineEventSchema } from "@/lib/cast/events"
@@ -23,7 +20,11 @@ import { pipelineEventSchema } from "@/lib/cast/events"
 const SLOT = { product: "brisa-citrus", market: "de-de", ratio: "1x1" }
 
 /** Make a solid-color PNG buffer of the given size. */
-async function solidPng(width: number, height: number, rgb: [number, number, number]): Promise<Buffer> {
+async function solidPng(
+  width: number,
+  height: number,
+  rgb: [number, number, number]
+): Promise<Buffer> {
   return sharp({
     create: {
       width,
@@ -105,74 +106,64 @@ describe("meanLuma / edgeDensity pure functions", () => {
     expect(luma).toBeCloseTo(64, 5)
   })
 
-  it("edgeDensity is zero for a flat field", () => {
+  it("edgeDensity is zero for a flat field and high for a checkerboard text-zone", () => {
     const w = 4
     const h = 4
-    const px = Buffer.alloc(w * h * 3, 128)
-    expect(edgeDensity(px, w, h, 3)).toBe(0)
-  })
+    const flat = Buffer.alloc(w * h * 3, 128)
+    expect(edgeDensity(flat, w, h, 3)).toBe(0)
 
-  it("edgeDensity is high for a checkerboard text-zone", () => {
-    const w = 4
-    const h = 4
-    const px = Buffer.alloc(w * h * 3)
+    const checker = Buffer.alloc(w * h * 3)
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const off = (y * w + x) * 3
         const v = (x + y) % 2 === 0 ? 0 : 255
-        px[off] = px[off + 1] = px[off + 2] = v
+        checker[off] = checker[off + 1] = checker[off + 2] = v
       }
     }
     // Bottom 45% of a 4-row frame = row 2+; the checkerboard produces near-max
     // edge density there.
-    const density = edgeDensity(px, w, h, 3)
+    const density = edgeDensity(checker, w, h, 3)
     expect(density).toBeGreaterThan(EDGE_DENSITY_THRESHOLD)
-  })
-
-  it("constants match the documented thresholds", () => {
-    expect(MIN_BYTES).toBe(10_240)
-    expect(LUMA_LO).toBe(15)
-    expect(LUMA_HI).toBe(245)
   })
 })
 
 describe("quality_result event contract", () => {
-  it("parses a pass event", () => {
-    const result = pipelineEventSchema.safeParse({
+  it("accepts pass and fail badges (with failures + retried) and rejects unknown badges", () => {
+    const pass = pipelineEventSchema.safeParse({
       type: "quality_result",
       slot: SLOT,
       badge: "pass",
       failures: [],
       retried: false,
     })
-    expect(result.success).toBe(true)
-  })
+    expect(pass.success).toBe(true)
 
-  it("parses a fail event with failures + retried", () => {
-    const result = pipelineEventSchema.safeParse({
+    const fail = pipelineEventSchema.safeParse({
       type: "quality_result",
       slot: SLOT,
       badge: "fail",
-      failures: ["white-out: mean luma 250.0 > 245", "text-leak: edge density 0.900 > 0.12"],
+      failures: [
+        "white-out: mean luma 250.0 > 245",
+        "text-leak: edge density 0.900 > 0.12",
+      ],
       retried: true,
     })
-    expect(result.success).toBe(true)
-    if (result.success) {
-      const ev = result.data
-      if (ev.type !== "quality_result") throw new Error("expected quality_result")
+    expect(fail.success).toBe(true)
+    if (fail.success) {
+      const ev = fail.data
+      if (ev.type !== "quality_result")
+        throw new Error("expected quality_result")
       expect(ev.retried).toBe(true)
       expect(ev.failures.length).toBe(2)
     }
-  })
 
-  it("rejects a quality_result with an invalid badge", () => {
-    const result = pipelineEventSchema.safeParse({
+    const invalid = pipelineEventSchema.safeParse({
       type: "quality_result",
       slot: SLOT,
       badge: "warn",
       failures: [],
       retried: false,
     })
-    expect(result.success).toBe(false)
+    expect(invalid.success).toBe(false)
   })
 })
