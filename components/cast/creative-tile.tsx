@@ -7,6 +7,7 @@ import { ComplianceBadgePill } from "@/components/cast/compliance-badge-pill"
 import { CreativeSourcePill } from "@/components/cast/creative-source-pill"
 import { aspectClassForRatio } from "@/lib/cast/creative-aspect-class"
 import { buildCreativeProxyUrl } from "@/lib/cast/creative-proxy-url"
+import { displayStatusOf, type DisplayStatus } from "@/lib/cast/creative-display-status"
 import type { Creative } from "@/lib/cast/schemas"
 import { cn } from "@/lib/utils"
 
@@ -46,8 +47,7 @@ export function CreativeTile({ creative, campaign, onClick, selected, onSelect }
   const failed = creative.path === null && !creative.stubbed
   const stubbed = creative.path === null && creative.stubbed === true
   const qualityFail = creative.quality === "fail"
-  const badge: "OK" | "WARN" | "FAIL" =
-    failed ? "FAIL" : (creative.compliance?.badge ?? "OK")
+  const badge: DisplayStatus = displayStatusOf(creative)
 
   // A stub has a real (1×1) file at the slot path — the proxy can serve it.
   const src = failed

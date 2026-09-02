@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CreativeFilterSelect } from "@/components/cast/creative-filter-select"
 import type { StatusFilter, RatioFilter, MarketCodeFilter } from "@/lib/cast/filter-creatives"
+import { STATUS_FILTER_OPTIONS } from "@/lib/cast/creative-display-status"
 import type { AspectRatio } from "@/lib/cast/schemas"
 import { cn } from "@/lib/utils"
 
@@ -88,7 +89,7 @@ export function ResultsToolbar({
           label="status"
           value={status}
           onChange={(v) => onStatusChange(v as StatusFilter)}
-          options={["ALL", "OK", "WARN", "FAIL"]}
+          options={[...STATUS_FILTER_OPTIONS]}
         />
         <CreativeFilterSelect
           label="ratio"

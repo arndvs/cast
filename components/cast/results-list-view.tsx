@@ -5,6 +5,7 @@ import { Check, ImageIcon, MoreHorizontal } from "lucide-react"
 
 import { ComplianceBadgePill } from "@/components/cast/compliance-badge-pill"
 import { buildCreativeProxyUrl } from "@/lib/cast/creative-proxy-url"
+import { displayStatusOf, type DisplayStatus } from "@/lib/cast/creative-display-status"
 import { regionOf } from "@/lib/cast/markets"
 import type { Creative } from "@/lib/cast/schemas"
 import { cn } from "@/lib/utils"
@@ -74,8 +75,7 @@ export function ResultsListView({
             const failed = creative.path === null && !creative.stubbed
             const stubbed = creative.path === null && creative.stubbed === true
             const qualityFail = creative.quality === "fail"
-            const badge: "OK" | "WARN" | "FAIL" =
-              failed ? "FAIL" : (creative.compliance?.badge ?? "OK")
+            const badge: DisplayStatus = displayStatusOf(creative)
 
             return (
               <tr
