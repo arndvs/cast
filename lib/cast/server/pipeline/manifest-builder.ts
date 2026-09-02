@@ -1,5 +1,4 @@
 import type {
-  AspectRatio,
   Brief,
   ComplianceBadge,
   Creative,
@@ -7,6 +6,7 @@ import type {
   ManifestError,
 } from "@/lib/cast/schemas"
 import type { runCompliance } from "@/lib/cast/server/pipeline/compliance"
+import { gridSize, slotOrder } from "@/lib/cast/slot-grid"
 
 // ---------------------------------------------------------------------------
 // Compliance reshaper
@@ -33,8 +33,7 @@ export function buildManifest(
   const succeededList = creatives.filter((c) => c.path !== null)
   const succeeded = succeededList.length
   const failed = errors.length
-  const requested =
-    brief.products.length * brief.markets.length * brief.ratios.length
+  const requested = gridSize(brief)
   const generated = succeededList.filter((c) => c.source === "genai").length
   const reused = succeededList.filter((c) => c.source === "local").length
   const quality_flag = succeededList.filter((c) => c.quality === "fail").length
@@ -55,24 +54,16 @@ export function buildManifest(
 // Deterministic sort comparators
 // ---------------------------------------------------------------------------
 
-const RATIO_ORDER: Record<AspectRatio, number> = {
-  "1x1": 0,
-  "9x16": 1,
-  "16x9": 2,
-}
-
 export function byCreative(a: Creative, b: Creative): number {
-  return (
-    a.market.localeCompare(b.market) ||
-    a.product.localeCompare(b.product) ||
-    RATIO_ORDER[a.ratio] - RATIO_ORDER[b.ratio]
+  return slotOrder(
+    { product: a.product, market: a.market, ratio: a.ratio },
+    { product: b.product, market: b.market, ratio: b.ratio },
   )
 }
 
 export function byError(a: ManifestError, b: ManifestError): number {
-  return (
-    a.market.localeCompare(b.market) ||
-    a.product.localeCompare(b.product) ||
-    RATIO_ORDER[a.ratio] - RATIO_ORDER[b.ratio]
+  return slotOrder(
+    { product: a.product, market: a.market, ratio: a.ratio },
+    { product: b.product, market: b.market, ratio: b.ratio },
   )
 }

@@ -12,6 +12,7 @@
 import type { PipelineEvent } from "@/lib/cast/events"
 import type { Brief, AspectRatio, ComplianceBadge } from "@/lib/cast/schemas"
 import { slugify } from "@/lib/cast/identifiers"
+import { gridSlots, slotKey } from "@/lib/cast/slot-grid"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -42,14 +43,6 @@ export interface ProductGroup {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function slotKey(product: string, market: string, ratio: string): string {
-  return `${product}/${market}/${ratio}`
-}
-
-// ---------------------------------------------------------------------------
 // Main derivation
 // ---------------------------------------------------------------------------
 
@@ -71,26 +64,20 @@ type StampedEvent = PipelineEvent & { receivedAt?: number }
 export function deriveCreativeStatuses(events: readonly StampedEvent[], brief: Brief): Map<string, CreativeSlotInfo> {
   const map = new Map<string, CreativeSlotInfo>()
 
-  // Seed every slot from the brief's cartesian product.
-  for (const product of brief.products) {
-    const slug = slugify(product.name)
-
-    for (const market of brief.markets) {
-      for (const ratio of brief.ratios) {
-        const key = slotKey(slug, market, ratio)
-        map.set(key, {
-          product: slug,
-          market,
-          ratio,
-          status: "queued",
-          duration: null,
-          source: null,
-          badge: null,
-          startedAt: null,
-          completedAt: null,
-        })
-      }
-    }
+  // Seed every slot from the canonical slot grid.
+  for (const slot of gridSlots(brief)) {
+    const key = slotKey(slot.product, slot.market, slot.ratio)
+    map.set(key, {
+      product: slot.product,
+      market: slot.market,
+      ratio: slot.ratio,
+      status: "queued",
+      duration: null,
+      source: null,
+      badge: null,
+      startedAt: null,
+      completedAt: null,
+    })
   }
 
   // Walk events in order, updating the slot map.
