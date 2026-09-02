@@ -11,6 +11,7 @@
 
 import type { PipelineEvent } from "@/lib/cast/events"
 import type { Brief, AspectRatio, ComplianceBadge } from "@/lib/cast/schemas"
+import { slugify } from "@/lib/cast/identifiers"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,14 +49,6 @@ function slotKey(product: string, market: string, ratio: string): string {
   return `${product}/${market}/${ratio}`
 }
 
-/** Inline slugify to avoid importing zod-heavy schemas into client bundle. */
-function slugifyProduct(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-}
-
 // ---------------------------------------------------------------------------
 // Main derivation
 // ---------------------------------------------------------------------------
@@ -80,7 +73,7 @@ export function deriveCreativeStatuses(events: readonly StampedEvent[], brief: B
 
   // Seed every slot from the brief's cartesian product.
   for (const product of brief.products) {
-    const slug = slugifyProduct(product.name)
+    const slug = slugify(product.name)
 
     for (const market of brief.markets) {
       for (const ratio of brief.ratios) {
@@ -181,7 +174,7 @@ export function groupByProduct(statusMap: Map<string, CreativeSlotInfo>, brief: 
   const groups: ProductGroup[] = []
 
   for (const product of brief.products) {
-    const slug = slugifyProduct(product.name)
+    const slug = slugify(product.name)
 
     const slots: CreativeSlotInfo[] = []
     for (const market of brief.markets) {

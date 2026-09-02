@@ -11,31 +11,34 @@
 import { z } from "zod"
 
 // ---------------------------------------------------------------------------
-// Shared regexes
+// Pure identifiers — hoisted to `identifiers.ts` (zero deps) and re-exported
+// here so existing server-side imports are unaffected. Client-only modules
+// should import from `identifiers.ts` directly to avoid pulling zod.
 // ---------------------------------------------------------------------------
 
-export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-export const MARKET_RE = /^[a-z]{2}-[a-z]{2}$/ // <region>-<lang>, e.g. us-en
-export const HEX_RE = /^#[0-9a-fA-F]{6}$/
+import {
+  ALL_RATIOS,
+  HEX_RE,
+  MARKET_RE,
+  SLUG_RE,
+  slugify,
+  type AspectRatio,
+} from "@/lib/cast/identifiers"
 
-export const ratioSchema = z.enum(["1x1", "9x16", "16x9"])
-export type AspectRatio = z.infer<typeof ratioSchema>
+export {
+  ALL_RATIOS,
+  HEX_RE,
+  MARKET_RE,
+  SLUG_RE,
+  slugify,
+  type AspectRatio,
+}
+
+export const ratioSchema = z.enum(ALL_RATIOS)
 
 // ---------------------------------------------------------------------------
 // Brief (editor input → /api/generate body)
 // ---------------------------------------------------------------------------
-
-/**
- * Same `slugify` shape used by `/api/upload` and the Asset Resolver:
- * lowercase, non-alphanumeric runs collapsed to `-`, leading/trailing `-`
- * stripped. One implementation, one import path.
- */
-export function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-}
 
 export const briefSchema = z
   .object({
