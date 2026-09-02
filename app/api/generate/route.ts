@@ -34,6 +34,8 @@ import {
   type ManifestError,
 } from "@/lib/cast/schemas"
 import { loadBrandProfile, type BrandLoadError } from "@/lib/cast/server/brand-loader"
+import { buildExecutionPlan } from "@/lib/cast/server/pipeline/orchestrator"
+import { slotKey } from "@/lib/cast/slot-grid"
 import { resolveAsset } from "@/lib/cast/server/pipeline/resolve"
 import {
   generateImage,
@@ -233,6 +235,14 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
   const { brief, brand, logoBuffer, mode, emit } = args
   const pipelineStartedAt = new Date().toISOString()
 
+  // Declared execution contract — one plan entry per slot in canonical order,
+  // with the cache-group keying made explicit (cheap shares per product,
+  // default keys per ratio). The loop below executes this plan.
+  const plan = buildExecutionPlan(brief, mode)
+  const planBySlot = new Map(
+    plan.map((p) => [slotKey(p.slot.product, p.slot.market, p.slot.ratio), p]),
+  )
+
   const creatives: Creative[] = []
   const errors: ManifestError[] = []
 
@@ -412,7 +422,9 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
               master = baseImageCache.get(productSlug)!
             } else {
               currentStage = "genai"
-              const cacheKey = `${productSlug}|${ratio}`
+              // Cache group from the declared plan — explicit, testable keying
+              // (default mode: one master per product × ratio per market).
+              const cacheKey = planBySlot.get(slotKey(slot.product, slot.market, slot.ratio))?.cacheGroup ?? `${productSlug}|${ratio}`
               const cached = baseImageCache.get(cacheKey)
               if (cached) {
                 master = cached
