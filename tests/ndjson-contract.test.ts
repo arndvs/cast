@@ -76,7 +76,6 @@ describe("emitComplete round-trip", () => {
         failed: 0,
         generated: 1,
         reused: 0,
-        flagged: 0,
         quality_flag: 0,
       },
       creatives: [

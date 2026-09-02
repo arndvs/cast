@@ -1,18 +1,18 @@
 /**
- * `deriveCounts` — UI-facing breakdown derived from the run manifest.
+ * `deriveCounts` — the single source of run accounting derived from the
+ * run manifest.
  *
  * The helper has two contracts to keep:
  *   1. Mirror the canonical mass counts (requested / succeeded / reused /
  *      generated) from `manifest.counts`.
  *   2. Compute the visual badge totals (`ok / warn / fail`) where `fail`
  *      includes both hard pipeline failures (`path === null`) and
- *      compliance-FAILed successes (`badge === "FAIL"`), and `flagged`
- *      is the helper-local `warn + fail` sum used by the WARN tooltip.
+ *      compliance-FAILed successes (`badge === "FAIL"`), and `flagged` is
+ *      the single operator-visible `warn + fail` sum used by the summary
+ *      cards, WARN tooltip, and the streamed `complete` log line.
  *
- * For the WARN+FAIL-on-succeeded case the helper's `flagged` matches
- * `manifest.counts.flagged` (the canonical invariant). For all-failed runs the
- * helper's `fail` reports the visible failure count even though
- * `manifest.counts.flagged` is `0` (because the invariant only counts succeeded).
+ * The manifest schema no longer carries a `counts.flagged` — there is exactly
+ * one definition of `flagged`, and it lives here.
  */
 
 import { describe, it, expect } from "vitest"
@@ -26,11 +26,6 @@ function mkManifest(
 ): Manifest {
   const succeeded = creatives.filter((c) => c.path !== null).length
   const failed = creatives.length - succeeded
-  const flagged = creatives.filter(
-    (c) =>
-      c.path !== null &&
-      (c.compliance?.badge === "WARN" || c.compliance?.badge === "FAIL")
-  ).length
   return {
     campaign: "test-campaign",
     brand: "brisa",
@@ -41,7 +36,6 @@ function mkManifest(
       failed,
       generated: succeeded,
       reused: 0,
-      flagged,
       ...partialCounts,
     },
     creatives,
@@ -110,27 +104,19 @@ describe("deriveCounts", () => {
     const m = mkManifest([ok("a"), ok("b"), ok("c")])
     const d = deriveCounts(m)
     expect(d).toMatchObject({ ok: 3, warn: 0, fail: 0, flagged: 0 })
-    expect(d.flagged).toBe(m.counts.flagged)
   })
 
-  it("WARN+FAIL mixed (compliance-fail on succeeded): flagged matches manifest.counts.flagged", () => {
+  it("WARN+FAIL mixed (compliance-fail on succeeded): flagged = warn + fail", () => {
     const m = mkManifest([ok("a"), warn("b"), failCompliance("c"), warn("d")])
     const d = deriveCounts(m)
     expect(d).toMatchObject({ ok: 1, warn: 2, fail: 1 })
     expect(d.flagged).toBe(d.warn + d.fail)
-    // counts.flagged counts WARN+FAIL on succeeded only — matches the
-    // helper's flagged here because every entry has `path !== null`.
-    expect(d.flagged).toBe(m.counts.flagged)
   })
 
-  it("all-failed manifest: fail counts every creative; helper.flagged > manifest.counts.flagged", () => {
+  it("all-failed manifest: fail counts every creative; flagged = warn + fail", () => {
     const m = mkManifest([hardFail("a"), hardFail("b"), hardFail("c")])
     const d = deriveCounts(m)
     expect(d).toMatchObject({ ok: 0, warn: 0, fail: 3, flagged: 3 })
-    // The canonical invariant only counts WARN+FAIL on succeeded creatives, so the manifest's
-    // own `flagged` is 0 here. The helper's `flagged` is the visible
-    // total (warn+fail) — the WARN tooltip surfaces this number.
-    expect(m.counts.flagged).toBe(0)
     expect(d.flagged).toBe(d.warn + d.fail)
   })
 

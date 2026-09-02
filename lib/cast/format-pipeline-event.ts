@@ -1,4 +1,5 @@
 import type { PipelineEvent } from "@/lib/cast/events"
+import { deriveCounts } from "@/lib/cast/manifest-counts"
 
 export function eventLabel(event: PipelineEvent): string {
   switch (event.type) {
@@ -52,8 +53,14 @@ export function eventDetail(event: PipelineEvent): string {
       return `${slotLabel(event.slot)} · stub: ${event.message}`
     case "error":
       return `${event.slot ? slotLabel(event.slot) + " · " : ""}${event.message}`
-    case "complete":
-      return `${event.manifest.counts.succeeded}/${event.manifest.counts.requested} succeeded · ${event.manifest.counts.failed} failed · ${event.manifest.counts.flagged} flagged`
+    case "complete": {
+      // Derive the operator-visible flagged count (warn + fail over ALL
+      // creatives, including hard failures) through the shared derivation —
+      // the manifest no longer carries a divergent `counts.flagged`.
+      const { succeeded, requested, flagged } = deriveCounts(event.manifest)
+      const failed = event.manifest.counts.failed
+      return `${succeeded}/${requested} succeeded · ${failed} failed · ${flagged} flagged`
+    }
   }
 }
 
