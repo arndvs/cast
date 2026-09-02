@@ -15,11 +15,23 @@ import type { BrandProfile } from "@/lib/cast/schemas"
 
 const mockedFind = findLocalAsset as ReturnType<typeof vi.fn>
 
-function makeBrand(canVariants: BrandProfile["canVariants"] = []): BrandProfile {
+function makeBrand(
+  canVariants: BrandProfile["canVariants"] = []
+): BrandProfile {
   return {
     slug: "acme",
-    brand: { displayName: "Acme", colors: { primary: "#000000", accent: "#ffffff" } },
-    voice: { tone: "test", do: [], dont: [], promptFragments: [], negativePromptFragments: [], moodKeywords: [] },
+    brand: {
+      displayName: "Acme",
+      colors: { primary: "#000000", accent: "#ffffff" },
+    },
+    voice: {
+      tone: "test",
+      do: [],
+      dont: [],
+      promptFragments: [],
+      negativePromptFragments: [],
+      moodKeywords: [],
+    },
     bannedWords: [],
     logoVariants: [],
     defaultLogoId: "primary",
@@ -37,13 +49,22 @@ describe("resolveAsset — local flat bucket wins", () => {
   it("returns source:local when findLocalAsset finds a match", async () => {
     mockedFind.mockResolvedValue("inputs/assets/my-product.png")
     const result = await resolveAsset("my-product", "SKU-001", makeBrand())
-    expect(result).toEqual({ source: "local", file: "inputs/assets/my-product.png" })
+    expect(result).toEqual({
+      source: "local",
+      file: "inputs/assets/my-product.png",
+    })
   })
 
   it("flat-bucket hit takes precedence over brand can variant", async () => {
     mockedFind.mockResolvedValue("inputs/assets/my-product.png")
     const brand = makeBrand([
-      { id: "can-x", sku: "SKU-001", file: "/abs/products/can.png", pose: "upright-center", detail: "clean" },
+      {
+        id: "can-x",
+        sku: "SKU-001",
+        file: "/abs/products/can.png",
+        pose: "upright-center",
+        detail: "clean",
+      },
     ])
     const result = await resolveAsset("my-product", "SKU-001", brand)
     expect(result.source).toBe("local")
@@ -54,7 +75,13 @@ describe("resolveAsset — brand can variants", () => {
   it("returns source:products when a matching SKU variant is found", async () => {
     mockedFind.mockResolvedValue(null)
     const brand = makeBrand([
-      { id: "citrus-front", sku: "BRS-CIT-12", file: "/abs/products/can-citrus.png", pose: "upright-center", detail: "clean" },
+      {
+        id: "citrus-front",
+        sku: "BRS-CIT-12",
+        file: "/abs/products/can-citrus.png",
+        pose: "upright-center",
+        detail: "clean",
+      },
     ])
     const result = await resolveAsset("brisa-citrus", "BRS-CIT-12", brand)
     expect(result).toEqual({
@@ -68,7 +95,13 @@ describe("resolveAsset — brand can variants", () => {
   it("returns source:genai when SKU does not match any variant", async () => {
     mockedFind.mockResolvedValue(null)
     const brand = makeBrand([
-      { id: "citrus-front", sku: "BRS-CIT-12", file: "/abs/products/can.png", pose: "upright-center", detail: "clean" },
+      {
+        id: "citrus-front",
+        sku: "BRS-CIT-12",
+        file: "/abs/products/can.png",
+        pose: "upright-center",
+        detail: "clean",
+      },
     ])
     const result = await resolveAsset("brisa-berry", "BRS-BRY-12", brand)
     expect(result.source).toBe("genai")

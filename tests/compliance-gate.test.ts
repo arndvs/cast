@@ -28,7 +28,8 @@ describe("pre-spend compliance gate event contract", () => {
     expect(result.success).toBe(true)
     if (result.success) {
       const ev = result.data
-      if (ev.type !== "compliance_failed") throw new Error("expected compliance_failed")
+      if (ev.type !== "compliance_failed")
+        throw new Error("expected compliance_failed")
       expect(ev.type).toBe("compliance_failed")
       expect(ev.bannedWords).toEqual(["cocaine", "heroin"])
     }
@@ -62,7 +63,9 @@ describe("pre-spend compliance gate event contract", () => {
       bannedWords: ["cocaine"],
     })
     expect(badgeResult.success).toBe(true)
-    expect(badgeResult.success ? badgeResult.data.type : "").toBe("compliance_result")
+    expect(badgeResult.success ? badgeResult.data.type : "").toBe(
+      "compliance_result"
+    )
   })
 })
 
@@ -73,12 +76,31 @@ describe("pre-spend compliance gate manifest accounting", () => {
       campaign: "summer-refresh-2026",
       brand: "brisa",
       outputDir: "outputs/summer-refresh-2026",
-      counts: { requested: 1, succeeded: 0, failed: 1, generated: 0, reused: 0, flagged: 0 },
+      counts: {
+        requested: 1,
+        succeeded: 0,
+        failed: 1,
+        generated: 0,
+        reused: 0,
+        flagged: 0,
+      },
       creatives: [
-        { product: "brisa-citrus", market: "de-de", ratio: "1x1", source: "genai", path: null },
+        {
+          product: "brisa-citrus",
+          market: "de-de",
+          ratio: "1x1",
+          source: "genai",
+          path: null,
+        },
       ],
       errors: [
-        { product: "brisa-citrus", market: "de-de", ratio: "1x1", stage: "compliance", message: "headline for de contains banned term(s): cocaine" },
+        {
+          product: "brisa-citrus",
+          market: "de-de",
+          ratio: "1x1",
+          stage: "compliance",
+          message: "headline for de contains banned term(s): cocaine",
+        },
       ],
     }
     const result = manifestSchema.safeParse(m)

@@ -20,13 +20,16 @@ import { describe, it, expect } from "vitest"
 import { deriveCounts } from "@/lib/cast/manifest-counts"
 import type { Creative, Manifest } from "@/lib/cast/schemas"
 
-function mkManifest(creatives: Creative[], partialCounts: Partial<Manifest["counts"]> = {}): Manifest {
+function mkManifest(
+  creatives: Creative[],
+  partialCounts: Partial<Manifest["counts"]> = {}
+): Manifest {
   const succeeded = creatives.filter((c) => c.path !== null).length
   const failed = creatives.length - succeeded
   const flagged = creatives.filter(
     (c) =>
       c.path !== null &&
-      (c.compliance?.badge === "WARN" || c.compliance?.badge === "FAIL"),
+      (c.compliance?.badge === "WARN" || c.compliance?.badge === "FAIL")
   ).length
   return {
     campaign: "test-campaign",
@@ -54,7 +57,11 @@ function mkManifest(creatives: Creative[], partialCounts: Partial<Manifest["coun
   }
 }
 
-function ok(product: string, market = "us-en", ratio: "1x1" | "9x16" | "16x9" = "1x1"): Creative {
+function ok(
+  product: string,
+  market = "us-en",
+  ratio: "1x1" | "9x16" | "16x9" = "1x1"
+): Creative {
   return {
     product,
     market,
@@ -137,7 +144,12 @@ describe("deriveCounts", () => {
   })
 
   it("mixed hard-fail and compliance-fail: fail = path-null + badge-FAIL", () => {
-    const m = mkManifest([ok("a"), failCompliance("b"), hardFail("c"), hardFail("d")])
+    const m = mkManifest([
+      ok("a"),
+      failCompliance("b"),
+      hardFail("c"),
+      hardFail("d"),
+    ])
     const d = deriveCounts(m)
     expect(d).toMatchObject({ ok: 1, warn: 0, fail: 3, flagged: 3 })
   })

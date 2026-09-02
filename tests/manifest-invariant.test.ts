@@ -97,7 +97,7 @@ describe("manifest invariants", () => {
     const flagged = m.creatives.filter(
       (c) =>
         c.path !== null &&
-        (c.compliance?.badge === "WARN" || c.compliance?.badge === "FAIL"),
+        (c.compliance?.badge === "WARN" || c.compliance?.badge === "FAIL")
     ).length
     expect(m.counts.flagged).toBe(flagged)
   })

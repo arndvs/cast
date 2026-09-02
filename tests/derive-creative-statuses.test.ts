@@ -36,20 +36,54 @@ function mkBrief(overrides: Partial<Brief> = {}): Brief {
   }
 }
 
-function stepEvent(product: string, market: string, ratio: "1x1" | "9x16" | "16x9", stage = "resolve" as const): PipelineEvent {
+function stepEvent(
+  product: string,
+  market: string,
+  ratio: "1x1" | "9x16" | "16x9",
+  stage = "resolve" as const
+): PipelineEvent {
   return { type: "step", stage, slot: { product, market, ratio } }
 }
 
-function readyEvent(product: string, market: string, ratio: "1x1" | "9x16" | "16x9", source: "local" | "genai" = "genai"): PipelineEvent {
-  return { type: "creative_ready", slot: { product, market, ratio }, path: `outputs/test/${market}/${product}/${ratio}.png`, source }
+function readyEvent(
+  product: string,
+  market: string,
+  ratio: "1x1" | "9x16" | "16x9",
+  source: "local" | "genai" = "genai"
+): PipelineEvent {
+  return {
+    type: "creative_ready",
+    slot: { product, market, ratio },
+    path: `outputs/test/${market}/${product}/${ratio}.png`,
+    source,
+  }
 }
 
-function complianceEvent(product: string, market: string, ratio: "1x1" | "9x16" | "16x9", badge: "OK" | "WARN" | "FAIL" = "OK"): PipelineEvent {
-  return { type: "compliance_result", slot: { product, market, ratio }, badge, bannedWords: badge === "OK" ? [] : ["bad"] }
+function complianceEvent(
+  product: string,
+  market: string,
+  ratio: "1x1" | "9x16" | "16x9",
+  badge: "OK" | "WARN" | "FAIL" = "OK"
+): PipelineEvent {
+  return {
+    type: "compliance_result",
+    slot: { product, market, ratio },
+    badge,
+    bannedWords: badge === "OK" ? [] : ["bad"],
+  }
 }
 
-function errorEvent(product: string, market: string, ratio: "1x1" | "9x16" | "16x9"): PipelineEvent {
-  return { type: "error", stage: "genai", slot: { product, market, ratio }, message: "API failure" }
+function errorEvent(
+  product: string,
+  market: string,
+  ratio: "1x1" | "9x16" | "16x9"
+): PipelineEvent {
+  return {
+    type: "error",
+    stage: "genai",
+    slot: { product, market, ratio },
+    message: "API failure",
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -73,9 +107,7 @@ describe("deriveCreativeStatuses", () => {
 
   it("promotes to generating on first step event", () => {
     const brief = mkBrief()
-    const events: PipelineEvent[] = [
-      stepEvent("berry", "us-en", "1x1"),
-    ]
+    const events: PipelineEvent[] = [stepEvent("berry", "us-en", "1x1")]
     const map = deriveCreativeStatuses(events, brief)
 
     expect(map.get("berry/us-en/1x1")?.status).toBe("generating")
@@ -195,7 +227,11 @@ describe("deriveCreativeStatuses — S1/S2/S7 event types", () => {
     const brief = mkBrief()
     const events: PipelineEvent[] = [
       stepEvent("berry", "us-en", "1x1"),
-      { type: "creative_stub", slot: { product: "berry", market: "us-en", ratio: "1x1" }, message: "API failed after retries" },
+      {
+        type: "creative_stub",
+        slot: { product: "berry", market: "us-en", ratio: "1x1" },
+        message: "API failed after retries",
+      },
     ]
     const map = deriveCreativeStatuses(events, brief)
     const slot = map.get("berry/us-en/1x1")!
@@ -207,7 +243,11 @@ describe("deriveCreativeStatuses — S1/S2/S7 event types", () => {
   it("compliance_failed flips a slot to failed with FAIL badge (S1)", () => {
     const brief = mkBrief()
     const events: PipelineEvent[] = [
-      { type: "compliance_failed", slot: { product: "lime", market: "de-de", ratio: "9x16" }, bannedWords: ["cocaine"] },
+      {
+        type: "compliance_failed",
+        slot: { product: "lime", market: "de-de", ratio: "9x16" },
+        bannedWords: ["cocaine"],
+      },
     ]
     const map = deriveCreativeStatuses(events, brief)
     const slot = map.get("lime/de-de/9x16")!
@@ -220,7 +260,13 @@ describe("deriveCreativeStatuses — S1/S2/S7 event types", () => {
     const events: PipelineEvent[] = [
       stepEvent("berry", "us-en", "1x1"),
       readyEvent("berry", "us-en", "1x1"),
-      { type: "quality_result", slot: { product: "berry", market: "us-en", ratio: "1x1" }, badge: "fail", failures: ["white-out"], retried: true },
+      {
+        type: "quality_result",
+        slot: { product: "berry", market: "us-en", ratio: "1x1" },
+        badge: "fail",
+        failures: ["white-out"],
+        retried: true,
+      },
     ]
     const map = deriveCreativeStatuses(events, brief)
     const slot = map.get("berry/us-en/1x1")!

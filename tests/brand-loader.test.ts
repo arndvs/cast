@@ -24,10 +24,13 @@ const mockAdapter: {
 }
 
 vi.mock("@/lib/cast/server/storage-adapter", async (importOriginal) => {
-  const original = await importOriginal<typeof import("@/lib/cast/server/storage-adapter")>()
+  const original =
+    await importOriginal<typeof import("@/lib/cast/server/storage-adapter")>()
   return {
     ...original,
-    getStorageAdapter: vi.fn(async () => mockAdapter as unknown as StorageAdapter),
+    getStorageAdapter: vi.fn(
+      async () => mockAdapter as unknown as StorageAdapter
+    ),
   }
 })
 
@@ -57,9 +60,7 @@ const VALID_VOICE = {
 }
 const VALID_LOGOS = {
   default: "primary",
-  variants: [
-    { id: "primary", displayName: "Primary", file: "primary.png" },
-  ],
+  variants: [{ id: "primary", displayName: "Primary", file: "primary.png" }],
 }
 
 function notFound(key = "unknown"): StorageNotFoundError {
@@ -75,9 +76,12 @@ function mountValidBrandFixture(slug = "acme"): void {
     return false
   })
   mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-    if (key === `brands/${slug}/brand.json`) return Buffer.from(JSON.stringify(VALID_BRAND))
-    if (key === `brands/${slug}/voice.json`) return Buffer.from(JSON.stringify(VALID_VOICE))
-    if (key === `brands/${slug}/logos/logos.json`) return Buffer.from(JSON.stringify(VALID_LOGOS))
+    if (key === `brands/${slug}/brand.json`)
+      return Buffer.from(JSON.stringify(VALID_BRAND))
+    if (key === `brands/${slug}/voice.json`)
+      return Buffer.from(JSON.stringify(VALID_VOICE))
+    if (key === `brands/${slug}/logos/logos.json`)
+      return Buffer.from(JSON.stringify(VALID_LOGOS))
     if (key === `brands/${slug}/banned-words.json`) throw notFound()
     if (key === `brands/${slug}/products.json`) throw notFound()
     if (key === `brands/${slug}/backgrounds.json`) throw notFound()
@@ -101,39 +105,47 @@ afterEach(() => {
 describe("loadBrandProfile", () => {
   it("rejects slugs that fail SLUG_RE", async () => {
     await expect(loadBrandProfile("INVALID_SLUG!")).rejects.toBeInstanceOf(
-      BrandNotFoundError,
+      BrandNotFoundError
     )
   })
 
   it("throws BrandNotFoundError when brand dir is missing", async () => {
     mockAdapter.fileExists.mockResolvedValue(false)
     mockAdapter.listPrefixes.mockResolvedValue([])
-    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandNotFoundError)
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
+      BrandNotFoundError
+    )
   })
 
   it("throws BrandIncompleteError when brand dir exists but brand.json is missing", async () => {
     mockAdapter.fileExists.mockResolvedValue(false)
     mockAdapter.listPrefixes.mockResolvedValue(["acme"])
-    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandIncompleteError)
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
+      BrandIncompleteError
+    )
   })
 
   it("throws BrandIncompleteError when a required file is missing", async () => {
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
       if (key === "brands/acme/voice.json") throw notFound()
-      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/brand.json")
+        return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/logos/logos.json")
+        return Buffer.from(JSON.stringify(VALID_LOGOS))
       throw notFound()
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
-      BrandIncompleteError,
+      BrandIncompleteError
     )
   })
 
   it("throws BrandInvalidError on JSON parse failure", async () => {
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockResolvedValue(Buffer.from("{ this is not json"))
-    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
+      BrandInvalidError
+    )
   })
 
   it("loads a valid profile and unions defaults into bannedWords", async () => {
@@ -162,7 +174,9 @@ describe("loadBrandProfile", () => {
     const readsAfterFirst = mockAdapter.readFile.mock.calls.length
     vi.advanceTimersByTime(90_001)
     await loadBrandProfile("acme")
-    expect(mockAdapter.readFile.mock.calls.length).toBeGreaterThan(readsAfterFirst)
+    expect(mockAdapter.readFile.mock.calls.length).toBeGreaterThan(
+      readsAfterFirst
+    )
   })
 
   it("re-reads after _clearBrandCache()", async () => {
@@ -171,18 +185,25 @@ describe("loadBrandProfile", () => {
     const readsAfterFirst = mockAdapter.readFile.mock.calls.length
     _clearBrandCache()
     await loadBrandProfile("acme")
-    expect(mockAdapter.readFile.mock.calls.length).toBeGreaterThan(readsAfterFirst)
+    expect(mockAdapter.readFile.mock.calls.length).toBeGreaterThan(
+      readsAfterFirst
+    )
   })
 
   it("accepts font.otf when font.ttf is absent", async () => {
-    mockAdapter.fileExists.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/font.ttf") return false
-      return true
-    })
+    mockAdapter.fileExists.mockImplementation(
+      async (_c: string, key: string) => {
+        if (key === "brands/acme/font.ttf") return false
+        return true
+      }
+    )
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
-      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/brand.json")
+        return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json")
+        return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json")
+        return Buffer.from(JSON.stringify(VALID_LOGOS))
       if (key === "brands/acme/banned-words.json") throw notFound()
       if (key === "brands/acme/products.json") throw notFound()
       if (key === "brands/acme/backgrounds.json") throw notFound()
@@ -193,22 +214,27 @@ describe("loadBrandProfile", () => {
   })
 
   it("throws BrandIncompleteError when neither font.ttf nor font.otf exists", async () => {
-    mockAdapter.fileExists.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/font.ttf") return false
-      if (key === "brands/acme/font.otf") return false
-      return true
-    })
+    mockAdapter.fileExists.mockImplementation(
+      async (_c: string, key: string) => {
+        if (key === "brands/acme/font.ttf") return false
+        if (key === "brands/acme/font.otf") return false
+        return true
+      }
+    )
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
-      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/brand.json")
+        return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json")
+        return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json")
+        return Buffer.from(JSON.stringify(VALID_LOGOS))
       if (key === "brands/acme/banned-words.json") throw notFound()
       if (key === "brands/acme/products.json") throw notFound()
       if (key === "brands/acme/backgrounds.json") throw notFound()
       throw notFound()
     })
     await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
-      BrandIncompleteError,
+      BrandIncompleteError
     )
   })
 })
@@ -252,9 +278,7 @@ describe("listBrandSlugs warn-once", () => {
 
   it("warns exactly once when no slugs match SLUG_RE", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
-    mockAdapter.listPrefixes.mockResolvedValue([
-      "INVALID",
-    ])
+    mockAdapter.listPrefixes.mockResolvedValue(["INVALID"])
     await listBrandSlugs()
     await listBrandSlugs()
     expect(warn).toHaveBeenCalledTimes(1)
@@ -264,9 +288,7 @@ describe("listBrandSlugs warn-once", () => {
 
   it("does NOT warn when at least one valid slug is present", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
-    mockAdapter.listPrefixes.mockResolvedValue([
-      "acme",
-    ])
+    mockAdapter.listPrefixes.mockResolvedValue(["acme"])
     await listBrandSlugs()
     expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
@@ -293,8 +315,10 @@ describe("tryLoadBrand", () => {
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
       if (key === "brands/acme/voice.json") throw notFound()
-      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/brand.json")
+        return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/logos/logos.json")
+        return Buffer.from(JSON.stringify(VALID_LOGOS))
       throw notFound()
     })
     const result = await tryLoadBrand("acme")
@@ -321,18 +345,34 @@ describe("tryLoadBrand", () => {
 describe("canVariants — products.json", () => {
   const VALID_PRODUCTS = {
     items: [
-      { id: "citrus-front", sku: "TST-CIT-12", file: "products/can-citrus.png", pose: "upright-center", detail: "clean" },
-      { id: "citrus-tilt",  sku: "TST-CIT-12", file: "products/can-citrus-tilt.png", pose: "tilt-left", detail: "clean" },
+      {
+        id: "citrus-front",
+        sku: "TST-CIT-12",
+        file: "products/can-citrus.png",
+        pose: "upright-center",
+        detail: "clean",
+      },
+      {
+        id: "citrus-tilt",
+        sku: "TST-CIT-12",
+        file: "products/can-citrus-tilt.png",
+        pose: "tilt-left",
+        detail: "clean",
+      },
     ],
   }
 
   it("populates canVariants when products.json is present", async () => {
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
-      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
-      if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(VALID_PRODUCTS))
+      if (key === "brands/acme/brand.json")
+        return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json")
+        return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json")
+        return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/products.json")
+        return Buffer.from(JSON.stringify(VALID_PRODUCTS))
       if (key === "brands/acme/banned-words.json") throw notFound()
       if (key === "brands/acme/backgrounds.json") throw notFound()
       throw notFound()
@@ -341,7 +381,9 @@ describe("canVariants — products.json", () => {
     expect(profile.canVariants).toHaveLength(2)
     expect(profile.canVariants[0].sku).toBe("TST-CIT-12")
     expect(profile.canVariants[0].pose).toBe("upright-center")
-    expect(profile.canVariants[0].file).toBe("brands/acme/products/can-citrus.png")
+    expect(profile.canVariants[0].file).toBe(
+      "brands/acme/products/can-citrus.png"
+    )
   })
 
   it("returns empty canVariants when products.json is absent", async () => {
@@ -353,101 +395,179 @@ describe("canVariants — products.json", () => {
   it("throws BrandInvalidError when products.json has invalid schema", async () => {
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
-      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
-      if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify({ items: [] })) // min(1) violation
+      if (key === "brands/acme/brand.json")
+        return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json")
+        return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json")
+        return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/products.json")
+        return Buffer.from(JSON.stringify({ items: [] })) // min(1) violation
       if (key === "brands/acme/banned-words.json") throw notFound()
       if (key === "brands/acme/backgrounds.json") throw notFound()
       throw notFound()
     })
-    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
+      BrandInvalidError
+    )
   })
 
   it("throws BrandInvalidError when item.file contains traversal segment", async () => {
     const TRAVERSAL_PRODUCTS = {
-      items: [{ id: "bad", sku: "BAD-001", file: "../../../etc/passwd", pose: "upright-center", detail: "evil" }],
+      items: [
+        {
+          id: "bad",
+          sku: "BAD-001",
+          file: "../../../etc/passwd",
+          pose: "upright-center",
+          detail: "evil",
+        },
+      ],
     }
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
-      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
-      if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(TRAVERSAL_PRODUCTS))
+      if (key === "brands/acme/brand.json")
+        return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json")
+        return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json")
+        return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/products.json")
+        return Buffer.from(JSON.stringify(TRAVERSAL_PRODUCTS))
       if (key === "brands/acme/banned-words.json") throw notFound()
       if (key === "brands/acme/backgrounds.json") throw notFound()
       throw notFound()
     })
-    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
+      BrandInvalidError
+    )
   })
 
   it("throws BrandInvalidError when item.file contains traversal via backslashes", async () => {
     const BACKSLASH_PRODUCTS = {
-      items: [{ id: "bad", sku: "BAD-001", file: "products\\..\\secrets.png", pose: "upright-center", detail: "evil" }],
+      items: [
+        {
+          id: "bad",
+          sku: "BAD-001",
+          file: "products\\..\\secrets.png",
+          pose: "upright-center",
+          detail: "evil",
+        },
+      ],
     }
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
-      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
-      if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(BACKSLASH_PRODUCTS))
+      if (key === "brands/acme/brand.json")
+        return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json")
+        return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json")
+        return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/products.json")
+        return Buffer.from(JSON.stringify(BACKSLASH_PRODUCTS))
       if (key === "brands/acme/banned-words.json") throw notFound()
       if (key === "brands/acme/backgrounds.json") throw notFound()
       throw notFound()
     })
-    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
+      BrandInvalidError
+    )
   })
 
   it("throws BrandInvalidError when item.file contains backslashes without traversal", async () => {
     const BACKSLASH_ONLY = {
-      items: [{ id: "bad", sku: "BAD-001", file: "products\\can.png", pose: "upright-center", detail: "evil" }],
+      items: [
+        {
+          id: "bad",
+          sku: "BAD-001",
+          file: "products\\can.png",
+          pose: "upright-center",
+          detail: "evil",
+        },
+      ],
     }
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
-      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
-      if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(BACKSLASH_ONLY))
+      if (key === "brands/acme/brand.json")
+        return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json")
+        return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json")
+        return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/products.json")
+        return Buffer.from(JSON.stringify(BACKSLASH_ONLY))
       if (key === "brands/acme/banned-words.json") throw notFound()
       if (key === "brands/acme/backgrounds.json") throw notFound()
       throw notFound()
     })
-    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
+      BrandInvalidError
+    )
   })
 
   it("throws BrandInvalidError when item.file resolves to empty segments", async () => {
     const EMPTY_KEY = {
-      items: [{ id: "empty", sku: "BAD-001", file: "///", pose: "upright-center", detail: "evil" }],
+      items: [
+        {
+          id: "empty",
+          sku: "BAD-001",
+          file: "///",
+          pose: "upright-center",
+          detail: "evil",
+        },
+      ],
     }
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
-      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
-      if (key === "brands/acme/products.json") return Buffer.from(JSON.stringify(EMPTY_KEY))
+      if (key === "brands/acme/brand.json")
+        return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json")
+        return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json")
+        return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/products.json")
+        return Buffer.from(JSON.stringify(EMPTY_KEY))
       if (key === "brands/acme/banned-words.json") throw notFound()
       if (key === "brands/acme/backgrounds.json") throw notFound()
       throw notFound()
     })
-    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
+      BrandInvalidError
+    )
   })
 })
 
 describe("backgroundVariants — backgrounds.json", () => {
   const VALID_BACKGROUNDS = {
     items: [
-      { id: "studio-1x1", file: "backgrounds/bg-studio.png", ratio: "1x1", sku: "TST-CIT-12", luminance: "light" },
-      { id: "story-9x16", file: "backgrounds/bg-story.png",  ratio: "9x16", sku: "TST-BRY-12", luminance: "dark"  },
+      {
+        id: "studio-1x1",
+        file: "backgrounds/bg-studio.png",
+        ratio: "1x1",
+        sku: "TST-CIT-12",
+        luminance: "light",
+      },
+      {
+        id: "story-9x16",
+        file: "backgrounds/bg-story.png",
+        ratio: "9x16",
+        sku: "TST-BRY-12",
+        luminance: "dark",
+      },
     ],
   }
 
   it("populates backgroundVariants when backgrounds.json is present", async () => {
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
-      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
-      if (key === "brands/acme/backgrounds.json") return Buffer.from(JSON.stringify(VALID_BACKGROUNDS))
+      if (key === "brands/acme/brand.json")
+        return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json")
+        return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json")
+        return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/backgrounds.json")
+        return Buffer.from(JSON.stringify(VALID_BACKGROUNDS))
       if (key === "brands/acme/banned-words.json") throw notFound()
       if (key === "brands/acme/products.json") throw notFound()
       throw notFound()
@@ -467,18 +587,32 @@ describe("backgroundVariants — backgrounds.json", () => {
 
   it("throws BrandInvalidError when item.file contains traversal segment", async () => {
     const TRAVERSAL_BG = {
-      items: [{ id: "bad", file: "../../../etc/shadow", ratio: "1x1", sku: "BAD-001", luminance: "dark" }],
+      items: [
+        {
+          id: "bad",
+          file: "../../../etc/shadow",
+          ratio: "1x1",
+          sku: "BAD-001",
+          luminance: "dark",
+        },
+      ],
     }
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/brand.json") return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/voice.json") return Buffer.from(JSON.stringify(VALID_VOICE))
-      if (key === "brands/acme/logos/logos.json") return Buffer.from(JSON.stringify(VALID_LOGOS))
-      if (key === "brands/acme/backgrounds.json") return Buffer.from(JSON.stringify(TRAVERSAL_BG))
+      if (key === "brands/acme/brand.json")
+        return Buffer.from(JSON.stringify(VALID_BRAND))
+      if (key === "brands/acme/voice.json")
+        return Buffer.from(JSON.stringify(VALID_VOICE))
+      if (key === "brands/acme/logos/logos.json")
+        return Buffer.from(JSON.stringify(VALID_LOGOS))
+      if (key === "brands/acme/backgrounds.json")
+        return Buffer.from(JSON.stringify(TRAVERSAL_BG))
       if (key === "brands/acme/banned-words.json") throw notFound()
       if (key === "brands/acme/products.json") throw notFound()
       throw notFound()
     })
-    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(BrandInvalidError)
+    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
+      BrandInvalidError
+    )
   })
 })

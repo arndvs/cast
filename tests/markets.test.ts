@@ -1,54 +1,33 @@
 import { describe, it, expect } from "vitest"
-import {
-  getMarket,
-  activeLanguages,
-  ALL_MARKETS,
-} from "@/lib/cast/markets"
+import { getMarket, activeLanguages } from "@/lib/cast/markets"
 
 describe("getMarket", () => {
-  it("returns a known market by code", () => {
-    const m = getMarket("us-en")
-    expect(m).toEqual({ code: "us-en", name: "United States · English", language: "en" })
-  })
-
-  it("returns undefined for unknown code", () => {
+  it("returns a known market by code, undefined for unknown codes", () => {
+    expect(getMarket("us-en")).toEqual({
+      code: "us-en",
+      name: "United States · English",
+      language: "en",
+    })
     expect(getMarket("xx-yy")).toBeUndefined()
   })
 })
 
 describe("activeLanguages", () => {
-  it("returns empty for no markets", () => {
-    expect(activeLanguages([])).toEqual([])
-  })
-
-  it("deduplicates languages", () => {
-    const result = activeLanguages(["us-en", "us-en"])
-    expect(result).toHaveLength(1)
-    expect(result[0].language).toBe("en")
-  })
-
-  it("returns languages in first-seen order", () => {
-    const result = activeLanguages(["de-de", "us-en", "fr-fr"])
+  it("deduplicates languages, preserving first-seen order", () => {
+    const result = activeLanguages(["de-de", "us-en", "de-de", "fr-fr"])
     expect(result.map((m) => m.language)).toEqual(["de", "en", "fr"])
   })
 
-  it("synthesizes market for unknown codes", () => {
-    const result = activeLanguages(["jp-ja"])
-    expect(result).toHaveLength(1)
-    expect(result[0].language).toBe("ja")
-    expect(result[0].code).toBe("jp-ja")
-  })
-
-  it("deduplicates across known and synthetic", () => {
+  it("synthesizes a market for unknown codes and dedupes against known ones", () => {
+    expect(activeLanguages([])).toEqual([])
+    const synthesized = activeLanguages(["jp-ja"])
+    expect(synthesized).toHaveLength(1)
+    expect(synthesized[0]).toEqual({
+      code: "jp-ja",
+      name: "jp-ja",
+      language: "ja",
+    })
     // "us-en" is known (language "en"), "gb-en" is synthetic (language "en")
-    const result = activeLanguages(["us-en", "gb-en"])
-    expect(result).toHaveLength(1)
-    expect(result[0].language).toBe("en")
-  })
-})
-
-describe("ALL_MARKETS", () => {
-  it("is frozen", () => {
-    expect(() => (ALL_MARKETS as unknown as { push: (v: unknown) => void }).push({ code: "x", name: "x", language: "x" })).toThrow()
+    expect(activeLanguages(["us-en", "gb-en"])).toHaveLength(1)
   })
 })

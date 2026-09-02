@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { castAppReducer, type CastAppState } from "@/components/cast/cast-app-state"
+import {
+  castAppReducer,
+  type CastAppState,
+} from "@/components/cast/cast-app-state"
 import type { Brief } from "@/lib/cast/schemas"
 
 // ---------------------------------------------------------------------------
@@ -16,7 +19,10 @@ const baseBrief: Brief = {
   ],
   markets: ["us-en", "mx-es"],
   audience: "18-34, urban, health-conscious",
-  message: { en: "Crack open something brighter.", es: "Abre algo más brillante." },
+  message: {
+    en: "Crack open something brighter.",
+    es: "Abre algo más brillante.",
+  },
   ratios: ["1x1", "9x16", "16x9"],
 }
 
@@ -44,8 +50,8 @@ function makeState(overrides?: Partial<CastAppState>): CastAppState {
 describe("replaceBrief", () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it("replaces the entire brief in state", () => {
-    const state = makeState()
+  it("replaces the entire brief in state, syncing brandSlug and logoVariant", () => {
+    const state = makeState({ logoVariant: "dark" })
     const next: Brief = {
       ...baseBrief,
       campaign: "volt-launch-2026",
@@ -54,24 +60,17 @@ describe("replaceBrief", () => {
       markets: ["us-en"],
       message: { en: "Feel the charge." },
       ratios: ["9x16"],
+      logoVariant: "light",
     }
 
     const result = castAppReducer(state, { type: "replaceBrief", brief: next })
 
     expect(result.brief).toEqual(next)
     expect(result.brandSlug).toBe("volt")
-  })
-
-  it("syncs logoVariant from the new brief", () => {
-    const state = makeState()
-    const next: Brief = { ...baseBrief, logoVariant: "light" }
-
-    const result = castAppReducer(state, { type: "replaceBrief", brief: next })
-
     expect(result.logoVariant).toBe("light")
   })
 
-  it("clears logoVariant when new brief omits it", () => {
+  it("clears logoVariant when the new brief omits it", () => {
     const state = makeState({ logoVariant: "dark" })
     const { logoVariant: _drop, ...briefNoLogo } = baseBrief
     void _drop
@@ -88,11 +87,24 @@ describe("replaceBrief", () => {
 
     const state = makeState({
       uploads: {
-        "brisa-citrus": { fileName: "a.png", objectUrl: "blob:a", size: 1, type: "image/png" },
-        "brisa-berry": { fileName: "b.png", objectUrl: "blob:b", size: 1, type: "image/png" },
+        "brisa-citrus": {
+          fileName: "a.png",
+          objectUrl: "blob:a",
+          size: 1,
+          type: "image/png",
+        },
+        "brisa-berry": {
+          fileName: "b.png",
+          objectUrl: "blob:b",
+          size: 1,
+          type: "image/png",
+        },
       },
     })
-    const next: Brief = { ...baseBrief, products: [{ name: "New Product", sku: "NP-1" }] }
+    const next: Brief = {
+      ...baseBrief,
+      products: [{ name: "New Product", sku: "NP-1" }],
+    }
 
     const result = castAppReducer(state, { type: "replaceBrief", brief: next })
 
