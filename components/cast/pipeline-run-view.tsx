@@ -11,6 +11,7 @@ import { PipelineLogLine } from "@/components/cast/pipeline-log-line"
 import { PipelineRunStatusBadge } from "@/components/cast/pipeline-run-status-badge"
 import { Wordmark } from "@/components/cast/wordmark"
 import { formatRunTime } from "@/lib/cast/format-run-time"
+import { gridSize } from "@/lib/cast/slot-grid"
 
 interface PipelineRunViewProps {
   state: CastAppState
@@ -34,7 +35,7 @@ interface PipelineRunViewProps {
 export function PipelineRunView({ state, dispatch, cancelRef }: PipelineRunViewProps) {
   const { brief, brandSlug, runState, events, runError, runStartedAt } = state
 
-  const total = brief.products.length * brief.markets.length * brief.ratios.length
+  const total = gridSize(brief)
   const expected = Math.max(1, total * 6)
   const rawPct = (events.length / expected) * 100
   const pct = runState === "complete" ? 100 : Math.min(99, rawPct)

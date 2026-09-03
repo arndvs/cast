@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 import { SLUG_RE } from "@/lib/cast/schemas"
 import { languageOf } from "@/lib/cast/markets"
+import { gridSize } from "@/lib/cast/slot-grid"
 
 interface BriefSummaryStripProps {
   state: CastAppState
@@ -52,7 +53,7 @@ export function BriefSummaryStrip({
   bannedHits = [],
 }: BriefSummaryStripProps) {
   const { brief, runState } = state
-  const total = brief.products.length * brief.markets.length * brief.ratios.length
+  const total = gridSize(brief)
   const slugInvalid = !SLUG_RE.test(brief.campaign || "")
   const hasBanned = bannedHits.length > 0
   const missingMessages =
