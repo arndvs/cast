@@ -26,6 +26,7 @@ import {
   BrandNotFoundError,
 } from "@/lib/cast/errors"
 import { BRAND_HINTS } from "@/lib/cast/brand-hints"
+import { languageOf } from "@/lib/cast/markets"
 import {
   briefSchema,
   slugify,
@@ -240,7 +241,7 @@ export async function runPipeline(args: RunPipelineArgs): Promise<Manifest> {
   const errors: ManifestError[] = []
 
   for (const market of brief.markets) {
-    const locale = market.split("-").pop()!
+    const locale = languageOf(market)
     const headline = brief.message[locale] ?? ""
 
     // S1: Pre-spend compliance gate. The compliance stage (post-compose) still

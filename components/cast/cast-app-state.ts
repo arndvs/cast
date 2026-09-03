@@ -13,7 +13,7 @@
  */
 
 import { ALL_RATIOS, type AspectRatio } from "@/lib/cast/ratios"
-import { getMarket } from "@/lib/cast/markets"
+import { languageOf } from "@/lib/cast/markets"
 import { slugify } from "@/lib/cast/identifiers"
 import {
   type Brief,
@@ -162,16 +162,16 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
       // completeness is enforced by the schema; prefill keeps the UI honest.
       const message = { ...state.brief.message }
       if (!has) {
-        const lang = getMarket(code)?.language ?? code.split("-").pop()
+        const lang = languageOf(code)
         if (lang && !(lang in message)) message[lang] = ""
       } else {
         // Removing a market — drop its language key only if no remaining market
         // uses that language AND the value is still the auto-seeded empty string.
         // Preserves user-entered headline text when toggling markets off/on.
-        const removedLang = getMarket(code)?.language ?? code.split("-").pop()
+        const removedLang = languageOf(code)
         if (removedLang) {
           const stillNeeded = markets.some(
-            (m) => (getMarket(m)?.language ?? m.split("-").pop()) === removedLang,
+            (m) => languageOf(m) === removedLang,
           )
           if (!stillNeeded && message[removedLang] === "") delete message[removedLang]
         }

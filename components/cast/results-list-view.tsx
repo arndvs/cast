@@ -5,6 +5,7 @@ import { Check, ImageIcon, MoreHorizontal } from "lucide-react"
 
 import { ComplianceBadgePill } from "@/components/cast/compliance-badge-pill"
 import { buildCreativeProxyUrl } from "@/lib/cast/creative-proxy-url"
+import { regionOf } from "@/lib/cast/markets"
 import type { Creative } from "@/lib/cast/schemas"
 import { cn } from "@/lib/utils"
 
@@ -121,7 +122,7 @@ export function ResultsListView({
                 <td className="p-3">
                   <div className="flex items-center gap-1.5">
                     <span className="flex h-4 w-4 items-center justify-center rounded bg-muted font-mono text-[0.5rem] uppercase">
-                      {creative.market.split("-")[0]}
+                      {regionOf(creative.market)}
                     </span>
                     <span>{creative.market}</span>
                   </div>

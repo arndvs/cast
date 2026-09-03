@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { getMarket } from "@/lib/cast/markets"
+import { languageOf } from "@/lib/cast/markets"
 import { buildCreativeProxyUrl } from "@/lib/cast/creative-proxy-url"
 import type { Creative } from "@/lib/cast/schemas"
 import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
@@ -70,7 +70,7 @@ function CreativeDetailDialogBody({
   const failed = creative.path === null && !creative.stubbed
   const stubbed = creative.path === null && creative.stubbed === true
   const qualityFail = creative.quality === "fail"
-  const language = getMarket(creative.market)?.language ?? creative.market.split("-").pop() ?? "—"
+  const language = languageOf(creative.market) || "—"
 
   const proxyUrl = buildCreativeProxyUrl(brief.campaign, creative.market, creative.product, creative.ratio)
 

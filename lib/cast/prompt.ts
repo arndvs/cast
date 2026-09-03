@@ -7,6 +7,7 @@
  */
 
 import type { AspectRatio } from "./ratios"
+import { languageOf } from "./markets"
 
 export interface PromptPreviewBrand {
   displayName: string
@@ -64,7 +65,7 @@ const FRAME_ROLE_CLAUSE: Record<"hero" | "mid" | "payoff", string> = {
 }
 
 export function buildPromptPreview({ brand, product, market, ratio, frameRole }: PromptPreviewArgs): string {
-  const lang = market.split("-").pop() ?? "en"
+  const lang = languageOf(market) || "en"
   const paletteHexes = product.skuFragments?.accentHex
     ? [
         product.skuFragments.accentHex,
