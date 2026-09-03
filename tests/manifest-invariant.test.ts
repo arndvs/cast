@@ -2,9 +2,11 @@
  * Manifest invariants.
  *
  *   counts.generated + counts.reused === counts.succeeded
- *   counts.flagged counts WARN+FAIL on succeeded only
  *   errors.length === counts.failed
  *   succeeded + failed === requested
+ *
+ * The run-accounting `flagged` invariant is derived, not stored — see
+ * `manifest-counts.ts` (deriveCounts) and its test.
  *
  * Also exercises the schema's structural rules (closed enums, market/slug
  * regexes, nullable path on failure, omitted compliance on non-write fail).
@@ -24,7 +26,6 @@ function mkManifest(overrides: Partial<Manifest> = {}): Manifest {
       failed: 1,
       generated: 2,
       reused: 1,
-      flagged: 1,
     },
     creatives: [
       {
@@ -92,16 +93,6 @@ describe("manifest invariants", () => {
     expect(m.counts.generated + m.counts.reused).toBe(m.counts.succeeded)
   })
 
-  it("counts.flagged counts only WARN+FAIL on succeeded", () => {
-    const m = mkManifest()
-    const flagged = m.creatives.filter(
-      (c) =>
-        c.path !== null &&
-        (c.compliance?.badge === "WARN" || c.compliance?.badge === "FAIL")
-    ).length
-    expect(m.counts.flagged).toBe(flagged)
-  })
-
   it("errors.length === counts.failed", () => {
     const m = mkManifest()
     expect(m.errors.length).toBe(m.counts.failed)
@@ -140,7 +131,6 @@ describe("manifest invariants", () => {
         failed: 1,
         generated: 0,
         reused: 0,
-        flagged: 0,
       },
     })
     expect(manifestSchema.safeParse(m).success).toBe(true)

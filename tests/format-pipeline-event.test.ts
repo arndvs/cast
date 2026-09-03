@@ -20,7 +20,7 @@ function completeEvent(counts: {
       campaign: "summer",
       brand: "acme",
       outputDir: "outputs/summer",
-      counts: { ...counts, generated: 1, reused: 0, flagged: 1 },
+      counts: { ...counts, generated: 1, reused: 0 },
       creatives: [],
       errors: [],
     },
@@ -144,9 +144,20 @@ describe("eventDetail", () => {
     ).toBe("file not found")
   })
 
-  it("formats complete with the run counts", () => {
-    expect(
-      eventDetail(completeEvent({ requested: 6, succeeded: 5, failed: 1 }))
-    ).toBe("5/6 succeeded · 1 failed · 1 flagged")
+  it("formats complete with counts (flagged derived from creatives)", () => {
+    const event: PipelineEvent = {
+      type: "complete",
+      manifest: {
+        campaign: "summer",
+        brand: "acme",
+        outputDir: "outputs/summer",
+        counts: { requested: 6, succeeded: 5, failed: 1, generated: 3, reused: 2 },
+        creatives: [],
+        errors: [],
+      },
+    }
+    // flagged is derived (warn+fail over creatives) — empty creatives => 0,
+    // not the old stored counts.flagged.
+    expect(eventDetail(event)).toBe("5/6 succeeded · 1 failed · 0 flagged")
   })
 })

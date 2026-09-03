@@ -350,7 +350,6 @@ export const countsSchema = z.object({
   failed: z.number().int().nonnegative(),
   generated: z.number().int().nonnegative(),
   reused: z.number().int().nonnegative(),
-  flagged: z.number().int().nonnegative(),
   /** Succeeded creatives that tripped the output quality gate (quality === "fail"). */
   quality_flag: z.number().int().nonnegative().optional(),
 })

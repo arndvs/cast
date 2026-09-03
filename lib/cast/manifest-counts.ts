@@ -1,16 +1,17 @@
 /**
- * Pure derivation of UI-facing counts from a run manifest.
+ * Pure derivation of UI-facing counts from a run manifest — the single source
+ * of truth for `fail` / `flagged` run accounting.
  *
- * The manifest's `counts` block already carries the canonical accounting
- * invariants — `succeeded + failed === requested`,
- * `generated + reused === succeeded`, `flagged === WARN+FAIL on succeeded
- * only`. The output grid surfaces a slightly different breakdown that includes
- * the visual badge totals (`ok / warn / fail`) used by the summary cards
- * and the WARN tooltip.
+ * The manifest's `counts` block carries the canonical structural invariants —
+ * `succeeded + failed === requested`, `generated + reused === succeeded`.
+ * This helper derives the visual badge totals (`ok / warn / fail`) and the
+ * operator-visible `flagged` (`warn + fail` over ALL creatives, including
+ * hard `path === null` failures) that the summary cards, WARN tooltip, and
+ * streamed `complete` log line share. The manifest no longer carries a
+ * divergent `counts.flagged` — this is the one definition.
  *
- * `fail` here is the *visible* failure count — both hard pipeline failures
- * (`creative.path === null`) and successful creatives that failed compliance
- * (`badge === "FAIL"`). `flagged` is the helper-local sum (`warn + fail`).
+ * `fail` is both hard pipeline failures (`creative.path === null`) and
+ * successful creatives that failed compliance (`badge === "FAIL"`).
  *
  * Pure: no I/O, no React. Safe to import from server and client.
  */
@@ -33,11 +34,9 @@ export interface DerivedCounts {
   /** `path === null` (hard fail) OR `compliance.badge === "FAIL"`. */
   fail: number
   /**
-   * UI-local total of `warn + fail`. Surfaced in summary cards and
-   * WARN tooltip as the operator-visible flagged count. This may differ
-   * from `manifest.counts.flagged`, which counts WARN+FAIL on succeeded
-   * creatives only and excludes hard pipeline failures. Use
-   * `manifest.counts.flagged` directly when the canonical invariant matters.
+   * Operator-visible flagged total — `warn + fail` over ALL creatives
+   * (including hard failures). Surfaced in summary cards, the WARN tooltip,
+   * and the streamed `complete` log line.
    */
   flagged: number
   /** Mean duration (seconds) across succeeded creatives with `duration` set. `null` when none have timing. */
