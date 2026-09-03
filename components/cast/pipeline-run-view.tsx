@@ -12,6 +12,15 @@ import { PipelineRunStatusBadge } from "@/components/cast/pipeline-run-status-ba
 import { Wordmark } from "@/components/cast/wordmark"
 import { formatRunTime } from "@/lib/cast/format-run-time"
 import { gridSize } from "@/lib/cast/slot-grid"
+import { estimateProgress } from "@/lib/cast/pipeline-progress"
+import type { PipelineEvent } from "@/lib/cast/events"
+
+/** Count `step`-typed events only — the progress budget numerator. */
+function stepEventCount(events: readonly PipelineEvent[]): number {
+  let n = 0
+  for (const ev of events) if (ev.type === "step") n += 1
+  return n
+}
 
 interface PipelineRunViewProps {
   state: CastAppState
@@ -24,20 +33,21 @@ interface PipelineRunViewProps {
  * Pipeline run view.
  *
  * Mounts when `state.screen === "pipeline-run"`. Renders the live NDJSON tape from
- * `state.events`, a progress bar driven by event count, and run-state-driven
+ * `state.events`, a progress bar driven by step-event count, and run-state-driven
  * action rows ("Cancel run" while running, "Edit brief"/"Retry" on failure,
  * "Edit brief"/"View output grid →" on completion).
  *
- * The progress estimator assumes ~6 `step` events per creative slot
- * (one per pipeline stage). It's rough, but it gives the user something to
- * watch while dall-e-3 takes its time.
+ * Progress is derived from the canonical stage sequence (STEPS_PER_SLOT) —
+ * not a hardcoded `×6` — so adding a pipeline stage updates the estimator
+ * automatically instead of silently distorting the bar.
  */
 export function PipelineRunView({ state, dispatch, cancelRef }: PipelineRunViewProps) {
   const { brief, brandSlug, runState, events, runError, runStartedAt } = state
 
   const total = gridSize(brief)
-  const expected = Math.max(1, total * 6)
-  const rawPct = (events.length / expected) * 100
+  // Budget only `step`-typed events into slots × STEPS_PER_SLOT — asset_resolved,
+  // compliance_result, creative_ready, and error lines don't count toward it.
+  const rawPct = estimateProgress(stepEventCount(events), total) * 100
   const pct = runState === "complete" ? 100 : Math.min(99, rawPct)
 
   // Back-scan without copying the events array — cheap on every render even
