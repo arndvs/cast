@@ -7,12 +7,11 @@ import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { UPLOAD_MAX_BYTES } from "@/lib/cast/upload-constraints"
+import { assetAcceptMap } from "@/lib/cast/asset-files"
 
-const ACCEPT = {
-  "image/png": [".png"],
-  "image/jpeg": [".jpg", ".jpeg"],
-  "image/webp": [".webp"],
-}
+// Derived from the canonical asset-format contract so the client accept list
+// can never drift from the server's MIME validation set.
+const ACCEPT = assetAcceptMap()
 
 export interface DropzoneFile {
   fileName: string

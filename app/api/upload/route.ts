@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server"
 import { saveAssetFile } from "@/lib/cast/server/storage"
 import { jsonError } from "@/lib/cast/server/api-helpers"
-import { magicBytesMatch } from "@/lib/cast/server/magic-bytes"
+import {
+  ASSET_MIMES,
+  magicBytesMatch,
+  mimeToExt,
+} from "@/lib/cast/asset-files"
 import { UPLOAD_MAX_BYTES, UPLOAD_MAX_DISPLAY } from "@/lib/cast/upload-constraints"
 import { SLUG_RE } from "@/lib/cast/schemas"
 
@@ -13,19 +17,13 @@ export const runtime = "nodejs"
  * Constraints (per flow-diagrams §4.2):
  *   - productSlug must match SLUG_RE → 400
  *   - Content-Length header is required and must be ≤ 5 MB → 411 / 413
- *   - MIME ∈ {image/png, image/jpeg, image/webp} → 415
+ *   - MIME ∈ {image/png, image/jpeg, image/webp} → 415 (from asset-files)
  *   - Magic bytes must match the declared MIME → 415
  *   - Animated formats (gif/mp4/webm) → 415
  *   - Extension is canonical-mapped from MIME (png→.png, jpeg→.jpg, webp→.webp)
  *   - Delete-then-write any existing inputs/assets/[slug].{png,jpg,jpeg,webp}
  *     so one slug owns one file at a time.
  */
-
-const MIME_TO_EXT: Record<string, "png" | "jpg" | "webp"> = {
-  "image/png": "png",
-  "image/jpeg": "jpg",
-  "image/webp": "webp",
-}
 
 export async function POST(req: Request): Promise<NextResponse> {
   // Require Content-Length so we can short-circuit oversize bodies before
@@ -78,12 +76,12 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   const mime = (file.type || "").toLowerCase()
-  const ext = MIME_TO_EXT[mime]
+  const ext = mimeToExt(mime)
   if (!ext) {
     return jsonError(415, [
       {
         path: ["file"],
-        message: `unsupported MIME "${mime}" — allowed: image/png, image/jpeg, image/webp`,
+        message: `unsupported MIME "${mime}" — allowed: ${ASSET_MIMES.join(", ")}`,
       },
     ])
   }

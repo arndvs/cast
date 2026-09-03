@@ -14,9 +14,11 @@ import { getStorageAdapter } from "@/lib/cast/server/storage-adapter"
 import { PathTraversalError } from "@/lib/cast/server/safe-join"
 import { CACHE_DIR } from "@/lib/cast/server/pipeline/cache"
 import type { AspectRatio } from "@/lib/cast/schemas"
-
-const ASSET_EXTS = ["png", "jpg", "jpeg", "webp"] as const
-type AssetExt = (typeof ASSET_EXTS)[number]
+import {
+  ASSET_EXTS,
+  assetKeysFor,
+  type AssetExt,
+} from "@/lib/cast/asset-files"
 
 /**
  * Scan `inputs/assets/` for a product photo named after `productSlug`.
@@ -202,8 +204,9 @@ export async function saveAssetFile(
     throw new Error(`invalid asset extension "${ext}" — allowed: ${ASSET_EXTS.join(", ")}`)
   }
   const adapter = await getStorageAdapter()
-  for (const e of ASSET_EXTS) {
-    await adapter.deleteFile("inputs", `assets/${productSlug}.${e}`)
+  // Delete every variant so one slug owns one file at a time.
+  for (const key of assetKeysFor(productSlug)) {
+    await adapter.deleteFile("inputs", key)
   }
   const key = `assets/${productSlug}.${ext}`
   await adapter.writeFile("inputs", key, Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength))
