@@ -17,18 +17,7 @@ import OpenAI from "openai"
 import { z } from "zod"
 import type { AspectRatio } from "@/lib/cast/schemas"
 import { ratioSchema } from "@/lib/cast/schemas"
-import { getOpenAIApiKey } from "@/lib/cast/server/config"
-
-// ---------------------------------------------------------------------------
-// Shared OpenAI client (lazy singleton — same pattern as pipeline/genai.ts)
-// ---------------------------------------------------------------------------
-
-let openaiClient: OpenAI | null = null
-function getClient(): OpenAI {
-  if (openaiClient) return openaiClient
-  openaiClient = new OpenAI({ apiKey: getOpenAIApiKey() })
-  return openaiClient
-}
+import { getOpenAIClient } from "@/lib/cast/server/config"
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -139,7 +128,7 @@ const ANALYSIS_PROMPT = `Analyze this social media ad creative image. Return a J
 Return ONLY the JSON object, no other text.`
 
 async function callVisionModel(imageBuffer: Buffer, client?: OpenAI): Promise<z.infer<typeof analysisResponseSchema>> {
-  const openai = client ?? getClient()
+  const openai = client ?? (await getOpenAIClient())
 
   const base64 = imageBuffer.toString("base64")
   const response = await openai.chat.completions.create({

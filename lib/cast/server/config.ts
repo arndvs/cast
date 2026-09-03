@@ -7,6 +7,10 @@
 
 import type { GenAIMode } from "@/lib/cast/server/pipeline/genai"
 
+// Type-only reference to the OpenAI SDK — erased at compile time, so config.ts
+// consumers never pull `openai` into their bundle unless they call the factory.
+type OpenAI = import("openai").default
+
 // ---------------------------------------------------------------------------
 // Required
 // ---------------------------------------------------------------------------
@@ -15,6 +19,38 @@ export function getOpenAIApiKey(): string {
   const key = process.env.OPENAI_API_KEY
   if (!key) throw new Error("OPENAI_API_KEY is not set")
   return key
+}
+
+// ---------------------------------------------------------------------------
+// OpenAI client factory (shared lazy singleton)
+// ---------------------------------------------------------------------------
+
+declare global {
+  var __openaiClient: OpenAI | undefined
+}
+
+/**
+ * Shared OpenAI SDK client — lazy singleton, the single construction site
+ * for `new OpenAI(...)` in `lib/cast/server/`.
+ *
+ * Both the GenAI image pipeline (`pipeline/genai.ts`) and the vision metadata
+ * analyzer (`metadata.ts`) previously built byte-identical clients privately.
+ * Centering the factory means future hardening (timeouts, baseURL, auth
+ * strategy) lands in one place and both callers share it by construction.
+ *
+ * OpenAI is imported lazily on first call so config.ts consumers that never
+ * hit the client don't pull the SDK into their initial bundle — same pattern
+ * as `AzureBlobAdapter` in storage-adapter.ts. The singleton is attached to
+ * `globalThis` so it survives HMR without leaking a second client.
+ */
+export async function getOpenAIClient(): Promise<OpenAI> {
+  const existing = globalThis.__openaiClient
+  if (existing) return existing
+
+  const { default: OpenAI } = await import("openai")
+  const client = new OpenAI({ apiKey: getOpenAIApiKey() })
+  globalThis.__openaiClient = client
+  return client
 }
 
 // ---------------------------------------------------------------------------
