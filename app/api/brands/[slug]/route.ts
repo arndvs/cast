@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server"
 import { loadBrandProfile } from "@/lib/cast/server/brand-loader"
-import {
-  BrandNotFoundError,
-  BrandIncompleteError,
-  BrandInvalidError,
-} from "@/lib/cast/errors"
+import { brandLoadErrorToResponse } from "@/lib/cast/brand-hints"
 
 export const runtime = "nodejs"
 
@@ -53,37 +49,35 @@ export async function GET(
       { headers: { "Cache-Control": "no-store" } },
     )
   } catch (err) {
-    if (err instanceof BrandNotFoundError) {
+    // Single mapper centralizes the error-kind → status mapping; this route
+    // keeps its `kind`-tagged envelope (with `errors` list) byte-identical.
+    const { status, body } = brandLoadErrorToResponse(err)
+    if (body.kind === "notFound") {
       return NextResponse.json(
-        { kind: "notFound", errors: [{ path: ["brand"], message: err.message }] },
-        { status: 404 },
+        { kind: "notFound", errors: [{ path: ["brand"], message: body.message }] },
+        { status },
       )
     }
-    if (err instanceof BrandIncompleteError) {
+    if (body.kind === "incomplete") {
       return NextResponse.json(
         {
           kind: "incomplete",
-          missing: err.missing,
-          errors: [
-            { path: ["brand", err.missing], message: err.message },
-          ],
+          missing: body.missing,
+          errors: [{ path: ["brand", body.missing], message: body.message }],
         },
-        { status: 400 },
+        { status },
       )
     }
-    if (err instanceof BrandInvalidError) {
-      return NextResponse.json(
-        {
-          kind: "invalid",
-          file: err.file,
-          errors: err.issues.map((i) => ({
-            path: ["brand", err.file, ...i.path],
-            message: i.message,
-          })),
-        },
-        { status: 400 },
-      )
-    }
-    throw err
+    return NextResponse.json(
+      {
+        kind: "invalid",
+        file: body.file,
+        errors: body.issues.map((i) => ({
+          path: ["brand", body.file, ...i.path],
+          message: i.message,
+        })),
+      },
+      { status },
+    )
   }
 }

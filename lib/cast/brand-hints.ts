@@ -69,3 +69,35 @@ export function toBrandLoadErrorInfo(error: BrandLoadError): BrandLoadErrorInfo 
   void _exhaustive
   throw new Error("unreachable")
 }
+
+/**
+ * Map a thrown brand-load error to its HTTP status + canonical body.
+ *
+ * The single named helper every brand-facing route calls instead of hand-
+ * writing an `instanceof BrandXError` cascade. Body is the `kind`-tagged
+ * `BrandLoadErrorInfo` union so the wire contract is one discriminated shape
+ * (what the missing-brand banner already consumes):
+ *   - notFound    → 404
+ *   - incomplete  → 400
+ *   - invalid     → 400
+ *
+ * Accepts `unknown` so routes can pass the raw catch-bind directly; any
+ * non-brand error is rethrown so unrelated failures aren't swallowed.
+ */
+export function brandLoadErrorToResponse(error: unknown): {
+  status: number
+  body: BrandLoadErrorInfo
+} {
+  if (
+    !(
+      error instanceof BrandNotFoundError ||
+      error instanceof BrandIncompleteError ||
+      error instanceof BrandInvalidError
+    )
+  ) {
+    throw error
+  }
+  const info = toBrandLoadErrorInfo(error)
+  const status = info.kind === "notFound" ? 404 : 400
+  return { status, body: info }
+}

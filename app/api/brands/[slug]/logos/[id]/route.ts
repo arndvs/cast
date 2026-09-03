@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server"
 import { loadBrandProfile } from "@/lib/cast/server/brand-loader"
-import {
-  BrandNotFoundError,
-  BrandIncompleteError,
-  BrandInvalidError,
-} from "@/lib/cast/errors"
+import { brandLoadErrorToResponse } from "@/lib/cast/brand-hints"
 import { getStorageAdapter, StorageNotFoundError } from "@/lib/cast/server/storage-adapter"
 
 export const runtime = "nodejs"
@@ -26,19 +22,13 @@ export async function GET(
   try {
     profile = await loadBrandProfile(slug)
   } catch (err) {
-    if (err instanceof BrandNotFoundError) {
-      return NextResponse.json(
-        { errors: [{ path: ["brand"], message: err.message }] },
-        { status: 404 },
-      )
-    }
-    if (err instanceof BrandIncompleteError || err instanceof BrandInvalidError) {
-      return NextResponse.json(
-        { errors: [{ path: ["brand"], message: err.message }] },
-        { status: 400 },
-      )
-    }
-    throw err
+    // Single mapper — also restores the Incomplete/Invalid distinction that
+    // the previous merged 400 branch erased on the wire.
+    const { status, body } = brandLoadErrorToResponse(err)
+    return NextResponse.json(
+      { errors: [{ path: ["brand"], message: body.message }], kind: body.kind },
+      { status },
+    )
   }
 
   // Variant id must match a declared variant — defense-in-depth on top of safeJoin.

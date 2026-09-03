@@ -20,12 +20,7 @@
  *   6. Write `report.json`. Emit terminal `complete` event with the manifest.
  */
 
-import {
-  BrandIncompleteError,
-  BrandInvalidError,
-  BrandNotFoundError,
-} from "@/lib/cast/errors"
-import { BRAND_HINTS } from "@/lib/cast/brand-hints"
+import { BRAND_HINTS, toBrandLoadErrorInfo } from "@/lib/cast/brand-hints"
 import { languageOf } from "@/lib/cast/markets"
 import {
   briefSchema,
@@ -38,7 +33,7 @@ import {
   type Manifest,
   type ManifestError,
 } from "@/lib/cast/schemas"
-import { loadBrandProfile } from "@/lib/cast/server/brand-loader"
+import { loadBrandProfile, type BrandLoadError } from "@/lib/cast/server/brand-loader"
 import { resolveAsset } from "@/lib/cast/server/pipeline/resolve"
 import {
   generateImage,
@@ -121,26 +116,27 @@ export async function POST(req: Request): Promise<Response> {
   try {
     brand = await loadBrandProfile(brief.brand)
   } catch (err) {
-    if (err instanceof BrandNotFoundError) {
+    // Use the canonical error info mapper for the message + kind, then layer
+    // operator hints on top — keeps the generate route's flat `{errors}`
+    // envelope byte-identical.
+    const info = toBrandLoadErrorInfo(err as BrandLoadError)
+    if (info.kind === "notFound") {
       return jsonError(404, [
-        { path: ["brand"], message: err.message },
+        { path: ["brand"], message: info.message },
         { path: ["brand"], message: BRAND_HINTS.notFound },
       ])
     }
-    if (err instanceof BrandIncompleteError) {
+    if (info.kind === "incomplete") {
       return jsonError(400, [
-        { path: ["brand"], message: err.message },
-        { path: ["brand"], message: `missing: ${err.missing}` },
+        { path: ["brand"], message: info.message },
+        { path: ["brand"], message: `missing: ${info.missing}` },
         { path: ["brand"], message: BRAND_HINTS.incomplete },
       ])
     }
-    if (err instanceof BrandInvalidError) {
-      return jsonError(400, [
-        ...err.issues.map((i) => ({ path: ["brand", err.file, ...i.path], message: i.message })),
-        { path: ["brand"], message: BRAND_HINTS.invalid },
-      ])
-    }
-    throw err
+    return jsonError(400, [
+      ...info.issues.map((i) => ({ path: ["brand", info.file, ...i.path], message: i.message })),
+      { path: ["brand"], message: BRAND_HINTS.invalid },
+    ])
   }
 
   // 2b. Cross-validate logoVariant.
