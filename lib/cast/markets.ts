@@ -27,6 +27,24 @@ export function getMarket(code: string): Market | undefined {
 }
 
 /**
+ * Language tag for a market code — catalog lookup first, then the locale
+ * suffix fallback (`us-en` → `en`). Single home for the
+ * `getMarket(code)?.language ?? code.split("-").pop()` pattern that was
+ * previously inlined at 10+ call sites.
+ */
+export function languageOf(marketCode: string): string {
+  return getMarket(marketCode)?.language ?? marketCode.split("-").pop() ?? ""
+}
+
+/**
+ * Region tag for a market code — the prefix before the first `-`
+ * (`us-en` → `us`). Used by UI surfaces that show the region half.
+ */
+export function regionOf(marketCode: string): string {
+  return marketCode.split("-")[0] ?? ""
+}
+
+/**
  * Active languages for a set of markets, in order of first appearance, deduped.
  * Used by the brief editor to render one headline row per language.
  *
@@ -48,7 +66,7 @@ export function activeLanguages(marketCodes: readonly string[]): Market[] {
 }
 
 function syntheticMarket(code: string): Market | undefined {
-  const lang = code.split("-").pop()
+  const lang = languageOf(code)
   if (!lang) return undefined
   return { code, name: code, language: lang }
 }

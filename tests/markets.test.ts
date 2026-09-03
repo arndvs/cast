@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { getMarket, activeLanguages } from "@/lib/cast/markets"
+import { getMarket, activeLanguages, languageOf, regionOf } from "@/lib/cast/markets"
 
 describe("getMarket", () => {
   it("returns a known market by code, undefined for unknown codes", () => {
@@ -29,5 +29,34 @@ describe("activeLanguages", () => {
     })
     // "us-en" is known (language "en"), "gb-en" is synthetic (language "en")
     expect(activeLanguages(["us-en", "gb-en"])).toHaveLength(1)
+  })
+})
+
+describe("languageOf", () => {
+  it("returns the catalog language for known markets", () => {
+    expect(languageOf("us-en")).toBe("en")
+    expect(languageOf("de-de")).toBe("de")
+  })
+
+  it("falls back to the locale suffix for unknown markets", () => {
+    expect(languageOf("jp-ja")).toBe("ja")
+    expect(languageOf("gb-en")).toBe("en")
+  })
+
+  it("handles edge cases", () => {
+    expect(languageOf("us")).toBe("us")
+    expect(languageOf("")).toBe("")
+  })
+})
+
+describe("regionOf", () => {
+  it("returns the region prefix", () => {
+    expect(regionOf("us-en")).toBe("us")
+    expect(regionOf("mx-es")).toBe("mx")
+  })
+
+  it("handles edge cases", () => {
+    expect(regionOf("us")).toBe("us")
+    expect(regionOf("")).toBe("")
   })
 })

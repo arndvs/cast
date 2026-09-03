@@ -6,6 +6,7 @@ import { Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { CastAppAction, CastAppState } from "@/components/cast/cast-app-state"
 import { SLUG_RE } from "@/lib/cast/schemas"
+import { languageOf } from "@/lib/cast/markets"
 
 interface BriefSummaryStripProps {
   state: CastAppState
@@ -57,7 +58,7 @@ export function BriefSummaryStrip({
   const missingMessages =
     // A required locale is absent or empty.
     brief.markets.some((m) => {
-      const lang = m.split("-").pop()!
+      const lang = languageOf(m)
       return !brief.message[lang]
     }) ||
     // A stale key with an empty value would fail server-side z.string().min(1).

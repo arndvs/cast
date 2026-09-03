@@ -24,6 +24,7 @@ import {
   slugify,
   type AspectRatio,
 } from "@/lib/cast/identifiers"
+import { languageOf } from "@/lib/cast/markets"
 
 export {
   ALL_RATIOS,
@@ -73,7 +74,7 @@ export const briefSchema = z
   .superRefine((brief, ctx) => {
     // Every market's locale (suffix after `-`) must have a message string.
     for (const market of brief.markets) {
-      const locale = market.split("-").pop()!
+      const locale = languageOf(market)
       if (!(locale in brief.message)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,

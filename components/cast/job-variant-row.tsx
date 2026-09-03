@@ -6,6 +6,7 @@ import { Check, ChevronDown, ChevronRight, Loader2, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { JobCreativeBadge } from "@/components/cast/job-creative-badge"
 import type { ProductGroup, CreativeSlotInfo } from "@/lib/cast/derive-creative-statuses"
+import { regionOf } from "@/lib/cast/markets"
 
 interface JobVariantRowProps {
   group: ProductGroup
@@ -74,7 +75,7 @@ export function JobVariantRow({ group }: JobVariantRowProps) {
                     ) : (
                       <Loader2 className="h-2.5 w-2.5 animate-spin" />
                     )}
-                    <span className="font-mono uppercase">{market.split("-")[0]}</span>
+                    <span className="font-mono uppercase">{regionOf(market)}</span>
                   </div>
                 )
               })}
@@ -106,7 +107,7 @@ export function JobVariantRow({ group }: JobVariantRowProps) {
             {[...byMarket.entries()].map(([market, slots]) => (
               <div key={market} className="flex items-start gap-3">
                 <span className="w-12 shrink-0 font-mono text-xs uppercase text-fg-3">
-                  {market.split("-")[0]}
+                  {regionOf(market)}
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {slots.map((slot) => (
