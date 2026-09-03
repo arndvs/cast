@@ -17,6 +17,7 @@
  */
 
 import type { Manifest } from "@/lib/cast/schemas"
+import { displayStatusOf } from "@/lib/cast/creative-display-status"
 
 export interface DerivedCounts {
   /** Mirror of `manifest.counts.requested`. */
@@ -54,21 +55,18 @@ export function deriveCounts(manifest: Manifest): DerivedCounts {
   let qualityFlagged = 0
 
   for (const c of manifest.creatives) {
-    if (c.path === null) {
-      fail += 1
-      continue
-    }
-    // Succeeded creatives default to OK when compliance is omitted — mirrors
-    // the UI fallback in `CreativeTile` and the status filter (`?? "OK"`)
-    // so `ok + warn + fail` always equals `manifest.counts.requested`.
-    const badge = c.compliance?.badge ?? "OK"
+    // Single display-status classification — includes hard failures
+    // (path === null) as FAIL and defaults missing compliance to OK, so
+    // ok + warn + fail always equals manifest.counts.requested.
+    const badge = displayStatusOf(c)
     if (badge === "FAIL") fail += 1
     else if (badge === "WARN") warn += 1
     else ok += 1
 
     if (c.quality === "fail") qualityFlagged += 1
 
-    if (c.duration != null) {
+    // averageDuration only over succeeded creatives (hard failures excluded).
+    if (c.path !== null && c.duration != null) {
       durationSum += c.duration
       durationCount += 1
     }

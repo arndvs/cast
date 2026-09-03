@@ -1,4 +1,5 @@
 import type { AspectRatio, Creative } from "@/lib/cast/schemas"
+import { displayStatusOf } from "@/lib/cast/creative-display-status"
 
 export type StatusFilter = "ALL" | "OK" | "WARN" | "FAIL"
 export type RatioFilter = "ALL" | AspectRatio
@@ -11,9 +12,7 @@ export function creativeMatchesFilters(
   if (filters.ratio !== "ALL" && creative.ratio !== filters.ratio) return false
   if (filters.market !== "ALL" && creative.market !== filters.market) return false
   if (filters.status !== "ALL") {
-    const badge: "OK" | "WARN" | "FAIL" =
-      creative.path === null ? "FAIL" : (creative.compliance?.badge ?? "OK")
-    if (badge !== filters.status) return false
+    if (displayStatusOf(creative) !== filters.status) return false
   }
   if (filters.query) {
     const q = filters.query.toLowerCase()

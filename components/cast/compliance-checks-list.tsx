@@ -2,6 +2,7 @@
 
 import { Check, X } from "lucide-react"
 import { ComplianceBadgePill } from "@/components/cast/compliance-badge-pill"
+import { displayStatusOf } from "@/lib/cast/creative-display-status"
 import type { Creative } from "@/lib/cast/schemas"
 import { cn } from "@/lib/utils"
 
@@ -11,7 +12,7 @@ interface ComplianceChecksListProps {
 
 export function ComplianceChecksList({ creative }: ComplianceChecksListProps) {
   const checks = creative.compliance?.checks
-  const badge = creative.compliance?.badge ?? "OK"
+  const badge = displayStatusOf(creative)
 
   return (
     <div className="flex flex-col gap-2">
