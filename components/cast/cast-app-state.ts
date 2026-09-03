@@ -14,6 +14,7 @@
 
 import { ALL_RATIOS, type AspectRatio } from "@/lib/cast/ratios"
 import { getMarket } from "@/lib/cast/markets"
+import { slugify } from "@/lib/cast/identifiers"
 import {
   type Brief,
   type Creative,
@@ -200,7 +201,7 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
       const stillUsed = new Set(
         state.brief.products
           .filter((p) => p.sku !== action.sku)
-          .map((p) => slugifyName(p.name)),
+          .map((p) => slugify(p.name)),
       )
       const uploads: Record<string, UploadPreview> = {}
       for (const [slug, prev] of Object.entries(state.uploads)) {
@@ -321,15 +322,4 @@ export function castAppReducer(state: CastAppState, action: CastAppAction): Cast
 function revokeAll(uploads: Record<string, UploadPreview>): Record<string, UploadPreview> {
   for (const prev of Object.values(uploads)) URL.revokeObjectURL(prev.objectUrl)
   return {}
-}
-
-/**
- * Inline copy of `slugify` to avoid importing `lib/cast/schemas` (and zod)
- * into hot reducer paths — the canonical implementation lives there.
- */
-function slugifyName(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
 }
