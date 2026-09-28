@@ -173,29 +173,13 @@ describe("analyzeImage", () => {
     expect(result.generatedAt).toBeTruthy()
   })
 
-  it("handles markdown-fenced JSON responses", async () => {
-    const fenced = "```json\n" + JSON.stringify(VISION_RESPONSE) + "\n```"
-    const client = makeMockClient({ content: fenced })
-
-    const result = await analyzeImage(fakeBuffer(), CONTEXT, { client })
-
-    expect(result.description).toBe(VISION_RESPONSE.description)
-    expect(result.tags).toEqual(VISION_RESPONSE.tags)
-  })
-
-  it("handles leading-newline fenced responses", async () => {
-    const fenced = "\n```json\n" + JSON.stringify(VISION_RESPONSE) + "\n```\n"
-    const client = makeMockClient({ content: fenced })
-
-    const result = await analyzeImage(fakeBuffer(), CONTEXT, { client })
-
-    expect(result.description).toBe(VISION_RESPONSE.description)
-    expect(result.tags).toEqual(VISION_RESPONSE.tags)
-  })
-
-  it("handles plain ``` fences without json tag", async () => {
-    const fenced = "```\n" + JSON.stringify(VISION_RESPONSE) + "\n```"
-    const client = makeMockClient({ content: fenced })
+  it.each([
+    ["json-tagged fences", "```json\n{}\n```"],
+    ["leading-newline fenced", "\n```json\n{}\n```\n"],
+    ["plain fences without json tag", "```\n{}\n```"],
+  ])("handles %s, extracting the embedded JSON", async (_label, wrapped) => {
+    const content = wrapped.replace("{}", JSON.stringify(VISION_RESPONSE))
+    const client = makeMockClient({ content })
 
     const result = await analyzeImage(fakeBuffer(), CONTEXT, { client })
 
@@ -274,17 +258,7 @@ describe("analyzeImage", () => {
     expect(result.tags).toEqual([])
   })
 
-  it("populates generatedAt with an ISO timestamp", async () => {
-    const client = makeMockClient({ content: JSON.stringify(VISION_RESPONSE) })
-
-    const result = await analyzeImage(fakeBuffer(), CONTEXT, { client })
-
-    // Verify it's a parseable ISO date
-    const parsed = new Date(result.generatedAt)
-    expect(parsed.getTime()).not.toBeNaN()
-  })
-
-  it("works with local source and null generation fields", async () => {
+  it("works with local source and null generation fields, stamping generatedAt", async () => {
     const localContext: AnalyzeImageContext = {
       ...CONTEXT,
       source: "local",
@@ -301,5 +275,8 @@ describe("analyzeImage", () => {
     expect(result.model).toBeNull()
     expect(result.revisedPrompt).toBeNull()
     expect(result.description).toBe(VISION_RESPONSE.description)
+    // generatedAt is a parseable ISO date from the new Date() path
+    const parsed = new Date(result.generatedAt)
+    expect(parsed.getTime()).not.toBeNaN()
   })
 })

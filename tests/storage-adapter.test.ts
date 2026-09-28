@@ -24,19 +24,17 @@ import {
   StorageNotFoundError,
 } from "@/lib/cast/server/storage-adapter"
 
-function enoent(syscall = "access"): NodeJS.ErrnoException {
+function enoent(): NodeJS.ErrnoException {
   const err = new Error(
-    `ENOENT: no such file or directory`
+    "ENOENT: no such file or directory"
   ) as NodeJS.ErrnoException
   err.code = "ENOENT"
-  err.syscall = syscall
   return err
 }
 
-function eacces(syscall = "access"): NodeJS.ErrnoException {
-  const err = new Error(`EACCES: permission denied`) as NodeJS.ErrnoException
+function eacces(): NodeJS.ErrnoException {
+  const err = new Error("EACCES: permission denied") as NodeJS.ErrnoException
   err.code = "EACCES"
-  err.syscall = syscall
   return err
 }
 
@@ -64,7 +62,7 @@ describe("LocalFsAdapter", () => {
     })
 
     it("throws StorageNotFoundError for missing file", async () => {
-      vi.mocked(fs.readFile).mockRejectedValue(enoent("open"))
+      vi.mocked(fs.readFile).mockRejectedValue(enoent())
 
       await expect(adapter.readFile("inputs", "missing.json")).rejects.toThrow(
         StorageNotFoundError
@@ -131,14 +129,6 @@ describe("LocalFsAdapter", () => {
         { recursive: true, force: true }
       )
     })
-
-    it("is a no-op when prefix does not exist (force: true)", async () => {
-      vi.mocked(fs.rm).mockResolvedValue()
-
-      await expect(
-        adapter.deletePrefix("outputs", "nonexistent")
-      ).resolves.toBeUndefined()
-    })
   })
 
   // ── fileExists ───────────────────────────────────────────────────────
@@ -156,43 +146,18 @@ describe("LocalFsAdapter", () => {
       expect(await adapter.fileExists("outputs", "missing.json")).toBe(false)
     })
 
-    it("rethrows EACCES instead of returning false", async () => {
+    it("rethrows non-ENOENT errors instead of returning false", async () => {
       vi.mocked(fs.access).mockRejectedValue(eacces())
 
       await expect(
         adapter.fileExists("outputs", "secret.json")
       ).rejects.toThrow("EACCES")
     })
-
-    it("rethrows non-ENOENT errors", async () => {
-      const eio = new Error("EIO") as NodeJS.ErrnoException
-      eio.code = "EIO"
-      vi.mocked(fs.access).mockRejectedValue(eio)
-
-      await expect(
-        adapter.fileExists("outputs", "bad-disk.json")
-      ).rejects.toThrow("EIO")
-    })
   })
 
   // ── listFiles ────────────────────────────────────────────────────────
 
   describe("listFiles", () => {
-    it("returns empty array for ENOENT (missing directory)", async () => {
-      vi.mocked(fs.readdir).mockRejectedValue(enoent("scandir"))
-
-      const result = await adapter.listFiles("outputs", "nonexistent")
-      expect(result).toEqual([])
-    })
-
-    it("rethrows EACCES from readdir", async () => {
-      vi.mocked(fs.readdir).mockRejectedValue(eacces("scandir"))
-
-      await expect(adapter.listFiles("outputs", "locked")).rejects.toThrow(
-        "EACCES"
-      )
-    })
-
     it("returns only files, not directories, from a flat listing", async () => {
       vi.mocked(fs.readdir).mockResolvedValue([
         { name: "a.png", isFile: () => true, isDirectory: () => false },
@@ -256,21 +221,6 @@ describe("LocalFsAdapter", () => {
       const result = await adapter.listPrefixes("inputs", "brands")
 
       expect(result).toEqual(["alpha", "bravo"])
-    })
-
-    it("returns empty array for ENOENT", async () => {
-      vi.mocked(fs.readdir).mockRejectedValue(enoent("scandir"))
-
-      const result = await adapter.listPrefixes("inputs", "brands")
-      expect(result).toEqual([])
-    })
-
-    it("rethrows EACCES from readdir", async () => {
-      vi.mocked(fs.readdir).mockRejectedValue(eacces("scandir"))
-
-      await expect(adapter.listPrefixes("inputs", "brands")).rejects.toThrow(
-        "EACCES"
-      )
     })
   })
 

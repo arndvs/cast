@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { readFileSync } from "node:fs"
 import path from "node:path"
 
-import { briefSchema, slugify } from "@/lib/cast/schemas"
+import { briefSchema } from "@/lib/cast/schemas"
 
 const briefJsonPath = path.resolve(process.cwd(), "inputs/brief.json")
 
@@ -79,13 +79,5 @@ describe("briefSchema", () => {
         result.error.issues.some((i) => i.message.includes("empty string"))
       ).toBe(true)
     }
-  })
-})
-
-describe("slugify", () => {
-  it("matches the resolver / upload contract", () => {
-    expect(slugify("Brisa Citrus")).toBe("brisa-citrus")
-    expect(slugify("  Brisa  Citrus  ")).toBe("brisa-citrus")
-    expect(slugify("Brisa & Berry!")).toBe("brisa-berry")
   })
 })

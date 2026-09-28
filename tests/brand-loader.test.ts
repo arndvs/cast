@@ -412,18 +412,12 @@ describe("canVariants — products.json", () => {
     )
   })
 
-  it("throws BrandInvalidError when item.file contains traversal segment", async () => {
-    const TRAVERSAL_PRODUCTS = {
-      items: [
-        {
-          id: "bad",
-          sku: "BAD-001",
-          file: "../../../etc/passwd",
-          pose: "upright-center",
-          detail: "evil",
-        },
-      ],
-    }
+  it.each([
+    ["forward-slash traversal", "../../../etc/passwd"],
+    ["backslash traversal", "products\\..\\secrets.png"],
+    ["backslash without traversal", "products\\can.png"],
+    ["empty segments", "///"],
+  ])("throws BrandInvalidError when item.file is %s", async (_label, file) => {
     mockAdapter.fileExists.mockResolvedValue(true)
     mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
       if (key === "brands/acme/brand.json")
@@ -433,100 +427,19 @@ describe("canVariants — products.json", () => {
       if (key === "brands/acme/logos/logos.json")
         return Buffer.from(JSON.stringify(VALID_LOGOS))
       if (key === "brands/acme/products.json")
-        return Buffer.from(JSON.stringify(TRAVERSAL_PRODUCTS))
-      if (key === "brands/acme/banned-words.json") throw notFound()
-      if (key === "brands/acme/backgrounds.json") throw notFound()
-      throw notFound()
-    })
-    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
-      BrandInvalidError
-    )
-  })
-
-  it("throws BrandInvalidError when item.file contains traversal via backslashes", async () => {
-    const BACKSLASH_PRODUCTS = {
-      items: [
-        {
-          id: "bad",
-          sku: "BAD-001",
-          file: "products\\..\\secrets.png",
-          pose: "upright-center",
-          detail: "evil",
-        },
-      ],
-    }
-    mockAdapter.fileExists.mockResolvedValue(true)
-    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/brand.json")
-        return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/voice.json")
-        return Buffer.from(JSON.stringify(VALID_VOICE))
-      if (key === "brands/acme/logos/logos.json")
-        return Buffer.from(JSON.stringify(VALID_LOGOS))
-      if (key === "brands/acme/products.json")
-        return Buffer.from(JSON.stringify(BACKSLASH_PRODUCTS))
-      if (key === "brands/acme/banned-words.json") throw notFound()
-      if (key === "brands/acme/backgrounds.json") throw notFound()
-      throw notFound()
-    })
-    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
-      BrandInvalidError
-    )
-  })
-
-  it("throws BrandInvalidError when item.file contains backslashes without traversal", async () => {
-    const BACKSLASH_ONLY = {
-      items: [
-        {
-          id: "bad",
-          sku: "BAD-001",
-          file: "products\\can.png",
-          pose: "upright-center",
-          detail: "evil",
-        },
-      ],
-    }
-    mockAdapter.fileExists.mockResolvedValue(true)
-    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/brand.json")
-        return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/voice.json")
-        return Buffer.from(JSON.stringify(VALID_VOICE))
-      if (key === "brands/acme/logos/logos.json")
-        return Buffer.from(JSON.stringify(VALID_LOGOS))
-      if (key === "brands/acme/products.json")
-        return Buffer.from(JSON.stringify(BACKSLASH_ONLY))
-      if (key === "brands/acme/banned-words.json") throw notFound()
-      if (key === "brands/acme/backgrounds.json") throw notFound()
-      throw notFound()
-    })
-    await expect(loadBrandProfile("acme")).rejects.toBeInstanceOf(
-      BrandInvalidError
-    )
-  })
-
-  it("throws BrandInvalidError when item.file resolves to empty segments", async () => {
-    const EMPTY_KEY = {
-      items: [
-        {
-          id: "empty",
-          sku: "BAD-001",
-          file: "///",
-          pose: "upright-center",
-          detail: "evil",
-        },
-      ],
-    }
-    mockAdapter.fileExists.mockResolvedValue(true)
-    mockAdapter.readFile.mockImplementation(async (_c: string, key: string) => {
-      if (key === "brands/acme/brand.json")
-        return Buffer.from(JSON.stringify(VALID_BRAND))
-      if (key === "brands/acme/voice.json")
-        return Buffer.from(JSON.stringify(VALID_VOICE))
-      if (key === "brands/acme/logos/logos.json")
-        return Buffer.from(JSON.stringify(VALID_LOGOS))
-      if (key === "brands/acme/products.json")
-        return Buffer.from(JSON.stringify(EMPTY_KEY))
+        return Buffer.from(
+          JSON.stringify({
+            items: [
+              {
+                id: "bad",
+                sku: "BAD-001",
+                file,
+                pose: "upright-center",
+                detail: "evil",
+              },
+            ],
+          })
+        )
       if (key === "brands/acme/banned-words.json") throw notFound()
       if (key === "brands/acme/backgrounds.json") throw notFound()
       throw notFound()
